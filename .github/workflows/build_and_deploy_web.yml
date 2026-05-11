@@ -34,6 +34,6 @@ jobs:
           docker network inspect $NETWORK_NAME >/dev/null 2>&1 || \
           docker network create $NETWORK_NAME
 
-          docker-compose -f ci/docker-composes/docker-compose.prod.yaml build --no-cache web
+          docker-compose -p $PROJECT_NAME -f ci/docker-composes/docker-compose.prod.yaml build --no-cache web
 
-          docker-compose -f ci/docker-composes/docker-compose.prod.yaml up -d web
+          docker-compose -p $PROJECT_NAME -f ci/docker-composes/docker-compose.prod.yaml up -d web
