@@ -19,9 +19,10 @@ network:
 	@docker network inspect $(NETWORK_NAME) >/dev/null 2>&1 || \
 	docker network create $(NETWORK_NAME)
 up: network
-	docker-compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
-
+	docker-compose -p $(PROJECT_NAME) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
 # 모든 컨테이너 종료 및 볼륨 삭제
 down:
-	docker-compose -f ci/docker-composes/docker-compose.dev.yaml down -v
-	docker-compose -f ci/docker-composes/docker-compose.prod.yaml down -v
+	@$(MAKE) down-env ENV_FILE=./envs/.env.dev COMPOSE_FILE=ci/docker-composes/docker-compose.dev.yaml
+	@$(MAKE) down-env ENV_FILE=./envs/.env.prod COMPOSE_FILE=ci/docker-composes/docker-compose.prod.yaml
+down-env:
+	docker-compose -p $(PROJECT_NAME) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
