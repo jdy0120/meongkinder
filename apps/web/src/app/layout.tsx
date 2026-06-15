@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "사주",
-  description: "사주를 통해 미래를 예측해보세요.",
+  title: "template",
+  description: "template web 입니다.",
 };
 
 export default function RootLayout({
