@@ -1,86 +1,65 @@
-import {
-  Strategy as JwtStrategy,
-  ExtractJwt,
-  StrategyOptions,
-  VerifyCallback,
-} from "passport-jwt";
+import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { Request } from "express";
+import { ExtractJwt, Strategy } from "passport-jwt";
 
-import {
-  ACCESS_TOKEN_SECRET,
-  REFRESH_TOKEN_SECRET,
-  STATUS_CODES,
-} from "../constants";
-import { HttpError } from "../errors/http-error";
-import { TokenError } from "../errors/token-error";
-import { compareHash } from "../utils/crypto"; // TODO: use make password when user sign up
-import { prisma } from "@template/database";
+import * as CONST from "../constants";
 
-const accessJwtStrategyOptions: StrategyOptions = {
-  jwtFromRequest: ExtractJwt.fromExtractors([
-    (req) => req?.cookies?.accessToken,
-  ]),
-  secretOrKey: ACCESS_TOKEN_SECRET,
-  ignoreExpiration: true,
-};
-const refreshJwtStrategyOptions: StrategyOptions = {
-  jwtFromRequest: ExtractJwt.fromExtractors([
-    (req) => req?.cookies?.refreshToken,
-  ]),
-  secretOrKey: REFRESH_TOKEN_SECRET,
-  ignoreExpiration: true,
-};
+interface JwtPayload {
+  userId: string;
+  email: string;
+}
 
-const verifyAccessJwt: VerifyCallback = async (payload, done) => {
-  try {
-    const now = Date.now();
-    const { id, issuedAt, expiredIn } = payload;
-
-    if (now > issuedAt + expiredIn)
-      return done(new TokenError(STATUS_CODES.FORBIDDEN, true, false), false);
-
-    const user = await prisma.user.findUnique({
-      where: {
-        id,
-      },
+@Injectable()
+export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt") {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: Request): string | null => {
+          return (request?.cookies?.access_token as string) ?? null;
+        },
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: CONST.ACCESS_TOKEN_SECRET,
     });
-
-    if (!user) return done(new HttpError(STATUS_CODES.NOT_FOUND), false);
-
-    return done(null, user);
-  } catch (err) {
-    console.error(err);
-    done(err, false);
   }
-};
 
-const verifyRefreshJwt: VerifyCallback = async (payload, done) => {
-  try {
-    const now = Date.now();
-    const { id, issuedAt, expiredIn } = payload;
+  validate(payload: JwtPayload) {
+    // Inject this object into request.user
+    return { userId: payload.userId, email: payload.email };
+  }
+}
 
-    if (now > issuedAt + expiredIn)
-      return done(new TokenError(STATUS_CODES.FORBIDDEN, true, true), false);
-
-    const user = await prisma.user.findUnique({
-      where: {
-        id,
-      },
+@Injectable()
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  "jwt-refresh",
+) {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: Request): string | null => {
+          return (request?.cookies?.refresh_token as string) ?? null;
+        },
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: CONST.REFRESH_TOKEN_SECRET,
+      passReqToCallback: true,
     });
-
-    if (!user) return done(new HttpError(STATUS_CODES.NOT_FOUND), false);
-
-    return done(null, user);
-  } catch (err) {
-    console.error(err);
-    done(err, false);
   }
-};
 
-export const accessJwtStrategy = new JwtStrategy(
-  accessJwtStrategyOptions,
-  verifyAccessJwt,
-);
-export const refreshJwtStrategy = new JwtStrategy(
-  refreshJwtStrategyOptions,
-  verifyRefreshJwt,
-);
+  validate(req: Request, payload: JwtPayload) {
+    const refreshToken =
+      (req.cookies?.refresh_token as string) ??
+      req.get("Authorization")?.replace("Bearer ", "").trim() ??
+      "";
+
+    return {
+      userId: payload.userId,
+      email: payload.email,
+      refreshToken,
+    };
+  }
+}

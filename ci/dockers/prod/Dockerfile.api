@@ -32,4 +32,4 @@ COPY --from=builder /app/packages/database/prisma.config.ts ./prisma/prisma.conf
 EXPOSE 3000
 ENV PORT=${SERVER_PORT:-4174}
 
-CMD ["sh", "-c", "cd ./prisma && npx prisma db push --schema=./prisma --accept-data-loss && cd .. && node dist/server.js"]
+CMD ["sh", "-c", "cd ./prisma && node ../node_modules/.pnpm/node_modules/prisma/build/index.js db push --schema=./prisma --accept-data-loss && cd .. && node dist/src/main.js"]

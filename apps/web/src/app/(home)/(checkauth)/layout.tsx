@@ -14,7 +14,7 @@ interface LayoutProps {
  */
 
 const getMe = async () => {
-  const { API_BASE_URL } = process.env;
+  const { API_BASE_URL, PROJECT_NAME } = process.env;
   const cookieStore = await cookies();
 
   const cookieString = cookieStore
@@ -22,12 +22,15 @@ const getMe = async () => {
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const response = await fetch(`${API_BASE_URL}/api/saju/v1/mypage/me`, {
-    method: "GET",
-    headers: {
-      Cookie: cookieString,
+  const response = await fetch(
+    `${API_BASE_URL}/api/${PROJECT_NAME}/auth/mypage`,
+    {
+      method: "GET",
+      headers: {
+        Cookie: cookieString,
+      },
     },
-  });
+  );
 
   return response;
 };
@@ -39,7 +42,16 @@ const layout = async ({ children }: LayoutProps) => {
     redirect("/auth/login");
   }
 
-  return <>{children}</>;
+  const data = await response.json();
+  if (data.data.user.status === "ACTIVE") {
+    return <main className='overflow-y-auto'>{children}</main>;
+  }
+
+  if (data.data.user.status === "PENDING") {
+    redirect("/auth/pending");
+  }
+
+  redirect("/auth/not-auth");
 };
 
 export default layout;

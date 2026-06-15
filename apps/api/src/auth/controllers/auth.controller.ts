@@ -1,30 +1,118 @@
-import { Request, Response } from "express";
-import * as authService from "../services/auth.service";
+import {
+  Controller,
+  Post,
+  Body,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Res,
+  Get,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import type { Request, Response } from "express";
+import { Public } from "../../shared/decorators/public.decorator";
+import { JwtRefreshGuard } from "../../shared/guards/jwt-refresh.guard";
+import { AUTH_ROUTES } from "../routes";
+import { AuthService } from "../services";
+import { LoginDto, SubmitOtpDto } from "../dtos";
 import * as CONST from "../../shared/constants";
 
-const kakaoAuthRedirect = async (req: Request, res: Response) => {
-  const kakaoAuthUrl = await authService.getKakaoAuthUrl();
-  res.redirect(kakaoAuthUrl);
-};
+@Controller(AUTH_ROUTES.v1.BASE)
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
 
-const kakaoCheckCode = async (req: Request, res: Response) => {
-  const { code } = req.query;
+  @Public()
+  @Get(AUTH_ROUTES.v1.LOGIN)
+  @HttpCode(HttpStatus.OK)
+  async login(@Query() loginDto: LoginDto) {
+    const result = await this.authService.login(loginDto);
+    return {
+      message: result.message,
+    };
+  }
 
-  const tokens = await authService.kakaoCheckCode(code as string);
+  @Public()
+  @Post(AUTH_ROUTES.v1.SUBMIT_OTP)
+  @HttpCode(HttpStatus.OK)
+  async submitOTP(
+    @Body() submitOtpDto: SubmitOtpDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.submitOTP(submitOtpDto);
+    res.cookie("access_token", result.user.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
+    });
+    res.cookie("refresh_token", result.user.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
+    });
 
-  res.cookie("accessToken", tokens.accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
-  });
-  res.cookie("refreshToken", tokens.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
-    // path: `/api/${process.env.APP_NAME}/auth/refresh`,
-  });
+    return {
+      message: result.message,
+      user: result.user,
+    };
+  }
 
-  res.redirect(`${process.env.WEB_URL}/auth/success`);
-};
+  @Post(AUTH_ROUTES.v1.LOGOUT)
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const userId = req.user?.userId || "";
+    const result = await this.authService.logout(userId);
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+    return {
+      message: result.message,
+    };
+  }
 
-export { kakaoAuthRedirect, kakaoCheckCode };
+  @Public()
+  @UseGuards(JwtRefreshGuard)
+  @Post(AUTH_ROUTES.v1.REFRESH)
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const email = req.user?.email || "";
+    const refreshToken = req.user?.refreshToken || "";
+    const result = await this.authService.refresh({ email, refreshToken });
+    res.cookie("access_token", result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
+    });
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
+    });
+    return result;
+  }
+
+  @Get(AUTH_ROUTES.v1.MYPAGE)
+  @HttpCode(HttpStatus.OK)
+  async mypage(@Req() req: Request) {
+    const userId = req.user?.userId;
+    const result = await this.authService.mypage(userId);
+    return {
+      message: result.message,
+      user: result.user,
+    };
+  }
+}

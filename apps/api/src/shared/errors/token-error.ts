@@ -4,7 +4,7 @@ export class TokenError extends HttpError {
   constructor(
     statusCode: number,
     readonly isAccessTokenExpired: boolean,
-    readonly isRefreshTokenExpired: boolean
+    readonly isRefreshTokenExpired: boolean,
   ) {
     super(statusCode);
 

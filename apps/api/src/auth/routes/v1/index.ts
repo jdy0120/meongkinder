@@ -1,2 +1,1 @@
-export * from "./auth.route";
-export * from "./token.route";
+export * from "./v1.routes";

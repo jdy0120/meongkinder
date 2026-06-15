@@ -3,7 +3,7 @@ import { getResponsePhrase } from "../utils";
 export class HttpError extends Error {
   constructor(
     readonly statusCode: number,
-    readonly customMessage?: string
+    readonly customMessage?: string,
   ) {
     const message = customMessage ?? getResponsePhrase(statusCode);
 

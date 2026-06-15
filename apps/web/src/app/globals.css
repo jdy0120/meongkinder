@@ -12,9 +12,6 @@ packages에서 사용하는 공통 테마
 */
 
 :root {
-  --app-height: 100dvh;
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
 }
 
 /* 기본 레이아웃 */
@@ -30,25 +27,21 @@ body {
 
 /* Next App 전체를 화면 꽉 채우고 중앙 정렬하고 싶을 때 예시 */
 main {
-  height: var(--app-height);
 }
 
 header {
-  padding-top: var(--safe-top);
+  /* padding-top: var(--safe-top); */
 }
 
 footer {
-  padding-bottom: var(--safe-bottom);
+  /* padding-bottom: var(--safe-bottom); */
 }
 
 #app-container {
   width: 100%;
-  max-width: 720px; /* 일반적인 모바일 최대 폭 */
   margin: 0 auto;
-  min-height: var(--app-height);
   background-color: var(--background);
   position: relative;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); /* PC에서 볼 때 경계선 구분 */
 }
 
 .unselectable {
