@@ -1,10 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
+  "files": [],
   "references": [
     { "path": "./packages/database" },
     { "path": "./packages/ui" },
     { "path": "./apps/api" },
     { "path": "./apps/web" }
-  ],
-  "exclude": ["node_modules"]
+  ]
 }

@@ -14,9 +14,21 @@ model User {
   refreshTokens RefreshToken[]
   userInfo UserInfo?
   pointTransactions PointTransaction[]
+  otpToken          OtpToken?
 
   @@unique([email])
   @@map("users")
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  code      String
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("otp_tokens")
 }
 
 model UserInfo {
