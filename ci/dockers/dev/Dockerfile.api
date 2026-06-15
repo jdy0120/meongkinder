@@ -19,4 +19,4 @@ ENV DATABASE_URL=$DATABASE_URL
 # 3. 설치 (루트에서 실행하면 workspace 전체 의존성이 다 설치됨)
 RUN pnpm install
 
-CMD ["pnpm", "--filter", "api", "dev"]
+CMD ["pnpm", "--filter", "api", "start:dev"]
