@@ -1,48 +1,89 @@
-import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import { Get } from "./request";
+import { InternalAxiosRequestConfig, AxiosError } from "axios";
+import axios from "axios";
 
 // Request interceptor
 const insertAccessToken = (config: InternalAxiosRequestConfig) => {
-  // const token = sessionStorage.getItem("persist:root");
-  // // Check if token exists and is valid
-  // let accessToken;
-  // try {
-  //   const login = token ? JSON.parse(token).login : null;
-  //   accessToken = JSON.parse(login)?.accessToken;
-  // } catch (error) {
-  //   console.error("Failed to parse token:", error);
-  //   accessToken = null; // Ensure accessToken is null on error
-  // }
+  const loginSession =
+    typeof window !== "undefined" ? sessionStorage.getItem("login") : null;
+  let accessToken = null;
 
-  // if (config.headers && accessToken) {
-  //   config.headers.authorization = `Bearer ${accessToken}`;
-  // }
+  if (loginSession) {
+    try {
+      const parsed = JSON.parse(loginSession);
+      accessToken = parsed?.state?.accessToken;
+    } catch (error) {
+      console.error("Failed to parse token:", error);
+    }
+  }
+
+  if (config.headers && accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
 
   return config;
 };
 
-//response interceptor
-const refreshAccessToken = async (response: AxiosResponse) => {
-  // if (response.status === 401) {
-  //   const token = sessionStorage.getItem("login");
-  //   const refreshTokenInStorage = JSON.parse(token || "").state.refreshToken;
-  //   try {
-  //     const accessTokenResponse = await Get<LoginResponse>("/auth/refresh", {
-  //       params: {
-  //         refreshtoken: refreshTokenInStorage,
-  //       },
-  //     });
-  //     const accessToken = accessTokenResponse.data.data.accessToken;
-  //     const refreshToken = accessTokenResponse.data.data.refreshToken;
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
-  //     console.log(accessTokenResponse);
-  //     sessionStorage.setItem("persist:root", JSON.stringify({ state: { accessToken, refreshToken } }));
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
+// Response interceptor for handling token expiration
+const refreshAccessToken = async (error: AxiosError) => {
+  const originalRequest = error.config as CustomAxiosRequestConfig | undefined;
 
-  return response;
+  const isAuthRequest =
+    originalRequest?.url?.includes("/auth/login") ||
+    originalRequest?.url?.includes("/auth/submit-otp") ||
+    originalRequest?.url?.includes("/auth/refresh");
+
+  if (
+    error.response?.status === 401 &&
+    originalRequest &&
+    !originalRequest._retry &&
+    !isAuthRequest
+  ) {
+    originalRequest._retry = true;
+
+    const proj = process.env.NEXT_PUBLIC_PROJECT_NAME || "monorepo-template";
+    let refreshSuccess = false;
+
+    try {
+      // Using standard axios to avoid recursion loop in interceptor
+      // withCredentials: true sends the HttpOnly refresh_token cookie automatically
+      const res = await axios.post(
+        `${originalRequest.baseURL || ""}/api/${proj}/auth/refresh`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+
+      const data = res.data?.data || res.data;
+      if (res.status === 200 || data?.accessToken) {
+        refreshSuccess = true;
+      }
+    } catch (err) {
+      console.error("Token refresh failed:", err);
+    }
+
+    if (refreshSuccess) {
+      // Re-create the request using the main axiosInstance
+      const { axiosInstance } = await import("./instance");
+      return axiosInstance(originalRequest);
+    }
+
+    // If refresh failed or was not possible, logout and redirect
+    if (typeof window !== "undefined") {
+      document.cookie =
+        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie =
+        "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      sessionStorage.clear();
+      window.location.href = "/auth/login";
+    }
+  }
+
+  return Promise.reject(error);
 };
 
 export { insertAccessToken, refreshAccessToken };
