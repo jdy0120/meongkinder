@@ -50,3 +50,5 @@ coverage
 .vercel
 
 _bmad-output
+
+/data
