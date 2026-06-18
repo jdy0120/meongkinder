@@ -15,9 +15,10 @@ import {
   JwtAccessStrategy,
   JwtRefreshStrategy,
 } from "../configs/passport.config";
+import { FileModule } from "../file/file.module";
 
 @Module({
-  imports: [PassportModule, AuthModule, MailModule],
+  imports: [PassportModule, AuthModule, MailModule, FileModule],
   providers: [
     {
       provide: APP_GUARD,

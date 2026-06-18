@@ -1,0 +1,46 @@
+model File {
+  id String @id @default(uuid())
+
+  originalName String
+  extension String
+  
+  mimeType String
+  sizeByte BigInt
+
+  localPath String?
+  cloudPath String?
+
+  storageStatus String @default("LOCAL") // LOCAL, CLOUD, DELETED
+  checksumMd5 String?
+  checksumSha256 String?
+
+  uploadedBy String? // user or service id
+
+  syncedAt  DateTime?
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([id])
+  @@map("files")
+}
+
+model FileTemp {
+  id String @id @default(uuid())
+
+  originalName String
+  extension String
+
+  mimeType String
+  sizeByte BigInt
+
+  localPath String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([id])
+  @@map("file_temps")
+}
+
