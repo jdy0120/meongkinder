@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { PassportModule } from "@nestjs/passport";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { AuthModule } from "../../auth/auth.module";
 import { MailModule } from "./mail.module";
 import { prismaDisconnect } from "@template/database";
@@ -18,11 +19,22 @@ import {
 import { FileModule } from "../file/file.module";
 
 @Module({
-  imports: [PassportModule, AuthModule, MailModule, FileModule],
+  imports: [
+    PassportModule,
+    AuthModule,
+    MailModule,
+    FileModule,
+    // OTP 엔드포인트 브루트포스 방지: 1분에 최대 5회
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
+  ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAccessGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
     JwtAccessStrategy,
     JwtRefreshStrategy,

@@ -10,7 +10,7 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "references": [{ "path": "../../packages/database" }],
+  "references": [{ "path": "../database" }],
   "include": ["src/**/*.ts", "**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

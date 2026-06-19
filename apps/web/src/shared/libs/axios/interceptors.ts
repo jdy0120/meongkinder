@@ -73,11 +73,21 @@ const refreshAccessToken = async (error: AxiosError) => {
     }
 
     // If refresh failed or was not possible, logout and redirect
+    // HttpOnly 쿠키는 JS로 삭제 불가 — 서버 로그아웃 API를 호출해 쿠키를 서버에서 제거
     if (typeof window !== "undefined") {
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       document.cookie =
         "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      try {
+        await axios.post(
+          `${originalRequest?.baseURL || ""}/api/${proj}/auth/logout`,
+          {},
+          { withCredentials: true },
+        );
+      } catch {
+        // 로그아웃 API 실패해도 클라이언트 정리 후 리다이렉트
+      }
       sessionStorage.clear();
       window.location.href = "/auth/login";
     }

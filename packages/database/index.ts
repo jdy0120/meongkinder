@@ -7,7 +7,6 @@ let prismaInstance: PrismaClient | null = null;
 const connect = async () => {
   if (prismaInstance) return prismaInstance; // 이미 연결되어 있으면 재사용
 
-  console.log(process.env.DATABASE_URL);
   const connectionString = process.env.DATABASE_URL;
   const adapter = new PrismaPg({ connectionString });
   prismaInstance = new PrismaClient({ adapter });

@@ -9,15 +9,16 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../shared/utils/jwt";
-import * as CONST from "../../shared/constants";
 import { MailerService } from "@nestjs-modules/mailer";
+import * as CONST from "../../shared/constants";
+import * as crypto from "crypto";
 
 @Injectable()
 export class AuthService {
   constructor(private readonly mailerService: MailerService) {}
 
   private generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 999999).toString();
   }
 
   private async sendOtpEmail(email: string, code: string) {
@@ -133,9 +134,19 @@ export class AuthService {
       },
     });
 
+    const {
+      accessToken: _accessToken,
+      refreshToken: _refreshToken,
+      accessTokenExpiresAt: _accessTokenExpiresAt,
+      refreshTokenExpiresAt: _refreshTokenExpiresAt,
+      ...safeUser
+    } = updatedUser;
+
     return {
       message: "로그인이 완료되었습니다.",
-      user: updatedUser,
+      accessToken,
+      refreshToken,
+      user: safeUser,
     };
   }
 

@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Query,
   HttpCode,
   HttpStatus,
   Res,
@@ -23,9 +22,9 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Get(AUTH_ROUTES.v1.LOGIN)
+  @Post(AUTH_ROUTES.v1.LOGIN)
   @HttpCode(HttpStatus.OK)
-  async login(@Query() loginDto: LoginDto) {
+  async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
     return {
       message: result.message,
@@ -40,13 +39,13 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.submitOTP(submitOtpDto);
-    res.cookie("access_token", result.user.accessToken, {
+    res.cookie("access_token", result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
     });
-    res.cookie("refresh_token", result.user.refreshToken, {
+    res.cookie("refresh_token", result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",

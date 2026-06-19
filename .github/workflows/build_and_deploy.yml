@@ -1,0 +1,61 @@
+name: Deploy to VM
+
+on:
+  push:
+    paths:
+      - "apps/api/**"
+      - "apps/web/**"
+      - "packages/**"
+      - "ci/nginx/**"
+      - "ci/docker-composes/docker-compose.prod.yaml"
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up Docker build cache
+        if: always()
+        run: |
+          docker builder prune -a -f
+          docker container prune -f
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILES }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+          NETWORK_NAME: ${{ secrets.NETWORK_NAME }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_PORT }}
+          envs: ENV_FILE,PROJECT_NAME,NETWORK_NAME
+          script: |
+            # VM의 프로젝트 위치를 변경 해야합니다. monorepo-template -> Repository 이름으로
+            cd /srv/monorepo-template
+
+            # 최신 코드 pull
+            git pull origin main
+
+
+            # .env 파일 생성
+            echo "$ENV_FILE" > .env
+
+            # 네트워크 없으면 생성
+            docker network inspect $NETWORK_NAME >/dev/null 2>&1 || \
+            docker network create $NETWORK_NAME
+
+            # 중단
+            docker compose -p $PROJECT_NAME -f ci/docker-composes/docker-compose.prod.yaml down
+
+            # 빌드 & 배포
+            docker compose -p $PROJECT_NAME --env-file .env -f ci/docker-composes/docker-compose.prod.yaml up -d --build
+
+            # 안 쓰는 이미지 및 빌드 캐시 정리
+            docker image prune -f
+            docker builder prune -af
+
+            echo "✅ 배포 완료"
