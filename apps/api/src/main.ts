@@ -1,7 +1,9 @@
+import "./shared/configs/serialization.config";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./shared/modules/app.module";
 import { setupApplication } from "./shared/configs/app.setup"; // 👈 불러오기
 import { prismaConnect } from "@template/database";
+
 async function bootstrap() {
   try {
     await prismaConnect();
