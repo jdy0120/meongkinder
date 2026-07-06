@@ -5,7 +5,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "db:dev": "nodemon --watch 'prisma/schema/**/*.prisma' --ext prisma --exec 'pnpm prisma generate && pnpm prisma db push --accept-data-loss'",
+    "db:dev": "nodemon --watch 'prisma/schema/**/*.prisma' --ext prisma --exec 'pnpm prisma generate && pnpm prisma db push --accept-data-loss && pnpm db:seed'",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

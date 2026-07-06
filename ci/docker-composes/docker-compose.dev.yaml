@@ -12,6 +12,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - ../../envs/.env.dev
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PROJECT_NAME}-db:5432/${POSTGRES_DB}
 
