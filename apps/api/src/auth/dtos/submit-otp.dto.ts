@@ -1,7 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import type { SubmitOtpRequest } from "@template/shared";
 
-export class SubmitOtpDto {
+export class SubmitOtpDto implements SubmitOtpRequest {
   @ApiProperty({ description: "이메일", example: "user@example.com" })
   @IsEmail()
   @IsNotEmpty()

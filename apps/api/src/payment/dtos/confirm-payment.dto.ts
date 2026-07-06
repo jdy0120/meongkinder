@@ -1,8 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsInt, IsNotEmpty, IsString, Min } from "class-validator";
+import type { ConfirmPaymentRequest } from "@template/shared";
 
 // 토스 결제창 성공 리다이렉트의 쿼리 파라미터를 그대로 전달받습니다.
-export class ConfirmPaymentDto {
+export class ConfirmPaymentDto implements ConfirmPaymentRequest {
   @ApiProperty({ description: "토스 결제 키", example: "tviva20240101..." })
   @IsString()
   @IsNotEmpty()

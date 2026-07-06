@@ -1,7 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import type { RefreshRequest } from "@template/shared";
 
-export class RefreshDto {
+export class RefreshDto implements RefreshRequest {
   @ApiProperty({ description: "이메일", example: "user@example.com" })
   @IsEmail()
   @IsNotEmpty()
