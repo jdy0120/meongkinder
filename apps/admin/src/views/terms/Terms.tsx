@@ -619,15 +619,19 @@ export const TermsPage = () => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className='flex-1 overflow-y-auto p-6 bg-slate-950 text-slate-200 rounded-xl mt-3 font-sans leading-relaxed'>
+          <div className='flex-1 overflow-hidden p-2 bg-slate-950 rounded-xl mt-3'>
             {isPreviewLoading ? (
               <div className='flex justify-center items-center py-20'>
                 <Spinner className='w-6 h-6 text-blue-500' />
               </div>
             ) : previewTerms?.content ? (
-              <div
-                className='prose prose-invert max-w-none prose-sm whitespace-pre-wrap'
-                dangerouslySetInnerHTML={{ __html: previewTerms.content }}
+              // 업로드된 약관 문서를 앱 오리진과 격리해 렌더링한다.
+              // sandbox="" 로 스크립트/폼 등을 차단해 XSS 위험을 제거한다.
+              <iframe
+                title={`${previewTerms.title ?? "약관"} 본문 미리보기`}
+                srcDoc={previewTerms.content}
+                sandbox=''
+                className='w-full h-full min-h-[50vh] rounded-lg border-0 bg-white'
               />
             ) : (
               <div className='text-center py-20 text-slate-500'>
