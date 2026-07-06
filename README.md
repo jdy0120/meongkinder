@@ -105,54 +105,102 @@ graph TD
 │   │
 │   └── ui/                      # 56종의 Tailwind CSS v4 + Radix UI 디자인 시스템 컴포넌트 라이브러리
 │
-├── envs/                        # 환경 변수 폴더 (.env, .env.dev, .env.prod 등)
+├── scripts/                     # 유틸리티 스크립트
+│   └── rename.sh                # 템플릿 네이밍(@template, PROJECT_NAME 등) 일괄 치환기
+├── envs/                        # 환경 변수 폴더
+│   └── .env.example             # 환경 변수 템플릿 (유일하게 커밋됨. 실제 .env* 는 gitignore)
 └── ci/                          # CI/CD 및 도커 컨테이너 설정 파일 저장소
     ├── docker-composes/         # 환경별 Docker Compose 파일 (dev, prod)
-    └── dockers/                 # 서비스별 Dockerfile 정의 (dev, prod)
+    ├── nginx/                   # 운영용 nginx 리버스 프록시 템플릿 (prod)
+    ├── db/                      # DB 초기화 스크립트 (init.sql)
+    └── dockers/                 # 서비스별 Dockerfile 정의 (dev, prod, test)
 ```
 
 ---
 
 ## 🚀 시작하기 (Getting Started)
 
-### 1. 개발 환경 실행 (Development)
+### 0. (선택) 템플릿을 내 프로젝트로 리네임
+
+이 템플릿은 npm 스코프 `@template/*`, 루트 패키지명 `template`, `PROJECT_NAME=template-*` 을 기본값으로 씁니다. 실제 프로젝트로 사용할 때는 아래 스크립트로 한 번에 치환하세요.
+
+```bash
+# ./scripts/rename.sh <새이름> [스코프]
+./scripts/rename.sh myapp          # @myapp/*, name "myapp", PROJECT_NAME myapp-* 로 치환
+./scripts/rename.sh myapp acme     # 스코프만 @acme/*, 나머지는 myapp
+
+# 치환 후 반드시 락파일을 재생성 (package.json 변경을 pnpm-lock.yaml 에 반영)
+pnpm install
+```
+
+스크립트가 한 번에 바꿔주는 것:
+* `@template/*` → `@<스코프>/*` — 공유 패키지 3개 정의 + 모든 import 구문
+* 루트 `package.json` 의 `"name"`
+* `envs/.env*` 의 `PROJECT_NAME` (접미사 `-dev`/`-prod` 는 유지)
+
+> [!IMPORTANT]
+> `pnpm-lock.yaml` 은 **커밋 대상**입니다(gitignore 금지). Docker 빌드는 `pnpm install --frozen-lockfile` 로 락파일과 `package.json` 의 일치를 검증하므로, 리네임 후 `pnpm install` 로 락파일을 갱신하지 않으면 빌드가 실패합니다.
+
+---
+
+### 1. 환경 변수 설정
+
+실제 값이 담긴 `.env*` 파일은 커밋되지 않습니다. `envs/.env.example` 을 복사해 환경별 파일을 만드세요.
+
+```bash
+cp envs/.env.example envs/.env.dev      # 로컬 개발 (make dev)
+cp envs/.env.example envs/.env.prod     # 운영     (make prod)
+```
+
+* `PROJECT_NAME`/`NETWORK_NAME` 은 dev/prod 를 다르게 두어 컨테이너·네트워크 충돌을 피하세요.
+* JWT 시크릿은 운영에서 반드시 `openssl rand -hex 32` 로 새로 발급해 교체하세요.
+* 이메일·Azure Blob 등 선택 기능은 값을 채울 때만 활성화됩니다. 자세한 설명은 `.env.example` 주석 참고.
+
+---
+
+### 2. 개발 환경 실행 (Development)
 
 로컬 개발 환경에서는 자체 도커 네트워크를 기반으로 PostgreSQL, DB 마이그레이션 와처, NestJS 서버, Next.js 프론트엔드가 유기적으로 연동되어 기동됩니다.
 
 #### 1) 의존성 설치 및 Prisma Client/Zod 생성
 ```bash
-# 의존성 설치
-pnpm install
-
-# 데이터베이스 클라이언트 및 Zod 생성
-pnpm run db:generate
+pnpm install          # 의존성 설치
+pnpm run db:generate  # 데이터베이스 클라이언트 및 Zod 생성
 ```
 > [!IMPORTANT]
-> `make dev` 또는 로컬 실행 전, 반드시 `pnpm run db:generate`를 한 번 실행하여 공통 모듈용 `@template/database/generated` 결과물이 존재하도록 해야 타입 컴파일 에러가 발생하지 않습니다.
+> `make dev` 또는 로컬 실행 전, 반드시 `pnpm run db:generate`를 한 번 실행하여 공통 모듈용 `@template/database` 의 `generated` 결과물이 존재하도록 해야 타입 컴파일 에러가 발생하지 않습니다.
 
 #### 2) 로컬 도커 가동
 ```bash
 make dev
 ```
-이 명령어는 다음과 같이 도커 네트워크 및 환경 변수(`.envs/.env.dev`)를 적용하여 컨테이너들을 시작합니다:
-* **`template-dev-db`**: PostgreSQL 데이터베이스 (포트 5432)
-* **`template-dev-db-migrate`**: Prisma Schema 디렉토리(`packages/database/prisma/schema/`) 내부 변화를 Watch하여 자동으로 Prisma Client를 갱신하고 스키마를 적용하는 `db:dev` 데몬 구동
-* **`template-dev-server`**: NestJS 기반 백엔드 서버 (포트 3000)
-* **`template-dev-web`**: Next.js 기반 프론트엔드 웹 앱 (포트 3001)
+`envs/.env.dev` 와 도커 네트워크를 적용해 다음 컨테이너들을 기동합니다 (컨테이너명은 `PROJECT_NAME` 접두사를 따름, 기본 `template-dev`):
+* **`<PROJECT_NAME>-db`**: PostgreSQL 데이터베이스 (포트 `DB_PORT`, 기본 5432)
+* **`db-migrate`**: Prisma Schema 디렉토리(`packages/database/prisma/schema/`) 변화를 Watch 하여 Prisma Client 를 자동 갱신·적용하는 `db:dev` 데몬
+* **`<PROJECT_NAME>-server`**: NestJS 백엔드 서버 (포트 `SERVER_PORT`, 기본 3000) — 소스 볼륨 마운트로 핫리로드
+* **`<PROJECT_NAME>-web`**: Next.js 프론트엔드 (포트 `WEB_PORT`, 기본 3001) — 핫리로드
 
 ---
 
-### 2. 운영 환경 실행 (Production)
+### 3. 운영 환경 실행 (Production)
 
-배포 또는 운영 컨테이너 테스트 시에는 로컬 스케일아웃 및 최적화된 빌드를 적용합니다.
+운영 이미지는 멀티스테이지 빌드로 최적화됩니다. `api`/`web` 빌드는 Turborepo(`pnpm turbo run build --filter=...`)가 의존성 그래프를 읽어 `database → shared → 앱` 순서를 자동으로 보장합니다.
 
 ```bash
-# 운영 컨테이너 실행
 make prod
 ```
+`envs/.env.prod` 를 적용해 다음 컨테이너들을 기동합니다 (기본 접두사 `template-prod`):
+* **`<PROJECT_NAME>-db`**: PostgreSQL 데이터베이스
+* **`<PROJECT_NAME>-api`**: NestJS 백엔드 (기동 시 `prisma db push` 로 스키마 반영)
+* **`<PROJECT_NAME>-web`**: Next.js 프론트엔드 (Standalone 빌드)
+* **`<PROJECT_NAME>-nginx`**: 리버스 프록시 (포트 80/443)
+
+> [!NOTE]
+> nginx 는 `envs/.env.prod` 의 `SERVER_NAME` 과 호스트의 `/etc/letsencrypt/live/<SERVER_NAME>/` TLS 인증서를 사용합니다. 실제 HTTPS 서비스를 하려면 해당 도메인의 Let's Encrypt 인증서가 호스트에 준비되어 있어야 합니다.
+
 > [!CAUTION]
-> 기존에 로컬 개발 DB 데이터와 다른 스키마 버전이 PostgreSQL 볼륨에 남아있을 경우 마이그레이션 충돌이 발생할 수 있습니다. 
-> 운영 배포 환경의 새로운 가동 시에는 반드시 **`make down`** 명령어를 통해 Docker 볼륨을 완전 삭제한 다음 `make prod`를 가동하는 것을 강력히 권장합니다.
+> 기존 PostgreSQL 볼륨에 다른 스키마 버전의 데이터가 남아있으면 마이그레이션 충돌이 발생할 수 있습니다.
+> 새로 가동할 때는 **`make down`** 으로 Docker 볼륨을 완전히 삭제한 뒤 `make prod` 를 실행하는 것을 권장합니다.
 
 ---
 
@@ -160,10 +208,13 @@ make prod
 
 | 명령어 | 설명 | 실행 레벨 |
 | :--- | :--- | :--- |
+| `./scripts/rename.sh <이름> [스코프]` | 템플릿 네이밍(`@template`, 루트명, `PROJECT_NAME`) 일괄 치환 후 `pnpm install` | Host CLI |
 | `make dev` | 개발용 컨테이너 기동 (`.env.dev` 사용) | Host CLI |
 | `make prod` | 운영용 컨테이너 빌드 및 백그라운드 기동 (`.env.prod` 사용) | Host CLI |
 | `make down` | 구동 중인 모든 개발/운영 컨테이너 정지 및 **도커 볼륨 영구 삭제** | Host CLI |
 | `pnpm install` | 프로젝트 내 모든 모노레포 패키지 의존성 통합 설치 | Host CLI / Root |
+| `pnpm run build` | Turborepo 로 전체 패키지 빌드 (의존성 순서·캐싱 자동 처리) | Host CLI / Root |
+| `pnpm run type-check` | 전체 워크스페이스 타입 체크 | Host CLI / Root |
 | `pnpm run db:generate` | Prisma 스키마 기반 Prisma Client 및 Zod 타입 생성 | Host CLI / Root |
 | `pnpm run web:dev` | 로컬 환경에서 프론트엔드만 개별 실행 (포트 3001) | Host CLI / Root |
 | `pnpm run api:dev` | 로컬 환경에서 백엔드만 개별 실행 (포트 3000) | Host CLI / Root |
