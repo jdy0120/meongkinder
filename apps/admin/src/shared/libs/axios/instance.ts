@@ -5,7 +5,7 @@ const axiosInstance = axios.create({
   baseURL:
     typeof window === "undefined"
       ? `${process.env.API_BASE_URL}/api/${process.env.PROJECT_NAME}`
-      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${process.env.PROJECT_NAME}` ||
+      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/${process.env.NEXT_PUBLIC_PROJECT_NAME}` ||
         "http://localhost:5175",
   headers: {
     "Content-Type": "application/json",
