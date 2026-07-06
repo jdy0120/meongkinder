@@ -8,11 +8,9 @@ WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
 
-# 빌드 소스(Database, API) 빌드
-RUN pnpm --filter database db:generate
-RUN pnpm --filter database build
-RUN pnpm --filter shared build
-RUN pnpm --filter api build
+# api 빌드 (turbo가 의존성 그래프를 읽어 database db:generate → database build →
+# shared build → api build 순서를 자동으로 보장)
+RUN pnpm turbo run build --filter=api
 
 # 배포를 위해 필요한 파일만 추출 (/app/pruned 폴더로)
 # production 의존성만 포함됩니다.

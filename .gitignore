@@ -14,6 +14,7 @@ build
 .next
 out
 *.tsbuildinfo
+.turbo
 
 # Environment
 ./envs
@@ -52,3 +53,4 @@ coverage
 _bmad-output
 
 /data
+/pgdata

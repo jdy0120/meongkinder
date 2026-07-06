@@ -1,21 +1,30 @@
-// [루트 경로]/turbo.json
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
+    "db:generate": {
+      "cache": true,
+      "inputs": ["prisma/schema/**/*.prisma", "prisma.config.ts"],
+      "outputs": ["generated/**"]
+    },
     "build": {
+      "dependsOn": ["^build", "db:generate"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.spec.ts"],
+      "outputs": ["dist/**", "generated/**", ".next/**", "!.next/cache/**"]
+    },
+    "lint": {
       "dependsOn": ["^build"]
     },
-    "web#build": {
+    "type-check": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
-      "env": [
-        "API_BASE_URL",
-        "NEXT_PUBLIC_API_BASE_URL",
-        "NEXT_PUBLIC_KAKAO_REST_API_KEY",
-        "NEXT_PUBLIC_KAKAO_REDIRECT_URI",
-        "NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY",
-        "NEXT_PUBLIC_KAKAO_CLIENT_SECRET"
-      ]
+      "outputs": ["coverage/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
     }
   }
 }
