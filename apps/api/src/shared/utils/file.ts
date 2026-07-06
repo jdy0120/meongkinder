@@ -105,6 +105,38 @@ export const moveFiles = async (
   }
 };
 
+export const moveFilesLocal = async (
+  domain: Domain,
+  files: { localPath: string; mimeType?: string }[],
+  to: string,
+) => {
+  const directoryPath = join(getUploadPath(domain), to);
+  makeDirectory(directoryPath);
+
+  for (const file of files) {
+    const oldPath = file.localPath;
+    let fname = "";
+    if (oldPath.includes("temps/")) {
+      fname = oldPath.split("temps/")[1];
+    } else {
+      const parts = oldPath.split("/");
+      fname = parts[parts.length - 1];
+    }
+
+    if (!fname) {
+      console.error("filename not found for path:", oldPath);
+      throw new Error("Filename not found");
+    }
+
+    const srcPath = oldPath.startsWith(resourcePath)
+      ? oldPath
+      : join(getTempPath(), fname);
+
+    const newPath = join(directoryPath, fname);
+    await fs.promises.rename(srcPath, newPath);
+  }
+};
+
 export const removeFiles = async (removePath: string) => {
   const targetPath = removePath.startsWith(resourcePath)
     ? removePath

@@ -1,5 +1,7 @@
 import "dotenv/config";
 import * as bcrypt from "bcryptjs";
+import * as fs from "fs";
+import * as path from "path";
 import { prisma, prismaConnect, prismaDisconnect } from "./index";
 
 /**
@@ -60,7 +62,9 @@ async function main() {
       title: "서비스 이용약관",
       type: "SERVICE_USE",
       version: "1.0.0",
-      content: "서비스 이용약관 본문입니다. 서비스를 이용하시려면 이 약관에 동의하셔야 합니다.",
+      fileName: "terms-service.txt",
+      content:
+        "서비스 이용약관 본문입니다. 서비스를 이용하시려면 이 약관에 동의하셔야 합니다.",
       isRequired: true,
       isActive: true,
     },
@@ -69,7 +73,9 @@ async function main() {
       title: "개인정보 수집 및 이용 동의",
       type: "PRIVACY_POLICY",
       version: "1.0.0",
-      content: "개인정보 수집 및 이용 동의 본문입니다. 서비스를 이용하시려면 개인정보 수집에 동의하셔야 합니다.",
+      fileName: "terms-privacy.txt",
+      content:
+        "개인정보 수집 및 이용 동의 본문입니다. 서비스를 이용하시려면 개인정보 수집에 동의하셔야 합니다.",
       isRequired: true,
       isActive: true,
     },
@@ -78,27 +84,68 @@ async function main() {
       title: "마케팅 정보 수신 동의",
       type: "MARKETING_RECEIPT",
       version: "1.0.0",
-      content: "마케팅 정보 수신 동의 본문입니다. 이벤트 및 혜택 정보를 받아보실 수 있습니다.",
+      fileName: "terms-marketing.txt",
+      content:
+        "마케팅 정보 수신 동의 본문입니다. 이벤트 및 혜택 정보를 받아보실 수 있습니다.",
       isRequired: false,
       isActive: true,
     },
   ];
 
   for (const terms of termsList) {
+    const fileId = `file-${terms.id}`;
+    const relativePath = `resources/uploads/terms/${terms.type}/${terms.version}/${terms.fileName}`;
+    const absolutePath = path.join(__dirname, "../../apps/api", relativePath);
+
+    // 1. 실제 파일 디렉토리 및 파일 생성
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+    fs.writeFileSync(absolutePath, terms.content, "utf8");
+
+    // 2. File 레코드 생성/갱신
+    await prisma.file.upsert({
+      where: { id: fileId },
+      update: {
+        originalName: terms.fileName,
+        extension: path.extname(terms.fileName),
+        mimeType: "text/plain",
+        sizeByte: BigInt(Buffer.byteLength(terms.content)),
+        localPath: relativePath,
+        storageStatus: "LOCAL",
+      },
+      create: {
+        id: fileId,
+        originalName: terms.fileName,
+        extension: path.extname(terms.fileName),
+        mimeType: "text/plain",
+        sizeByte: BigInt(Buffer.byteLength(terms.content)),
+        localPath: relativePath,
+        storageStatus: "LOCAL",
+      },
+    });
+
+    // 3. Terms 레코드 생성/갱신
     await prisma.terms.upsert({
       where: { id: terms.id },
       update: {
         title: terms.title,
         type: terms.type,
         version: terms.version,
-        content: terms.content,
+        fileId: fileId,
         isRequired: terms.isRequired,
         isActive: terms.isActive,
       },
-      create: terms,
+      create: {
+        id: terms.id,
+        title: terms.title,
+        type: terms.type,
+        version: terms.version,
+        fileId: fileId,
+        isRequired: terms.isRequired,
+        isActive: terms.isActive,
+      },
     });
   }
-  console.log("✅ 기본 약관 시드 생성 완료");
+  console.log("✅ 기본 약관 및 파일 시드 생성 완료");
 
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({

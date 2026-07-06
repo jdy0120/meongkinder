@@ -111,6 +111,54 @@ export class FileService {
     await this.eraseTemps({ files: fileTemps, tx });
   }
 
+  async moveTempsToUploadsLocal(options: MoveFileOptions) {
+    const { fileList, domain, newPath, tx, beforeMove } = options;
+    const fileIds = fileList.map((file) => file.id);
+
+    const client = tx || prisma;
+
+    const fileTemps = await client.fileTemp.findMany({
+      where: { id: { in: fileIds } },
+    });
+
+    if (beforeMove) {
+      await beforeMove(fileTemps);
+    }
+
+    const filesToMove = fileTemps
+      .filter((file) => !!file.localPath)
+      .map((file) => ({
+        localPath: file.localPath as string,
+        mimeType: file.mimeType || undefined,
+      }));
+
+    await UTILS.moveFilesLocal(domain, filesToMove, newPath);
+
+    await Promise.all(
+      fileTemps.map(async (temp) => {
+        const filename = temp.localPath ? path.basename(temp.localPath) : "";
+        const newLocalPath = temp.localPath
+          ? path.join("resources", "uploads", domain, newPath, filename)
+          : null;
+
+        await client.file.create({
+          data: {
+            id: temp.id,
+            originalName: temp.originalName,
+            extension: temp.extension,
+            mimeType: temp.mimeType,
+            sizeByte: temp.sizeByte,
+            localPath: newLocalPath,
+            cloudPath: null,
+            storageStatus: "LOCAL",
+          },
+        });
+      }),
+    );
+
+    await this.eraseTemps({ files: fileTemps, tx });
+  }
+
   async eraseTemps(options: EraseTempsOptions) {
     const { files, tx } = options;
     const client = tx || prisma;

@@ -30,3 +30,26 @@ export interface UserWithAgreements extends User {
     terms: Terms;
   })[];
 }
+
+export interface CreateTermsRequest {
+  title: string;
+  type: string;
+  version: string;
+  isRequired: boolean;
+  isActive: boolean;
+  fileId?: string;
+}
+
+export interface CreateTermsResponse {
+  message: string;
+  terms: Terms;
+}
+
+export interface UpdateTermsActiveRequest {
+  isActive: boolean;
+}
+
+export interface UpdateTermsActiveResponse {
+  message: string;
+  terms: Terms;
+}
