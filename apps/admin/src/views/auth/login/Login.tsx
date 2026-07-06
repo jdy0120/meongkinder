@@ -32,13 +32,13 @@ export const LoginPage = () => {
     setServerError("");
     try {
       const res = await Post<LoginResponse, LoginRequest>(
-        "/auth/login",
+        "/v1/auth/login",
         values,
       );
 
       // 관리자 앱은 ADMIN 만 허용. 아니면 세션(쿠키)을 정리하고 거부한다.
       if (res.data.data?.user.role !== ROLES.ADMIN) {
-        await Post("/auth/logout", {});
+        await Post("/v1/auth/logout", {});
         setServerError("관리자 권한이 없는 계정입니다.");
         return;
       }

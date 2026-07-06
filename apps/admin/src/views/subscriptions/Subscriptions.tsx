@@ -26,7 +26,7 @@ export const SubscriptionsPage = () => {
 
   const { data, isLoading } = usePaginatedList<UserSubscriptionDetail>(
     "subscriptions",
-    "/admin/subscriptions",
+    "/v1/admin/subscriptions",
     {
       page,
       pageSize: 10,

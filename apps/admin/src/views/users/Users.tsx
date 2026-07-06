@@ -33,7 +33,7 @@ export const UsersPage = () => {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
-  const { data, isLoading } = usePaginatedList<User>("users", "/admin/users", {
+  const { data, isLoading } = usePaginatedList<User>("users", "/v1/admin/users", {
     page,
     pageSize: 10,
     search,
@@ -43,7 +43,7 @@ export const UsersPage = () => {
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ id, role }: { id: string; role: string }) => {
-      const res = await Patch(`/admin/users/${id}/role`, { role });
+      const res = await Patch(`/v1/admin/users/${id}/role`, { role });
       return res.data;
     },
     onSuccess: () => {

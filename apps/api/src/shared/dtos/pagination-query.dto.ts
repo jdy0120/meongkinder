@@ -9,7 +9,11 @@ import type { PaginationQuery, SortOrder } from "@template/shared";
  * 실제 보정/skip·take 계산은 @template/shared 의 resolvePagination 이 담당한다.
  */
 export class PaginationQueryDto implements PaginationQuery {
-  @ApiPropertyOptional({ description: "페이지 (1부터)", default: 1, minimum: 1 })
+  @ApiPropertyOptional({
+    description: "페이지 (1부터)",
+    default: 1,
+    minimum: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -29,7 +33,10 @@ export class PaginationQueryDto implements PaginationQuery {
   @Max(PAGINATION_DEFAULTS.maxPageSize)
   pageSize?: number;
 
-  @ApiPropertyOptional({ description: "정렬 기준 필드명", example: "createdAt" })
+  @ApiPropertyOptional({
+    description: "정렬 기준 필드명",
+    example: "createdAt",
+  })
   @IsOptional()
   @IsString()
   sort?: string;

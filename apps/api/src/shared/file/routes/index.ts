@@ -1,6 +1,6 @@
 export const FILE_ROUTES = {
   v1: {
-    BASE: "/file",
+    BASE: "/v1/file",
     UPLOAD: "/upload",
   },
 };

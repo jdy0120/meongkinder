@@ -32,9 +32,9 @@ const refreshAccessToken = async (error: AxiosError) => {
   const originalRequest = error.config as CustomAxiosRequestConfig | undefined;
 
   const isAuthRequest =
-    originalRequest?.url?.includes("/auth/login") ||
-    originalRequest?.url?.includes("/auth/signup") ||
-    originalRequest?.url?.includes("/auth/refresh");
+    originalRequest?.url?.includes("/v1/auth/login") ||
+    originalRequest?.url?.includes("/v1/auth/signup") ||
+    originalRequest?.url?.includes("/v1/auth/refresh");
 
   if (
     error.response?.status === 401 &&
@@ -51,7 +51,7 @@ const refreshAccessToken = async (error: AxiosError) => {
       // Using standard axios to avoid recursion loop in interceptor
       // withCredentials: true sends the HttpOnly refresh_token cookie automatically
       const res = await axios.post(
-        `${originalRequest.baseURL || ""}/api/${proj}/auth/refresh`,
+        `${originalRequest.baseURL || ""}/api/${proj}/v1/auth/refresh`,
         {},
         {
           withCredentials: true,
@@ -81,7 +81,7 @@ const refreshAccessToken = async (error: AxiosError) => {
         "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       try {
         await axios.post(
-          `${originalRequest?.baseURL || ""}/api/${proj}/auth/logout`,
+          `${originalRequest?.baseURL || ""}/api/${proj}/v1/auth/logout`,
           {},
           { withCredentials: true },
         );

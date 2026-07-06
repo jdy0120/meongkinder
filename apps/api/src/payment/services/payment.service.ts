@@ -52,7 +52,7 @@ export class PaymentService {
       );
     }
 
-    const data = (await res.json().catch(() => ({}))) as any;
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       // 토스 에러 응답: { code, message }
       this.logger.warn(
@@ -144,7 +144,9 @@ export class PaymentService {
 
     // 🔒 금액 위변조 검증: 클라이언트가 보낸 금액과 주문 금액이 일치해야 함
     if (order.amount !== dto.amount) {
-      throw new BadRequestException("결제 금액이 주문 금액과 일치하지 않습니다.");
+      throw new BadRequestException(
+        "결제 금액이 주문 금액과 일치하지 않습니다.",
+      );
     }
 
     // 토스 결제 승인

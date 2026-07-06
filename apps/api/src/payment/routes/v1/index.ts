@@ -1,5 +1,5 @@
 export const PAYMENT_ROUTES = {
-  BASE: "payments",
+  BASE: "v1/payments",
   CREATE_ORDER: "orders", // POST: 주문 생성
   LIST_ORDERS: "orders", // GET:  주문 목록 (페이지네이션)
   CONFIRM: "confirm", // POST: 결제 승인

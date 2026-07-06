@@ -23,7 +23,7 @@ const getMe = async () => {
     .join("; ");
 
   const response = await fetch(
-    `${API_BASE_URL}/api/${PROJECT_NAME}/auth/mypage`,
+    `${API_BASE_URL}/api/${PROJECT_NAME}/v1/auth/mypage`,
     {
       method: "GET",
       headers: {

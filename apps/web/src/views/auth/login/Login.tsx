@@ -31,7 +31,7 @@ export const LoginPage = () => {
     setServerError("");
     try {
       // 인증은 httpOnly 쿠키(withCredentials)로 처리 — 응답 본문에 토큰 없음
-      await Post<LoginResponse, LoginRequest>("/auth/login", values);
+      await Post<LoginResponse, LoginRequest>("/v1/auth/login", values);
       router.replace("/");
     } catch {
       setServerError("이메일 또는 비밀번호가 올바르지 않습니다.");
@@ -45,7 +45,10 @@ export const LoginPage = () => {
           <CardTitle>로그인</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className='flex flex-col gap-4'
+          >
             <Field>
               <FieldLabel htmlFor='email'>이메일</FieldLabel>
               <Input
