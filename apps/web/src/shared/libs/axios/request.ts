@@ -2,7 +2,12 @@ import { AxiosRequestConfig, AxiosResponse } from "axios";
 
 import { axiosInstance } from "./instance";
 
-import { BaseResponse } from "@template/shared";
+import {
+  toQueryParams,
+  type BaseResponse,
+  type PaginatedData,
+  type PaginationQuery,
+} from "@template/shared";
 
 const Get = async <T, D>(
   url: string,
@@ -11,6 +16,19 @@ const Get = async <T, D>(
 ): Promise<AxiosResponse<BaseResponse<T>>> => {
   const response = await axiosInstance.get(url, {
     params: data,
+    ...config,
+  });
+  return response;
+};
+
+// 공통 목록 조회 — @template/shared 유틸로 쿼리 생성 + 응답 타이핑
+const GetList = async <T>(
+  url: string,
+  query: PaginationQuery = {},
+  config?: AxiosRequestConfig,
+): Promise<AxiosResponse<BaseResponse<PaginatedData<T>>>> => {
+  const response = await axiosInstance.get(url, {
+    params: toQueryParams(query),
     ...config,
   });
   return response;
@@ -51,4 +69,4 @@ const Delete = async <T>(
   return response;
 };
 
-export { Delete, Get, Patch, Post, Put };
+export { Delete, Get, GetList, Patch, Post, Put };

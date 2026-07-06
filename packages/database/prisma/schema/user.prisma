@@ -3,32 +3,18 @@ model User {
   nickname  String
   email     String
 
-  accessToken String?
-  accessTokenExpiresAt DateTime?
-  refreshToken String?
-  refreshTokenExpiresAt DateTime?
+  // 인증 토큰(access/refresh)과 OTP 는 DB 가 아닌 Redis 에서 관리합니다.
+  // (apps/api/src/auth/services/auth.service.ts + shared/redis)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   socialAccounts SocialAccount[]
-  refreshTokens RefreshToken[]
   userInfo UserInfo?
   pointTransactions PointTransaction[]
-  otpToken          OtpToken?
+  orders            Order[]
 
   @@unique([email])
   @@map("users")
-}
-
-model OtpToken {
-  id        String   @id @default(uuid())
-  code      String
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@map("otp_tokens")
 }
 
 model UserInfo {
@@ -78,17 +64,4 @@ model SocialAccount {
   @@unique([provider, accountId])
   @@index([userId])
   @@map("social_accounts")
-}
-
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime // 토큰 만료 시간
-  createdAt DateTime @default(now())
-
-  @@unique([token])
-  @@index([userId])
-  @@map("refresh_tokens")
 }

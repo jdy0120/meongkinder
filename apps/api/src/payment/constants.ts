@@ -1,0 +1,20 @@
+// 결제 도메인 상수 (Prisma String status 값과 일치)
+
+export const ORDER_STATUS = {
+  PENDING: "PENDING",
+  PAID: "PAID",
+  CANCELED: "CANCELED",
+  FAILED: "FAILED",
+} as const;
+
+// 토스 결제 상태
+export const PAYMENT_STATUS = {
+  READY: "READY",
+  IN_PROGRESS: "IN_PROGRESS",
+  WAITING_FOR_DEPOSIT: "WAITING_FOR_DEPOSIT",
+  DONE: "DONE",
+  CANCELED: "CANCELED",
+  PARTIAL_CANCELED: "PARTIAL_CANCELED",
+  ABORTED: "ABORTED",
+  EXPIRED: "EXPIRED",
+} as const;

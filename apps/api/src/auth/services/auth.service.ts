@@ -12,10 +12,21 @@ import {
 import { MailerService } from "@nestjs-modules/mailer";
 import * as CONST from "../../shared/constants";
 import * as crypto from "crypto";
+import { RedisService } from "../../shared/redis/redis.service";
+
+// OTP 유효시간 (5분)
+const OTP_TTL_SEC = 5 * 60;
+
+// Redis 키 헬퍼
+const otpKey = (email: string) => `otp:${email}`;
+const refreshKey = (userId: string) => `refresh:${userId}`;
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+    private readonly redis: RedisService,
+  ) {}
 
   private generateOTP(): string {
     return crypto.randomInt(100000, 999999).toString();
@@ -47,6 +58,7 @@ export class AuthService {
     }
   }
 
+  /** 로그인 요청 — OTP 발급 후 Redis 에 5분간 저장 */
   async login(dto: LoginDto) {
     const user = await prisma.user.findUnique({
       where: {
@@ -59,20 +71,8 @@ export class AuthService {
 
     const code = this.generateOTP();
 
-    await prisma.otpToken.upsert({
-      where: {
-        userId: user.id,
-      },
-      update: {
-        code: code,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5분 후
-      },
-      create: {
-        userId: user.id,
-        code: code,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5분 후
-      },
-    });
+    // DB 대신 Redis 에 저장 (TTL 로 자동 만료 → 별도 정리 불필요)
+    await this.redis.set(otpKey(dto.email), code, OTP_TTL_SEC);
 
     await this.sendOtpEmail(dto.email, code);
 
@@ -81,132 +81,84 @@ export class AuthService {
     };
   }
 
+  /** OTP 검증 → 토큰 발급. refresh 토큰은 Redis 에 저장 */
   async submitOTP(dto: SubmitOtpDto) {
     const user = await prisma.user.findUnique({
       where: {
         email: dto.email,
-      },
-      include: {
-        otpToken: true,
       },
     });
     if (!user) {
       throw new UnauthorizedException("존재하지 않는 이메일입니다.");
     }
 
-    const otp = user.otpToken;
-    if (!otp || otp.code !== dto.otpToken) {
+    const savedCode = await this.redis.get(otpKey(dto.email));
+    // 없으면 만료됐거나 발급된 적 없음, 다르면 오답
+    if (!savedCode || savedCode !== dto.otpToken) {
       throw new UnauthorizedException("유효하지 않은 인증번호입니다.");
     }
 
-    if (otp.expiresAt < new Date()) {
-      throw new UnauthorizedException(
-        "만료된 인증번호입니다. 다시 발급해주세요.",
-      );
-    }
-
-    // 일회용 OTP이므로 검증 성공 후 삭제 처리
-    await prisma.otpToken.delete({
-      where: {
-        userId: user.id,
-      },
-    });
+    // 일회용 OTP — 검증 성공 즉시 삭제
+    await this.redis.del(otpKey(dto.email));
 
     const payload = { userId: user.id, email: user.email };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    const now = new Date();
-    const accessTokenExpiresAt = new Date(
-      now.getTime() + CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
+    // refresh 토큰을 Redis 에 저장 (TTL = refresh 만료). 이후 검증은 여기서 비교
+    await this.redis.set(
+      refreshKey(user.id),
+      refreshToken,
+      CONST.REFRESH_TOKEN_EXPIRED_IN_SEC,
     );
-    const refreshTokenExpiresAt = new Date(
-      now.getTime() + CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
-    );
-
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        accessToken,
-        accessTokenExpiresAt,
-        refreshToken,
-        refreshTokenExpiresAt,
-      },
-    });
-
-    const {
-      accessToken: _accessToken,
-      refreshToken: _refreshToken,
-      accessTokenExpiresAt: _accessTokenExpiresAt,
-      refreshTokenExpiresAt: _refreshTokenExpiresAt,
-      ...safeUser
-    } = updatedUser;
 
     return {
       message: "로그인이 완료되었습니다.",
       accessToken,
       refreshToken,
-      user: safeUser,
+      user,
     };
   }
 
+  /** 로그아웃 — Redis 에서 refresh 토큰 제거 */
   async logout(userId: string) {
-    await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        accessToken: null,
-        accessTokenExpiresAt: null,
-        refreshToken: null,
-        refreshTokenExpiresAt: null,
-      },
-    });
+    if (userId) {
+      await this.redis.del(refreshKey(userId));
+    }
     return {
       message: "로그아웃이 완료되었습니다.",
     };
   }
 
+  /** refresh 토큰 재발급 — Redis 에 저장된 값과 대조 (빠른 검증) */
   async refresh(dto: RefreshDto) {
     const user = await prisma.user.findUnique({
       where: { email: dto.email },
     });
-
-    if (!user || !user.refreshToken || user.refreshToken !== dto.refreshToken) {
+    if (!user) {
       throw new UnauthorizedException("유효하지 않은 토큰입니다.");
     }
 
-    if (user.refreshTokenExpiresAt && new Date() > user.refreshTokenExpiresAt) {
-      throw new UnauthorizedException(
-        "만료된 Refresh 토큰입니다. 다시 로그인해주세요.",
-      );
+    const savedToken = await this.redis.get(refreshKey(user.id));
+    // Redis 에 없으면(만료/로그아웃) 또는 불일치면 거부
+    if (!savedToken || savedToken !== dto.refreshToken) {
+      throw new UnauthorizedException("유효하지 않은 토큰입니다.");
     }
 
     const payload = { userId: user.id, email: user.email };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    const now = new Date();
-    const accessTokenExpiresAt = new Date(
-      now.getTime() + CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
+    // 토큰 회전(rotation): 새 refresh 토큰으로 교체
+    await this.redis.set(
+      refreshKey(user.id),
+      refreshToken,
+      CONST.REFRESH_TOKEN_EXPIRED_IN_SEC,
     );
-    const refreshTokenExpiresAt = new Date(
-      now.getTime() + CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
-    );
-
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        accessToken,
-        accessTokenExpiresAt,
-        refreshToken,
-        refreshTokenExpiresAt,
-      },
-    });
 
     return {
-      accessToken: updatedUser.accessToken,
-      refreshToken: updatedUser.refreshToken,
+      accessToken,
+      refreshToken,
     };
   }
 

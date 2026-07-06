@@ -17,13 +17,17 @@ import {
   JwtRefreshStrategy,
 } from "../configs/passport.config";
 import { FileModule } from "../file/file.module";
+import { PaymentModule } from "../../payment/payment.module";
+import { RedisModule } from "../redis/redis.module";
 
 @Module({
   imports: [
     PassportModule,
+    RedisModule,
     AuthModule,
     MailModule,
     FileModule,
+    PaymentModule,
     // OTP 엔드포인트 브루트포스 방지: 1분에 최대 5회
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
   ],

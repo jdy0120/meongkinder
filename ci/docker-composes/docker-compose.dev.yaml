@@ -29,6 +29,8 @@ services:
       - ../../envs/.env.dev
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PROJECT_NAME}-db:5432/${POSTGRES_DB}
+      - REDIS_HOST=${PROJECT_NAME}-redis
+      - REDIS_PORT=6379
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
     networks:
@@ -44,6 +46,8 @@ services:
       retries: 5
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   web:
@@ -86,6 +90,22 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME}-redis
+    command: redis-server --appendonly yes
+    ports:
+      - ${REDIS_PORT:-6379}:6379
+    volumes:
+      - redisdata:/data
+    networks:
+      - custom-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   custom-network:
     name: ${NETWORK_NAME}
@@ -93,4 +113,6 @@ networks:
 
 volumes:
   pgdata:
+    driver: local
+  redisdata:
     driver: local

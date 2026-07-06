@@ -47,10 +47,15 @@ services:
       - SIGN_UP_JWT_EXPIRED_SEC=${SIGN_UP_JWT_EXPIRED_SEC}
       - WEB_URL=${WEB_URL}
       - PORT=${SERVER_PORT:-3000}
+      - REDIS_HOST=${PROJECT_NAME}-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
     networks:
@@ -98,6 +103,24 @@ services:
     networks:
       - custom-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME}-redis
+    # 운영 Redis 는 외부 포트를 노출하지 않고 내부 네트워크로만 접근합니다.
+    # 비밀번호(REDIS_PASSWORD)는 필수입니다.
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redisdata:/data
+    networks:
+      - custom-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   custom-network:
     driver: bridge
@@ -106,3 +129,4 @@ networks:
 
 volumes:
   pgdata:
+  redisdata:
