@@ -3,7 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CreditCard, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  LogOut,
+  ShieldCheck,
+} from "lucide-react";
 
 interface SidebarProps {
   user: {
@@ -31,6 +37,11 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
       name: "구독 관리",
       href: "/subscriptions",
       icon: CreditCard,
+    },
+    {
+      name: "약관 관리",
+      href: "/terms",
+      icon: ShieldCheck,
     },
   ];
 

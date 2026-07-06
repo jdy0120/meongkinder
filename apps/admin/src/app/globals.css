@@ -66,3 +66,28 @@ footer {
   color: white !important;
   stroke: white !important;
 }
+
+/* 전역 스크롤바: 트랙(배경) 제거. thumb 만 은은하게 남겨 스크롤은 유지한다. */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent; /* thumb, track(투명) */
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent; /* 스크롤 배경 제거 */
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4); /* slate-400/40 */
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.6);
+}

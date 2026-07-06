@@ -45,7 +45,7 @@ export const setupApplication = (app: INestApplication) => {
 
   app.enableCors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   });
 
