@@ -8,19 +8,23 @@
     "db:dev": "nodemon --watch 'prisma/schema/**/*.prisma' --ext prisma --exec 'pnpm prisma generate && pnpm prisma db push --accept-data-loss'",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx seed.ts"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/pg": "^8.18.0",
-    "prisma-zod-generator": "^2.1.4"
+    "prisma-zod-generator": "^2.1.4",
+    "tsx": "^4.21.0"
   },
   "packageManager": "pnpm@10.10.0",
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
-    "pg": "^8.20.0",
     "nodemon": "^3.1.14",
+    "pg": "^8.20.0",
     "prisma": "^7.5.0"
   }
 }

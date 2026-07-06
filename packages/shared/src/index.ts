@@ -4,3 +4,4 @@ export type * from "../types/pagination";
 export type * from "../types/contracts";
 export * from "../types/domain";
 export * from "./pagination";
+export * from "./roles";

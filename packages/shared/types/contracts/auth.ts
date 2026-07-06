@@ -1,14 +1,16 @@
-// 인증 도메인 API 계약 (request / response)
+// 인증 도메인 API 계약 (request / response) — 이메일 + 비밀번호 기반
 import type { User } from "@template/database";
 
 // ── 요청 ──────────────────────────────────────────────
-export interface LoginRequest {
+export interface SignupRequest {
   email: string;
+  password: string;
+  nickname: string;
 }
 
-export interface SubmitOtpRequest {
+export interface LoginRequest {
   email: string;
-  otpToken: string;
+  password: string;
 }
 
 export interface RefreshRequest {
@@ -17,12 +19,13 @@ export interface RefreshRequest {
 }
 
 // ── 응답 (data 페이로드) ──────────────────────────────
-// access/refresh 토큰은 httpOnly 쿠키로 내려가므로 본문에는 없습니다.
-export interface LoginResponse {
+export interface SignupResponse {
   message: string;
+  user: User;
 }
 
-export interface SubmitOtpResponse {
+// 로그인 성공. access/refresh 토큰은 httpOnly 쿠키로만 내려간다(본문에 토큰 없음).
+export interface LoginResponse {
   message: string;
   user: User;
 }

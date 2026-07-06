@@ -1,0 +1,71 @@
+{
+  "id": {
+    "label": "아이디"
+  },
+  "randomPassword": {
+    "label": "랜덤 비밀번호"
+  },
+  "isRandomPassword": {
+    "label": "랜덤 비밀번호 여부"
+  },
+  "adminUserInfo": {
+    "label": "관리자 정보"
+  },
+  "email": {
+    "label": "이메일",
+    "placeholder": "이메일을 입력해 주세요."
+  },
+  "password": {
+    "label": "비밀번호",
+    "placeholder": "비밀번호를 입력해 주세요.",
+    "errors": {
+      "minLength": "비밀번호는 최소 6자 이상이어야 합니다."
+    }
+  },
+  "currentPassword": {
+    "label": "현재 비밀번호",
+    "placeholder": "현재 비밀번호를 입력해 주세요."
+  },
+  "newPassword": {
+    "label": "새 비밀번호",
+    "placeholder": "새 비밀번호를 입력해 주세요."
+  },
+  "role": {
+    "label": "역할",
+    "placeholder": "역할을 선택해주세요."
+  },
+  "logId": {
+    "label": "로그ID"
+  },
+  "userId": {
+    "label": "유저ID"
+  },
+  "drawId": {
+    "label": "드로우ID"
+  },
+  "action": {
+    "label": "드로우형태"
+  },
+  "receiveCash": {
+    "label": "받은캐시"
+  },
+  "isPush": {
+    "label": "푸쉬 여부"
+  },
+  "registerAt": {
+    "label": "생성일"
+  },
+  "updatedAt": {
+    "label": "수정일"
+  },
+  "logInfo": {
+    "label": "로그 정보"
+  },
+  "errors": {
+    "required": "필수 항목입니다.",
+    "lowercase": "소문자를 포함해야 합니다.",
+    "uppercase": "대문자를 포함해야 합니다.",
+    "numeric": "숫자를 포함해야 합니다.",
+    "special": "특수문자를 포함해야 합니다."
+  }
+}

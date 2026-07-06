@@ -1,0 +1,21 @@
+FROM node:20-alpine
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# 1. 루트의 필수 설정 파일 복사
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+
+# 2. 모든 소스 코드(apps, packages)를 폴더 구조 그대로 복사
+# 이는 모노레포 내부의 공유 패키지(@template/ui 등) 의존성을 해결하기 위함입니다.
+COPY apps ./apps
+COPY packages ./packages
+COPY package.json ./package.json
+COPY tsconfig.base.json ./tsconfig.base.json
+COPY tsconfig.json ./tsconfig.json
+
+# 3. 전체 워크스페이스 의존성 설치
+RUN pnpm install
+
+# 4. 웹 앱 개발 서버 실행 (기본 포트 3001)
+CMD ["pnpm", "--filter", "web", "dev"]

@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@import "tailwindcss/utilities";
+
+@import "../../../../packages/ui/src/styles/styles.css";
+
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+/*
+UI 컴포넌트 스타일 가져오기
+packages에서 사용하는 공통 테마
+모노레포 특성상 다른 웹 프로젝트가 있더라도 같은 스타일 공유가 좋을 듯 함
+*/
+
+:root {
+}
+
+/* 기본 레이아웃 */
+html,
+body {
+  height: 100%;
+
+  overflow: hidden; /* 바디 스크롤을 막고 내부 컨텐츠만 스크롤하게 설정 (앱 느낌) */
+  touch-action: pan-y; /* 불필요한 제스처 방지 */
+  -webkit-tap-highlight-color: transparent; /* 터치 시 파란색 하이라이트 제거 */
+  -webkit-touch-callout: none;
+}
+
+/* Next App 전체를 화면 꽉 채우고 중앙 정렬하고 싶을 때 예시 */
+main {
+}
+
+header {
+  /* padding-top: var(--safe-top); */
+}
+
+footer {
+  /* padding-bottom: var(--safe-bottom); */
+}
+
+#app-container {
+  width: 100%;
+  margin: 0 auto;
+  background-color: var(--background);
+  position: relative;
+}
+
+.unselectable {
+  /* 1. 텍스트 드래그 선택 방지 (PC/모바일 공통) */
+  user-select: none;
+  -webkit-user-select: none;
+
+  /* 2. 이미지 드래그 방지 (PC에서 이미지 끌어다 저장하는 것 방지) */
+  -webkit-user-drag: none;
+}
+
+/* Select Scroll Buttons Visibility Fix */
+[data-slot="select-scroll-up-button"],
+[data-slot="select-scroll-down-button"] {
+  background-color: #18181b !important; /* zinc-900 */
+  color: white !important;
+  opacity: 1 !important;
+}
+
+[data-slot="select-scroll-up-button"] svg,
+[data-slot="select-scroll-down-button"] svg {
+  color: white !important;
+  stroke: white !important;
+}

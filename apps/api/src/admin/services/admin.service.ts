@@ -1,0 +1,61 @@
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { prisma } from "@template/database";
+import {
+  buildPaginatedData,
+  resolvePagination,
+  type PaginationQuery,
+  type Role,
+} from "@template/shared";
+
+const USER_SORTABLE_FIELDS = ["createdAt", "email", "nickname", "role"] as const;
+
+@Injectable()
+export class AdminService {
+  /** 사용자 목록 (공통 페이지네이션 유틸 사용) */
+  async listUsers(query: PaginationQuery) {
+    const { page, pageSize, skip, take, order, sort, search } =
+      resolvePagination(query);
+
+    const where = search
+      ? {
+          OR: [
+            { email: { contains: search, mode: "insensitive" as const } },
+            { nickname: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+
+    const sortField = USER_SORTABLE_FIELDS.includes(
+      sort as (typeof USER_SORTABLE_FIELDS)[number],
+    )
+      ? (sort as string)
+      : "createdAt";
+
+    const [items, total] = await prisma.$transaction([
+      prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { [sortField]: order },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return buildPaginatedData(items, { page, pageSize, total });
+  }
+
+  /** 사용자 역할 변경 (승격/강등) — ADMIN 전용 */
+  async updateUserRole(id: string, role: Role) {
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new NotFoundException("존재하지 않는 사용자입니다.");
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+
+    return { message: "역할이 변경되었습니다.", user };
+  }
+}

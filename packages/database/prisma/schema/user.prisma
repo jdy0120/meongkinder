@@ -3,6 +3,13 @@ model User {
   nickname  String
   email     String
 
+  // 역할: "USER"(서비스만) | "ADMIN"(서비스+관리자). @template/shared 의 ROLES 와 일치
+  role      String @default("USER")
+  // bcrypt 해시된 비밀번호 (소셜 전용 계정은 없을 수 있어 nullable)
+  password  String?
+  // 계정 상태: "ACTIVE" | "PENDING" | "SUSPENDED" (checkauth 레이아웃에서 사용)
+  status    String @default("ACTIVE")
+
   // 인증 토큰(access/refresh)과 OTP 는 DB 가 아닌 Redis 에서 관리합니다.
   // (apps/api/src/auth/services/auth.service.ts + shared/redis)
 

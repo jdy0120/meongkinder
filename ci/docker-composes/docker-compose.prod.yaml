@@ -80,6 +80,26 @@ services:
     networks:
       - custom-network
 
+  admin:
+    build:
+      context: ../../
+      dockerfile: ci/dockers/prod/Dockerfile.admin
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+    container_name: ${PROJECT_NAME}-admin
+    environment:
+      - PROJECT_NAME=${PROJECT_NAME}
+      - NETWORK_NAME=${NETWORK_NAME}
+      - ADMIN_PORT=${ADMIN_PORT:3333}
+      - APP_NAME=${APP_NAME}
+      - API_BASE_URL=${API_BASE_URL}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+      - PORT=${ADMIN_PORT:-3333}
+    ports:
+      - "${ADMIN_PORT:-3333}:${ADMIN_PORT:-3333}"
+    networks:
+      - custom-network
+
   nginx:
     image: nginx:1.25-alpine
     container_name: ${PROJECT_NAME}-nginx
@@ -116,7 +136,7 @@ services:
     networks:
       - custom-network
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
       interval: 10s
       timeout: 5s
       retries: 5

@@ -1,0 +1,31 @@
+{
+  "admin": "Admin",
+  "notice": "공지사항",
+  "banner": "Banner",
+  "adminUser": {
+    "default": "관리자",
+    "create": "관리자 등록",
+    "update": "관리자 수정"
+  },
+  "myPage": "마이페이지",
+  "contents": "콘텐츠",
+  "giftBoxEntity": {
+    "default": "선물함(전체)"
+  },
+  "giftBoxPersonal": { "default": "선물함(개인)" },
+  "user": { "default": "User" },
+  "instantDraw": { "default": "즉석 뽑기" },
+  "luckyDraw": { "default": "행운권" },
+  "instantDrawWinnerEntity": { "default": "즉석 뽑기 당첨 리스트" },
+  "luckyDrawUserEntity": { "default": "행운권 뽑은 인원 리스트" },
+  "drawLogEntity": {
+    "default": "꽝 없는 100% 뽑기 현황",
+    "detail": "상세 보기"
+  },
+  "userContactsEntity": { "default": "수령 정보 리스트" },
+  "promotionEntity": { "default": "프로모션 코드" },
+  "rewardFevertimeEntity": { "default": "피버 타임" },
+  "userWhitelistEntity": { "default": "재가입 whitelist" },
+  "drawEntity": { "default": "꽝 없는 100% 뽑기" },
+  "serviceConfigEntity": "서비스 설정 조회"
+}

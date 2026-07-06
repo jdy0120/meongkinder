@@ -65,8 +65,30 @@ services:
     environment:
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
       - API_BASE_URL=${API_BASE_URL}
+      - WEB_PORT=${WEB_PORT}
     ports:
       - ${WEB_PORT}:${WEB_PORT}
+    networks:
+      - custom-network
+
+  admin:
+    build:
+      context: ../../
+      dockerfile: ci/dockers/dev/Dockerfile.admin
+    container_name: ${PROJECT_NAME}-admin
+    working_dir: /app/apps/admin
+    volumes:
+      - ../../apps/admin:/app/apps/admin
+      - ../../packages:/app/packages
+      - /app/apps/admin/node_modules
+    env_file:
+      - ../../envs/.env.dev
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+      - API_BASE_URL=${API_BASE_URL}
+      - ADMIN_PORT=${ADMIN_PORT}
+    ports:
+      - ${ADMIN_PORT}:${ADMIN_PORT}
     networks:
       - custom-network
 

@@ -1,8 +1,8 @@
 export const AUTH_ROUTES = {
   BASE: "auth",
+  SIGNUP: "signup",
   LOGIN: "login",
   LOGOUT: "logout",
   REFRESH: "refresh",
-  SUBMIT_OTP: "submit-otp",
   MYPAGE: "mypage",
 } as const;

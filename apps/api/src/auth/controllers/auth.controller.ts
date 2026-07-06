@@ -14,44 +14,49 @@ import { Public } from "../../shared/decorators/public.decorator";
 import { JwtRefreshGuard } from "../../shared/guards/jwt-refresh.guard";
 import { AUTH_ROUTES } from "../routes";
 import { AuthService } from "../services";
-import { LoginDto, SubmitOtpDto } from "../dtos";
+import { LoginDto, SignupDto } from "../dtos";
 import * as CONST from "../../shared/constants";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+};
 
 @Controller(AUTH_ROUTES.v1.BASE)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post(AUTH_ROUTES.v1.LOGIN)
-  @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto) {
-    const result = await this.authService.login(loginDto);
+  @Post(AUTH_ROUTES.v1.SIGNUP)
+  @HttpCode(HttpStatus.CREATED)
+  async signup(@Body() signupDto: SignupDto) {
+    const result = await this.authService.signup(signupDto);
     return {
       message: result.message,
+      user: result.user,
     };
   }
 
   @Public()
-  @Post(AUTH_ROUTES.v1.SUBMIT_OTP)
+  @Post(AUTH_ROUTES.v1.LOGIN)
   @HttpCode(HttpStatus.OK)
-  async submitOTP(
-    @Body() submitOtpDto: SubmitOtpDto,
+  async login(
+    @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.submitOTP(submitOtpDto);
+    const result = await this.authService.login(loginDto);
+
     res.cookie("access_token", result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      ...cookieOptions,
       maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
     });
     res.cookie("refresh_token", result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      ...cookieOptions,
       maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
     });
 
+    // 토큰은 httpOnly 쿠키로만 내려간다. 본문에는 토큰을 포함하지 않는다.
     return {
       message: result.message,
       user: result.user,
@@ -63,16 +68,8 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const userId = req.user?.userId || "";
     const result = await this.authService.logout(userId);
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.clearCookie("access_token", cookieOptions);
+    res.clearCookie("refresh_token", cookieOptions);
     return {
       message: result.message,
     };
@@ -90,15 +87,11 @@ export class AuthController {
     const refreshToken = req.user?.refreshToken || "";
     const result = await this.authService.refresh({ email, refreshToken });
     res.cookie("access_token", result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      ...cookieOptions,
       maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
     });
     res.cookie("refresh_token", result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      ...cookieOptions,
       maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
     });
     return result;
