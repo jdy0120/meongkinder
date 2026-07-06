@@ -90,11 +90,12 @@ services:
     environment:
       - PROJECT_NAME=${PROJECT_NAME}
       - NETWORK_NAME=${NETWORK_NAME}
-      - ADMIN_PORT=${ADMIN_PORT:3333}
+      - ADMIN_PORT=${ADMIN_PORT:-3333}
       - APP_NAME=${APP_NAME}
       - API_BASE_URL=${API_BASE_URL}
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
       - PORT=${ADMIN_PORT:-3333}
+
     ports:
       - "${ADMIN_PORT:-3333}:${ADMIN_PORT:-3333}"
     networks:
