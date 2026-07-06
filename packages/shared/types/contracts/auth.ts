@@ -1,11 +1,13 @@
 // 인증 도메인 API 계약 (request / response) — 이메일 + 비밀번호 기반
 import type { User } from "@template/database";
+import type { TermsAgreementInput } from "./terms";
 
 // ── 요청 ──────────────────────────────────────────────
 export interface SignupRequest {
   email: string;
   password: string;
   nickname: string;
+  agreements?: TermsAgreementInput[];
 }
 
 export interface LoginRequest {

@@ -21,6 +21,7 @@ model User {
   orders            Order[]
   billingKey        BillingKey?
   subscriptions     UserSubscription[]
+  termsAgreements   UserTermsAgreement[]
 
   @@unique([email])
   @@map("users")

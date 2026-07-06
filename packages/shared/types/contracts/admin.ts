@@ -3,6 +3,8 @@ import type {
   User,
   UserSubscription,
   SubscriptionPlan,
+  UserTermsAgreement,
+  Terms,
 } from "@template/database";
 import type { Role } from "../../src/roles";
 
@@ -21,4 +23,10 @@ export interface UserSubscriptionDetail extends UserSubscription {
     nickname: string;
   };
   plan: SubscriptionPlan;
+}
+
+export interface UserWithAgreements extends User {
+  termsAgreements?: (UserTermsAgreement & {
+    terms: Terms;
+  })[];
 }

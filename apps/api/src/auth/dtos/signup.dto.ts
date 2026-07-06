@@ -1,6 +1,28 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, IsString, MinLength } from "class-validator";
-import type { SignupRequest } from "@template/shared";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsArray,
+  IsOptional,
+  ValidateNested,
+  IsBoolean,
+} from "class-validator";
+import { Type } from "class-transformer";
+import type { SignupRequest, TermsAgreementInput } from "@template/shared";
+
+export class TermsAgreementInputDto implements TermsAgreementInput {
+  @ApiProperty({ description: "약관 ID" })
+  @IsString()
+  @IsNotEmpty()
+  termsId!: string;
+
+  @ApiProperty({ description: "동의 여부" })
+  @IsBoolean()
+  @IsNotEmpty()
+  isAgreed!: boolean;
+}
 
 export class SignupDto implements SignupRequest {
   @ApiProperty({ description: "이메일", example: "user@example.com" })
@@ -18,4 +40,14 @@ export class SignupDto implements SignupRequest {
   @IsString()
   @IsNotEmpty()
   nickname: string;
+
+  @ApiPropertyOptional({
+    description: "약관 동의 내역",
+    type: [TermsAgreementInputDto],
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => TermsAgreementInputDto)
+  agreements?: TermsAgreementInputDto[];
 }

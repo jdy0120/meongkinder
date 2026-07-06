@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -31,13 +32,43 @@ export class AuthService {
       throw new ConflictException("이미 가입된 이메일입니다.");
     }
 
+    // 필수 약관 동의 체크
+    const activeRequiredTerms = await prisma.terms.findMany({
+      where: { isActive: true, isRequired: true },
+    });
+
+    for (const reqTerms of activeRequiredTerms) {
+      const isAgreed = dto.agreements?.some(
+        (a) => a.termsId === reqTerms.id && a.isAgreed === true,
+      );
+      if (!isAgreed) {
+        throw new BadRequestException(
+          `필수 약관 '${reqTerms.title}'에 동의해야 회원가입이 가능합니다.`,
+        );
+      }
+    }
+
     const hashed = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
-    const user = await prisma.user.create({
-      data: {
-        email: dto.email,
-        nickname: dto.nickname,
-        password: hashed,
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email: dto.email,
+          nickname: dto.nickname,
+          password: hashed,
+        },
+      });
+
+      if (dto.agreements && dto.agreements.length > 0) {
+        await tx.userTermsAgreement.createMany({
+          data: dto.agreements.map((ag) => ({
+            userId: createdUser.id,
+            termsId: ag.termsId,
+            isAgreed: ag.isAgreed,
+          })),
+        });
+      }
+
+      return createdUser;
     });
 
     return {

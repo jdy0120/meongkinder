@@ -42,6 +42,16 @@ export class AdminService {
         skip,
         take,
         orderBy: { [sortField]: order },
+        include: {
+          termsAgreements: {
+            include: {
+              terms: true,
+            },
+            orderBy: {
+              agreedAt: "desc",
+            },
+          },
+        },
       }),
       prisma.user.count({ where }),
     ]);

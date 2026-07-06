@@ -25,7 +25,7 @@ import {
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { Patch } from "@/shared/libs/axios/request";
 import { ROLES } from "@template/shared";
-import type { User } from "@template/database";
+import type { UserWithAgreements } from "@template/shared";
 
 export const UsersPage = () => {
   const queryClient = useQueryClient();
@@ -33,13 +33,17 @@ export const UsersPage = () => {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
-  const { data, isLoading } = usePaginatedList<User>("users", "/v1/admin/users", {
-    page,
-    pageSize: 10,
-    search,
-    sort: "createdAt",
-    order: "desc",
-  });
+  const { data, isLoading } = usePaginatedList<UserWithAgreements>(
+    "users",
+    "/v1/admin/users",
+    {
+      page,
+      pageSize: 10,
+      search,
+      sort: "createdAt",
+      order: "desc",
+    },
+  );
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ id, role }: { id: string; role: string }) => {
@@ -116,6 +120,9 @@ export const UsersPage = () => {
                     <TableHead className='text-slate-400 font-semibold'>
                       가입일
                     </TableHead>
+                    <TableHead className='text-slate-400 font-semibold'>
+                      약관 동의
+                    </TableHead>
                     <TableHead className='text-slate-400 font-semibold w-[160px]'>
                       역할
                     </TableHead>
@@ -145,6 +152,68 @@ export const UsersPage = () => {
                           )}
                         </TableCell>
                         <TableCell>
+                          <div className='flex flex-col gap-1 text-[11px] min-w-[170px]'>
+                            {(() => {
+                              const service = user.termsAgreements?.find(
+                                (a) => a.terms.type === "SERVICE_USE",
+                              );
+                              const privacy = user.termsAgreements?.find(
+                                (a) => a.terms.type === "PRIVACY_POLICY",
+                              );
+                              const marketing = user.termsAgreements?.find(
+                                (a) => a.terms.type === "MARKETING_RECEIPT",
+                              );
+
+                              return (
+                                <>
+                                  <div className='flex items-center gap-1.5'>
+                                    <span className='text-slate-400 w-[50px]'>
+                                      이용약관:
+                                    </span>
+                                    {service?.isAgreed ? (
+                                      <span className='px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20 font-medium'>
+                                        동의 (v{service.terms.version})
+                                      </span>
+                                    ) : (
+                                      <span className='px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-medium'>
+                                        미동의
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className='flex items-center gap-1.5 mt-0.5'>
+                                    <span className='text-slate-400 w-[50px]'>
+                                      개인정보:
+                                    </span>
+                                    {privacy?.isAgreed ? (
+                                      <span className='px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20 font-medium'>
+                                        동의 (v{privacy.terms.version})
+                                      </span>
+                                    ) : (
+                                      <span className='px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-medium'>
+                                        미동의
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className='flex items-center gap-1.5 mt-0.5'>
+                                    <span className='text-slate-400 w-[50px]'>
+                                      마케팅:
+                                    </span>
+                                    {marketing?.isAgreed ? (
+                                      <span className='px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium'>
+                                        동의 (v{marketing.terms.version})
+                                      </span>
+                                    ) : (
+                                      <span className='px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-medium'>
+                                        미동의
+                                      </span>
+                                    )}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <Select
                             value={user.role}
                             onValueChange={(val) =>
@@ -169,7 +238,7 @@ export const UsersPage = () => {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className='text-center text-slate-500 py-12'
                       >
                         검색된 사용자가 없습니다.

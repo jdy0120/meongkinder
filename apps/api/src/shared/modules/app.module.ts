@@ -23,6 +23,7 @@ import { AdminModule } from "../../admin/admin.module";
 import { RedisModule } from "../redis/redis.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { SubscriptionModule } from "../../subscription/subscription.module";
+import { TermsModule } from "../../terms/terms.module";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SubscriptionModule } from "../../subscription/subscription.module";
     AdminModule,
     ScheduleModule.forRoot(),
     SubscriptionModule,
+    TermsModule,
     // OTP 엔드포인트 브루트포스 방지: 1분에 최대 5회
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
   ],

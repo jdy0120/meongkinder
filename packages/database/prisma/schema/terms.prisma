@@ -1,0 +1,35 @@
+model Terms {
+  id          String   @id @default(uuid())
+  title       String   // 약관 제목 (예: "서비스 이용약관", "개인정보 수집 및 이용 동의")
+  type        String   // 약관 구분 코드 (예: "SERVICE_USE", "PRIVACY_POLICY", "MARKETING_RECEIPT")
+  version     String   // 약관 버전 (예: "1.0.0", "1.1.0")
+  content     String   // 약관 상세 본문 (Markdown 또는 HTML)
+  
+  isRequired  Boolean  @default(true)  // 필수 동의 여부 (필수/선택)
+  isActive    Boolean  @default(false) // 현재 서비스에 적용 중인 활성 버전 여부
+  
+  agreements  UserTermsAgreement[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  @@unique([type, version])
+  @@index([type, isActive])
+  @@map("terms")
+}
+
+model UserTermsAgreement {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  termsId   String
+  terms     Terms    @relation(fields: [termsId], references: [id])
+  
+  isAgreed  Boolean  @default(true)  // 동의 여부 (선택 약관 철회 처리 대비)
+  agreedAt  DateTime @default(now()) @map("agreed_at") // 동의/철회 시점
+
+  @@index([userId])
+  @@index([termsId])
+  @@map("user_terms_agreements")
+}
