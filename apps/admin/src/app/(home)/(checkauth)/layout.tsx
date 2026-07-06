@@ -1,6 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { Sidebar } from "@/widgets/sidebar";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,15 +44,31 @@ const layout = async ({ children }: LayoutProps) => {
   }
 
   const data = await response.json();
-  if (data.data.user.status === "ACTIVE") {
-    return <main className='overflow-y-auto'>{children}</main>;
+  const user = data.data.user;
+
+  if (user.status !== "ACTIVE") {
+    if (user.status === "PENDING") {
+      redirect("/auth/pending");
+    }
+    redirect("/auth/not-auth");
   }
 
-  if (data.data.user.status === "PENDING") {
-    redirect("/auth/pending");
-  }
+  const handleLogout = async () => {
+    "use server";
+    const cookieStore = await cookies();
+    cookieStore.delete("accessToken");
+    cookieStore.delete("refreshToken");
+    redirect("/auth/login");
+  };
 
-  redirect("/auth/not-auth");
+  return (
+    <div className='flex h-screen w-screen overflow-hidden bg-slate-950'>
+      <Sidebar user={user} onLogout={handleLogout} />
+      <main className='flex-1 overflow-y-auto bg-slate-950 p-8 text-slate-100'>
+        {children}
+      </main>
+    </div>
+  );
 };
 
 export default layout;

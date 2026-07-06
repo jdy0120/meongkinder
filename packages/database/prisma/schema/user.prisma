@@ -19,6 +19,8 @@ model User {
   userInfo UserInfo?
   pointTransactions PointTransaction[]
   orders            Order[]
+  billingKey        BillingKey?
+  subscriptions     UserSubscription[]
 
   @@unique([email])
   @@map("users")

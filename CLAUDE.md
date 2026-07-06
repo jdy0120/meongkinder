@@ -54,3 +54,4 @@
 - Module Layout: `routes/` · `dtos/` · `controllers/` · `services/`.
 - Redis: Used for auth tokens/OTP (`apps/api/src/shared/redis`).
 - Response: Wrapped in `BaseResponse` by `TransformInterceptor` automatically.
+- Error Typing: React Query's default error type is augmented globally via `global.d.ts` as `AxiosError<BaseResponse<unknown>>`. Rely on automatic type inference in callbacks (like `onError`) instead of specifying `any` or explicit typing.

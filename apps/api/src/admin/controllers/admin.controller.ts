@@ -56,4 +56,11 @@ export class AdminController {
     }
     return this.adminService.updateUserRole(id, dto.role);
   }
+
+  // 구독 목록 (페이지네이션·정렬·검색)
+  @Get(ADMIN_ROUTES.v1.LIST_SUBSCRIPTIONS)
+  @HttpCode(HttpStatus.OK)
+  async listSubscriptions(@Query() query: PaginationQueryDto) {
+    return this.adminService.listSubscriptions(query);
+  }
 }

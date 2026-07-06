@@ -1,0 +1,52 @@
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  name        String   // 플랜 이름 (예: "BASIC 요금제")
+  price       Int      // 결제 금액 (원, KRW)
+  interval    String   // 결제 주기 (MONTHLY, YEARLY)
+  description String?
+
+  subscriptions UserSubscription[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  @@map("subscription_plans")
+}
+
+model BillingKey {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  customerKey    String   @unique // 토스페이먼츠용 고객 식별 키
+  billingKey     String   // PG사에서 발급받은 실제 빌링키
+  
+  cardName       String?  // 카드사 이름 (마이페이지 노출용)
+  cardNumber     String?  // 마스킹된 카드 번호 (마이페이지 노출용)
+
+  subscriptions  UserSubscription[]
+  createdAt      DateTime @default(now()) @map("created_at")
+  @@map("billing_keys")
+}
+
+model UserSubscription {
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  billingKeyId    String?
+  billingKey      BillingKey?      @relation(fields: [billingKeyId], references: [id])
+
+  // ACTIVE(활성) | CANCELED(해지예정) | EXPIRED(만료) | FAIL_PAUSED(결제실패 보류)
+  status          String           @default("ACTIVE")
+  
+  startDate       DateTime         @map("start_date") // 구독 시작일
+  endDate         DateTime         @map("end_date")   // 구독 만료일
+  nextPaymentDate DateTime         @map("next_payment_date") // 다음 정기결제 예정일
+
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("user_subscriptions")
+}

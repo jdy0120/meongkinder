@@ -7,7 +7,12 @@ import {
   type Role,
 } from "@template/shared";
 
-const USER_SORTABLE_FIELDS = ["createdAt", "email", "nickname", "role"] as const;
+const USER_SORTABLE_FIELDS = [
+  "createdAt",
+  "email",
+  "nickname",
+  "role",
+] as const;
 
 @Injectable()
 export class AdminService {
@@ -57,5 +62,52 @@ export class AdminService {
     });
 
     return { message: "역할이 변경되었습니다.", user };
+  }
+
+  /** 구독 목록 (페이지네이션·정렬·검색) */
+  async listSubscriptions(query: PaginationQuery) {
+    const { page, pageSize, skip, take, order, sort, search } =
+      resolvePagination(query);
+
+    const where = search
+      ? {
+          user: {
+            OR: [
+              { email: { contains: search, mode: "insensitive" as const } },
+              { nickname: { contains: search, mode: "insensitive" as const } },
+            ],
+          },
+        }
+      : {};
+
+    const sortField = [
+      "createdAt",
+      "startDate",
+      "endDate",
+      "nextPaymentDate",
+    ].includes(sort as string)
+      ? (sort as string)
+      : "createdAt";
+
+    const [items, total] = await prisma.$transaction([
+      prisma.userSubscription.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { [sortField]: order },
+        include: {
+          user: {
+            select: {
+              email: true,
+              nickname: true,
+            },
+          },
+          plan: true,
+        },
+      }),
+      prisma.userSubscription.count({ where }),
+    ]);
+
+    return buildPaginatedData(items, { page, pageSize, total });
   }
 }
