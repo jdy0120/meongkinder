@@ -15,6 +15,7 @@
   export class CreateOrderDto implements CreateOrderRequest {}
   ```
 - **Web**: Import contract types for payloads and responses (`BaseResponse<T>`).
+- **Versioning**: All API routes must include a version prefix (e.g., `v1/admin`, `v1/auth`, `v1/payments`, `v1/subscriptions`). When upgrading an API to a new version (e.g., `v2`), keep the older version active without deleting it to maintain service stability.
 
 ## 3. Pagination
 

@@ -14,7 +14,8 @@ model Order {
   amount    Int // 결제 금액 (원, KRW)
 
   // PENDING(주문생성) | PAID(승인완료) | CANCELED(취소) | FAILED(실패)
-  status    String @default("PENDING")
+  status     String  @default("PENDING")
+  failReason String? @map("fail_reason") // 결제 실패 사유
 
   payment   Payment?
 
