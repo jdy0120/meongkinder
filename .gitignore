@@ -21,6 +21,8 @@ out
 .env
 .env.*
 !.env.example
+# .env.test 는 더미 값(실제 시크릿 아님)만 담고 e2e 재현에 필요하므로 커밋한다.
+!.env.test
 
 # IDE / editor
 .idea

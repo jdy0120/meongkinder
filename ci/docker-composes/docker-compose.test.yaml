@@ -1,1 +1,33 @@
-# TDD 실행을 위한 컨테이너 설정
+# e2e 테스트용 격리 인프라.
+# dev/prod 와 포트를 분리(5433/6380)해 동시 실행 시에도 충돌하지 않습니다.
+# jest globalSetup 이 `up -d --wait` 로 기동하고 globalTeardown 이 `down -v` 로 정리합니다.
+# 값은 자체 완결적(하드코딩) — .env 주입 없이 단독으로 뜹니다.
+
+services:
+  test-db:
+    image: postgres:16-alpine
+    container_name: template-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: template_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data # 디스크에 안 남김(테스트 후 흔적 0)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d template_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  test-redis:
+    image: redis:7-alpine
+    container_name: template-test-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
