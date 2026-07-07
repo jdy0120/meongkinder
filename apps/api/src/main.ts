@@ -1,3 +1,4 @@
+import "./shared/configs/env"; // 👈 반드시 최상단 — 다른 어떤 모듈보다 먼저 환경변수 검증
 import "./shared/configs/serialization.config";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./shared/modules/app.module";
