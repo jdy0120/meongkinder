@@ -14,7 +14,8 @@ describe("test harness (Tier 0)", () => {
     expect(env.REFRESH_JWT_SECRET.length).toBeGreaterThanOrEqual(32);
     expect(env.SIGN_UP_JWT_SECRET.length).toBeGreaterThanOrEqual(32);
     expect(env.DATABASE_URL).toMatch(/^postgres(ql)?:\/\//);
-    expect(env.REDIS_PORT).toBe(6379);
+    // 포트 값 자체보다 "문자열이 숫자로 강제 변환됨" 을 검증(포트는 환경별로 다름).
+    expect(typeof env.REDIS_PORT).toBe("number");
   });
 
   it("parses the '30*60' duration convention into seconds", () => {

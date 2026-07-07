@@ -4,6 +4,11 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "setupFiles": ["<rootDir>/setup-env.ts"],
+  "globalSetup": "<rootDir>/global-setup.ts",
+  "globalTeardown": "<rootDir>/global-teardown.ts",
+  "moduleNameMapper": {
+    "^file-type$": "<rootDir>/mocks/file-type.ts"
+  },
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   }
