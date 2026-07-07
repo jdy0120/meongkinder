@@ -20,6 +20,17 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
+// 비밀번호 찾기 — 재설정 링크(토큰)를 이메일로 발송
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+// 비밀번호 재설정 — 이메일 링크의 토큰 + 새 비밀번호
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
 // ── 응답 (data 페이로드) ──────────────────────────────
 export interface SignupResponse {
   message: string;
@@ -30,4 +41,9 @@ export interface SignupResponse {
 export interface LoginResponse {
   message: string;
   user: User;
+}
+
+// 비밀번호 찾기/재설정 공통 — 메시지만 반환 (계정 열거 방지를 위해 항상 동일 응답)
+export interface MessageResponse {
+  message: string;
 }

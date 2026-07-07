@@ -20,6 +20,7 @@ jest.mock("@template/database", () =>
 
 import { AuthService } from "./auth.service";
 import type { RedisService } from "../../shared/redis/redis.service";
+import type { MailerService } from "@nestjs-modules/mailer";
 
 type RedisMock = {
   set: jest.Mock;
@@ -27,16 +28,23 @@ type RedisMock = {
   del: jest.Mock;
 };
 
+type MailerMock = { sendMail: jest.Mock };
+
 const asUser = (u: Partial<User>): User => u as unknown as User;
 
 describe("AuthService", () => {
   let service: AuthService;
   let redis: RedisMock;
+  let mailer: MailerMock;
 
   beforeEach(() => {
     resetPrismaMock();
     redis = { set: jest.fn(), get: jest.fn(), del: jest.fn() };
-    service = new AuthService(redis as unknown as RedisService);
+    mailer = { sendMail: jest.fn() };
+    service = new AuthService(
+      redis as unknown as RedisService,
+      mailer as unknown as MailerService,
+    );
   });
 
   describe("signup", () => {
@@ -161,6 +169,68 @@ describe("AuthService", () => {
         result.refreshToken,
         expect.any(Number),
       );
+    });
+  });
+
+  describe("forgotPassword", () => {
+    it("존재하는 이메일이면 리셋 토큰을 저장하고 메일을 보낸다", async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        asUser({ id: "u1", email: "user@example.com" }),
+      );
+
+      const result = await service.forgotPassword({
+        email: "user@example.com",
+      });
+
+      expect(redis.set).toHaveBeenCalledWith(
+        expect.stringMatching(/^reset:/),
+        "u1",
+        expect.any(Number),
+      );
+      expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+      expect(result.message).toEqual(expect.any(String));
+    });
+
+    it("존재하지 않는 이메일이어도 동일 메시지를 반환한다(계정 열거 방지)", async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      const result = await service.forgotPassword({
+        email: "none@example.com",
+      });
+
+      expect(redis.set).not.toHaveBeenCalled();
+      expect(mailer.sendMail).not.toHaveBeenCalled();
+      expect(result.message).toEqual(expect.any(String));
+    });
+  });
+
+  describe("resetPassword", () => {
+    it("유효하지 않은 토큰이면 BadRequestException", async () => {
+      redis.get.mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword({ token: "bad", password: "newpassword1234" }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("유효한 토큰이면 비밀번호를 갱신하고 토큰·세션을 무효화한다", async () => {
+      redis.get.mockResolvedValue("u1");
+
+      const result = await service.resetPassword({
+        token: "good-token",
+        password: "newpassword1234",
+      });
+
+      // deep 목 메서드 참조 + expect.any 는 unbound-method/unsafe-assignment false positive
+      /* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment */
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: "u1" },
+        data: { password: expect.any(String) },
+      });
+      /* eslint-enable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment */
+      expect(redis.del).toHaveBeenCalledWith("reset:good-token");
+      expect(redis.del).toHaveBeenCalledWith("refresh:u1");
+      expect(result.message).toEqual(expect.any(String));
     });
   });
 });

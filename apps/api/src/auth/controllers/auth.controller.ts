@@ -14,7 +14,12 @@ import { Public } from "../../shared/decorators/public.decorator";
 import { JwtRefreshGuard } from "../../shared/guards/jwt-refresh.guard";
 import { AUTH_ROUTES } from "../routes";
 import { AuthService } from "../services";
-import { LoginDto, SignupDto } from "../dtos";
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  ResetPasswordDto,
+  SignupDto,
+} from "../dtos";
 import * as CONST from "../../shared/constants";
 
 const cookieOptions = {
@@ -36,6 +41,20 @@ export class AuthController {
       message: result.message,
       user: result.user,
     };
+  }
+
+  @Public()
+  @Post(AUTH_ROUTES.v1.FORGOT_PASSWORD)
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post(AUTH_ROUTES.v1.RESET_PASSWORD)
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Public()

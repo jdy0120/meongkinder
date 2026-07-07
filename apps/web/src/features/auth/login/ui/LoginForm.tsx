@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 
 import {
@@ -63,6 +64,13 @@ export const LoginForm = () => {
       <Button type='submit' disabled={login.isPending} className='w-full'>
         {login.isPending ? "로그인 중…" : "로그인"}
       </Button>
+
+      <Link
+        href='/auth/forgot-password'
+        className='text-center text-sm text-muted-foreground hover:underline'
+      >
+        비밀번호를 잊으셨나요?
+      </Link>
     </form>
   );
 };

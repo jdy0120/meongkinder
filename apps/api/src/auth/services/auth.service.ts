@@ -1,12 +1,21 @@
+import { randomBytes } from "node:crypto";
 import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from "@nestjs/common";
+import { MailerService } from "@nestjs-modules/mailer";
 import { prisma } from "@template/database";
 import * as bcrypt from "bcryptjs";
-import { LoginDto, RefreshDto, SignupDto } from "../dtos";
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  RefreshDto,
+  ResetPasswordDto,
+  SignupDto,
+} from "../dtos";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -18,10 +27,18 @@ const BCRYPT_ROUNDS = 10;
 
 // Redis 키 헬퍼 — refresh 토큰은 Redis 에서 관리
 const refreshKey = (userId: string) => `refresh:${userId}`;
+// 비밀번호 재설정 토큰 — 랜덤 토큰을 Redis 에 저장(30분 TTL)
+const resetKey = (token: string) => `reset:${token}`;
+const RESET_TOKEN_EXPIRED_IN_SEC = 30 * 60;
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly redis: RedisService) {}
+  private readonly logger = new Logger(AuthService.name);
+
+  constructor(
+    private readonly redis: RedisService,
+    private readonly mailer: MailerService,
+  ) {}
 
   /** 회원가입 — 이메일 + 비밀번호(bcrypt 해시) */
   async signup(dto: SignupDto) {
@@ -150,6 +167,73 @@ export class AuthService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * 비밀번호 찾기 — 재설정 토큰을 Redis 에 저장하고 이메일로 링크 발송.
+   * 계정 열거(enumeration) 방지를 위해 사용자 존재 여부와 무관하게 동일 응답을 반환한다.
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (user) {
+      const token = randomBytes(32).toString("hex");
+      await this.redis.set(
+        resetKey(token),
+        user.id,
+        RESET_TOKEN_EXPIRED_IN_SEC,
+      );
+
+      // 메일 발송 실패가 계정 존재를 노출하지 않도록 내부에서 처리(로그만 남김).
+      try {
+        const webUrl = process.env.WEB_URL || "http://localhost:3001";
+        const resetUrl = `${webUrl}/auth/reset-password?token=${token}`;
+        await this.mailer.sendMail({
+          to: user.email,
+          subject: "[비밀번호 재설정] 요청하신 재설정 링크입니다.",
+          html: `
+            <p>아래 링크를 눌러 비밀번호를 재설정하세요. (30분 후 만료)</p>
+            <p><a href="${resetUrl}">${resetUrl}</a></p>
+            <p>본인이 요청하지 않았다면 이 메일을 무시하세요.</p>
+          `,
+        });
+      } catch (error) {
+        this.logger.error(
+          `비밀번호 재설정 메일 발송 실패 (userId=${user.id})`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+
+    return {
+      message:
+        "가입된 이메일이라면 비밀번호 재설정 링크를 발송했습니다. 메일함을 확인해주세요.",
+    };
+  }
+
+  /**
+   * 비밀번호 재설정 — Redis 의 토큰을 검증하고 비밀번호를 교체한다.
+   * 성공 시 토큰과 기존 refresh 세션을 무효화한다.
+   */
+  async resetPassword(dto: ResetPasswordDto) {
+    const userId = await this.redis.get(resetKey(dto.token));
+    if (!userId) {
+      throw new BadRequestException("유효하지 않거나 만료된 토큰입니다.");
+    }
+
+    const hashed = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    // 사용된 토큰 제거 + 기존 로그인 세션(refresh) 무효화
+    await this.redis.del(resetKey(dto.token));
+    await this.redis.del(refreshKey(userId));
+
+    return { message: "비밀번호가 변경되었습니다. 다시 로그인해주세요." };
   }
 
   async mypage(userId: string | undefined) {

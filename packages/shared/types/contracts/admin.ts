@@ -17,6 +17,17 @@ export interface UpdateUserRoleResponse {
   user: User;
 }
 
+// 사용자 정보 수정 (닉네임·계정 상태) — ADMIN 전용. 필드는 선택적(부분 수정).
+export interface UpdateUserRequest {
+  nickname?: string;
+  status?: string; // "ACTIVE" | "PENDING" | "SUSPENDED"
+}
+
+export interface UpdateUserResponse {
+  message: string;
+  user: User;
+}
+
 export interface UserSubscriptionDetail extends UserSubscription {
   user: {
     email: string;

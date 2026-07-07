@@ -21,6 +21,7 @@ import { AdminModule } from "../../admin/admin.module";
 import { RedisModule } from "../redis/redis.module";
 import { SubscriptionModule } from "../../subscription/subscription.module";
 import { TermsModule } from "../../terms/terms.module";
+import { HealthModule } from "../../health/health.module";
 import { LoggerModule } from "../logger/logger.module";
 import { appLogger } from "../logger";
 
@@ -37,6 +38,7 @@ import { appLogger } from "../logger";
     ScheduleModule.forRoot(),
     SubscriptionModule,
     TermsModule,
+    HealthModule,
     // 전역 기본 rate limit: 1분당 100회 (일반 API 보호).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],

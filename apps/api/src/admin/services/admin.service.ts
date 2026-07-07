@@ -5,6 +5,7 @@ import {
   resolvePagination,
   type PaginationQuery,
   type Role,
+  type UpdateUserRequest,
 } from "@template/shared";
 
 const USER_SORTABLE_FIELDS = [
@@ -72,6 +73,24 @@ export class AdminService {
     });
 
     return { message: "역할이 변경되었습니다.", user };
+  }
+
+  /** 사용자 정보 수정 (닉네임·계정 상태) — ADMIN 전용. 전달된 필드만 부분 수정. */
+  async updateUser(id: string, dto: UpdateUserRequest) {
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new NotFoundException("존재하지 않는 사용자입니다.");
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.nickname !== undefined ? { nickname: dto.nickname } : {}),
+        ...(dto.status !== undefined ? { status: dto.status } : {}),
+      },
+    });
+
+    return { message: "사용자 정보가 수정되었습니다.", user };
   }
 
   /** 구독 목록 (페이지네이션·정렬·검색) */

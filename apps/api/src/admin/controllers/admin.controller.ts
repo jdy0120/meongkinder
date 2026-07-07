@@ -15,7 +15,7 @@ import type { Request } from "express";
 import { ROLES } from "@template/shared";
 import { Roles } from "../../shared/decorators/roles.decorator";
 import { PaginationQueryDto } from "../../shared/dtos";
-import { UpdateUserRoleDto } from "../dtos";
+import { UpdateUserDto, UpdateUserRoleDto } from "../dtos";
 import { ADMIN_ROUTES } from "../routes";
 import { AdminService } from "../services";
 import { TermsService } from "../../terms/services/terms.service";
@@ -46,6 +46,13 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   async listUsers(@Query() query: PaginationQueryDto) {
     return this.adminService.listUsers(query);
+  }
+
+  // 사용자 정보 수정 (닉네임·계정 상태)
+  @Patch(ADMIN_ROUTES.v1.UPDATE_USER)
+  @HttpCode(HttpStatus.OK)
+  async updateUser(@Param("id") id: string, @Body() dto: UpdateUserDto) {
+    return this.adminService.updateUser(id, dto);
   }
 
   // 사용자 역할 변경 (승격/강등)

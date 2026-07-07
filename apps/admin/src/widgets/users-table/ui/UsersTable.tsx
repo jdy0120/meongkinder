@@ -20,6 +20,7 @@ import type { UserWithAgreements } from "@template/shared";
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { UserTermsBadges } from "@/entities/user";
 import { RoleSelect } from "@/features/user/change-role";
+import { EditUserDialog } from "@/features/user/edit-user";
 
 const formatDate = (value: string | Date) =>
   new Date(value).toLocaleDateString("ko-KR", {
@@ -96,6 +97,9 @@ export const UsersTable = () => {
                   <TableHead className='text-slate-400 font-semibold w-[160px]'>
                     역할
                   </TableHead>
+                  <TableHead className='text-slate-400 font-semibold text-right'>
+                    작업
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -120,12 +124,21 @@ export const UsersTable = () => {
                       <TableCell>
                         <RoleSelect userId={user.id} role={user.role} />
                       </TableCell>
+                      <TableCell className='text-right'>
+                        <EditUserDialog
+                          user={{
+                            id: user.id,
+                            nickname: user.nickname,
+                            status: user.status,
+                          }}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className='text-center text-slate-500 py-12'
                     >
                       검색된 사용자가 없습니다.
