@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { PassportModule } from "@nestjs/passport";
+import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { AuthModule } from "../../auth/auth.module";
 import { MailModule } from "./mail.module";
@@ -13,22 +14,20 @@ import { prismaDisconnect } from "@template/database";
 import { LoggerMiddleware } from "../middleware/logger.middleware";
 import { JwtAccessGuard } from "../guards/jwt-access.guard";
 import { RolesGuard } from "../guards/roles.guard";
-import {
-  JwtAccessStrategy,
-  JwtRefreshStrategy,
-} from "../configs/passport.config";
+import { JwtAccessStrategy, JwtRefreshStrategy } from "../configs";
 import { FileModule } from "../file/file.module";
 import { PaymentModule } from "../../payment/payment.module";
 import { AdminModule } from "../../admin/admin.module";
 import { RedisModule } from "../redis/redis.module";
-import { ScheduleModule } from "@nestjs/schedule";
 import { SubscriptionModule } from "../../subscription/subscription.module";
 import { TermsModule } from "../../terms/terms.module";
+import { LoggerModule } from "../logger/logger.module";
 
 @Module({
   imports: [
     PassportModule,
     RedisModule,
+    LoggerModule,
     AuthModule,
     MailModule,
     FileModule,

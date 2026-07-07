@@ -183,4 +183,22 @@ export class FileService {
       await client.file.delete({ where: { id } });
     }
   }
+
+  /** 생성된 지 24시간이 지난 임시 파일과 DB 레코드를 일괄 정리 */
+  async cleanOldTempFiles() {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const oldTemps = await prisma.fileTemp.findMany({
+      where: {
+        createdAt: {
+          lt: oneDayAgo,
+        },
+      },
+    });
+
+    if (oldTemps.length > 0) {
+      await this.eraseTemps({ files: oldTemps });
+    }
+
+    return oldTemps.length;
+  }
 }

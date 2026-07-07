@@ -4,6 +4,8 @@ import { AppModule } from "./shared/modules/app.module";
 import { setupApplication } from "./shared/configs/app.setup"; // 👈 불러오기
 import { prismaConnect } from "@template/database";
 
+import { WinstonLogger } from "./shared/logger/logger.service";
+
 async function bootstrap() {
   try {
     await prismaConnect();
@@ -14,8 +16,10 @@ async function bootstrap() {
   }
   const PORT = Number(process.env.SERVER_PORT) || 3000;
 
-  // 1. NestJS 인스턴스 생성
-  const app = await NestFactory.create(AppModule);
+  // 1. NestJS 인스턴스 생성 (WinstonLogger 등록)
+  const app = await NestFactory.create(AppModule, {
+    logger: new WinstonLogger(),
+  });
   // 2. 환경 설정 파일에 인스턴스를 넘겨 CORS, 미들웨어 등을 주입
   setupApplication(app);
   // 3. 포트 리스닝 시작

@@ -3,21 +3,34 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
+# 1) Pruner: 모노레포에서 web 서브셋(web + 의존 패키지)만 추출한다.
+#    out/json  = package.json + lockfile (install 레이어 캐싱용)
+#    out/full  = 실제 소스 (build 레이어용)
+FROM base AS pruner
+WORKDIR /app
+RUN npm install -g turbo@2.10.3
+COPY . .
+RUN turbo prune web --docker
+
+# 2) Builder: 의존성 설치 → 소스 복사 → 빌드
 FROM base AS builder
 WORKDIR /app
-COPY . .
+# 매니페스트/lockfile 만 먼저 복사해 install 을 별도 레이어로 캐싱한다.
+COPY --from=pruner /app/out/json/ .
+RUN pnpm install --frozen-lockfile
 
+# NEXT_PUBLIC_* 는 빌드타임에 번들로 인라인되므로 build 직전에 주입한다.
+# install 이후에 선언해 URL 이 바뀌어도 install 캐시는 유지되게 한다.
 ARG API_BASE_URL
 ARG NEXT_PUBLIC_API_BASE_URL
-
 ENV API_BASE_URL=${API_BASE_URL}
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
-# Next.js 빌드를 위해 워크스페이스 의존성 모두 맵핑
-RUN pnpm install --frozen-lockfile
-
-# web 빌드 (turbo가 의존성 그래프를 읽어 database db:generate → database build →
+# 실제 소스 복사 후 빌드 (turbo가 database db:generate → database build →
 # shared build → web build 순서를 자동으로 보장)
+COPY --from=pruner /app/out/full/ .
+# turbo prune 는 루트 공용 tsconfig 를 포함하지 않으므로 별도 복사한다 (모든 패키지가 extends).
+COPY tsconfig.base.json ./tsconfig.base.json
 RUN pnpm turbo run build --filter=web
 
 FROM base AS runner
@@ -26,8 +39,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Next.js Standalone 결과물 복사
-# Standalone 모드는 빌드된 코드와 node_modules 일부분을 모아서 내보냅니다.
+# Next.js Standalone 결과물만 복사
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
