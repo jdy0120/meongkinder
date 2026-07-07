@@ -6,6 +6,7 @@ import * as fs from "fs";
 import { join, relative, extname } from "path";
 import { containerClient } from "../configs/azure.config";
 import { mimeMap } from "../constants";
+import { fileLogger } from "../logger";
 
 export const resourcePath = join(process.cwd(), "resources");
 export const tempPath = () => join(resourcePath, "temps");
@@ -87,7 +88,7 @@ export const moveFiles = async (
     }
 
     if (!fname) {
-      console.error("filename not found for path:", oldPath);
+      fileLogger.error(`filename not found for path: ${oldPath}`);
       throw new Error("Filename not found");
     }
 
@@ -124,7 +125,7 @@ export const moveFilesLocal = async (
     }
 
     if (!fname) {
-      console.error("filename not found for path:", oldPath);
+      fileLogger.error(`filename not found for path: ${oldPath}`);
       throw new Error("Filename not found");
     }
 
@@ -177,11 +178,14 @@ export const uploadToAzure = async (
         blobContentType: contentType,
       },
     });
-    console.log(
+    fileLogger.log(
       `Successfully uploaded to Azure: ${oldPath} -> ${blobName} (${contentType})`,
     );
   } catch (error) {
-    console.error("Error uploading to Azure:", error);
+    fileLogger.error(
+      "Error uploading to Azure:",
+      error instanceof Error ? error.stack : undefined,
+    );
     throw error;
   }
 };
@@ -189,8 +193,11 @@ export const uploadToAzure = async (
 export const uploadToS3 = (newPath: string) => {
   try {
     // Stubbed out for now
-    console.log(`Bypassed S3 upload: ${newPath}`);
+    fileLogger.log(`Bypassed S3 upload: ${newPath}`);
   } catch (error) {
-    console.error("Error uploading to S3:", error);
+    fileLogger.error(
+      "Error uploading to S3:",
+      error instanceof Error ? error.stack : undefined,
+    );
   }
 };

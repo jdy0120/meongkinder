@@ -22,6 +22,7 @@ import { RedisModule } from "../redis/redis.module";
 import { SubscriptionModule } from "../../subscription/subscription.module";
 import { TermsModule } from "../../terms/terms.module";
 import { LoggerModule } from "../logger/logger.module";
+import { appLogger } from "../logger";
 
 @Module({
   imports: [
@@ -63,8 +64,8 @@ export class AppModule implements NestModule, OnApplicationShutdown {
   }
 
   async onApplicationShutdown(signal?: string) {
-    console.log(`\nReceived signal: ${signal}. Disconnecting Prisma...`);
+    appLogger.log(`Received signal: ${signal}. Disconnecting Prisma...`);
     await prismaDisconnect();
-    console.log("✅ Prisma disconnected successfully!");
+    appLogger.log("✅ Prisma disconnected successfully!");
   }
 }
