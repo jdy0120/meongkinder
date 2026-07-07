@@ -7,7 +7,7 @@ import { HttpErrorFilter } from "../filters/http-exception.filter";
 import { TransformInterceptor } from "../interceptors/transform.interceptor";
 
 export const setupApplication = (app: INestApplication) => {
-  const PROJECT_NAME = process.env.PROJECT_NAME || "mediaartnation-admin-api";
+  const PROJECT_NAME = process.env.PROJECT_NAME || "template-dev";
 
   app.enableShutdownHooks();
 
@@ -28,14 +28,14 @@ export const setupApplication = (app: INestApplication) => {
 
   // 2. Swagger 설정 추가 👈
   const config = new DocumentBuilder()
-    .setTitle("mediaartnation-admin API")
-    .setDescription("mediaartnation-admin Platform API 문서입니다.")
+    .setTitle("template-dev API")
+    .setDescription("template-dev Platform API 문서입니다.")
     .setVersion("1.0")
     // .addBearerAuth() // 필요 시 JWT 토큰 인증 기능 추가
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  // 엔드포인트 경로: http://localhost:3000/api/mediaartnation-admin-platform-dev/docs
+  // 엔드포인트 경로: http://localhost:3000/api/template-dev/docs
   SwaggerModule.setup(`api/${PROJECT_NAME}/docs`, app, document);
 
   // 3. CORS 설정
