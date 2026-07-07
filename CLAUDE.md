@@ -56,3 +56,37 @@
 - Redis: Used for auth tokens/OTP (`apps/api/src/shared/redis`).
 - Response: Wrapped in `BaseResponse` by `TransformInterceptor` automatically.
 - Error Typing: React Query's default error type is augmented globally via `global.d.ts` as `AxiosError<BaseResponse<unknown>>`. Rely on automatic type inference in callbacks (like `onError`) instead of specifying `any` or explicit typing.
+
+## 7. Frontend Architecture (FSD)
+
+`apps/web` and `apps/admin` follow **Feature-Sliced Design**. Layers (import direction is one-way, top imports from bottom only):
+
+`app/` (Next.js routes) → `views/` (pages) → `widgets/` → `features/` → `entities/` → `shared/`
+
+- **Never import upward or sideways** (a `feature` must not import a `widget`; two `features` must not import each other). Share via `entities/` or `shared/`.
+- **Slice layout**: each slice is `<slice>/{model,ui,lib}` with an `index.ts` barrel as its **public API**. Import slices through the barrel only: `@/features/auth/login`, `@/entities/user`, `@/widgets/users-table` (`@/` = `src/`).
+
+Layer responsibilities:
+
+- **`app/`**: routing, layouts, providers, SSR auth guards. Pages (`page.tsx`) stay thin — delegate to a view: `export default function Page() { return <UsersPage />; }`.
+- **`views/`**: page composition only. **No data fetching, no form logic, no business logic** — compose widgets/features and lay out the page.
+- **`widgets/`**: self-contained page blocks (e.g. a list table). Own their own list query + pagination/search state via `usePaginatedList`. Compose entities + features.
+- **`features/`**: a single user interaction (login, change-role, create-terms). `model/` holds the hook (`useMutation`/`useQuery`), `ui/` holds the component.
+- **`entities/`**: business-domain display/model — types (`model/`), pure helpers (`lib/`), presentational pieces like badges (`ui/`).
+
+Data & forms (enforced):
+
+- **Never call raw `Post`/`Get`/`Patch` inside a view/page component.** Wrap every mutation in a `useMutation` hook inside a feature `model`; `onSuccess` invalidate the related query key and `toast` feedback.
+  ```ts
+  // features/user/change-role/model/useUpdateUserRole.ts
+  export const useUpdateUserRole = () => {
+    const qc = useQueryClient();
+    return useMutation({
+      mutationFn: ({ id, role }: { id: string; role: string }) =>
+        Patch(`/v1/admin/users/${id}/role`, { role }),
+      onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+    });
+  };
+  ```
+- **Forms** use `react-hook-form` (`useForm`) for input state and delegate submit to the feature's mutation hook. Do not hand-roll `useState` for field/error/loading.
+- **Lists** use `usePaginatedList` in a widget (see §3); render rows/badges from `entities`.
