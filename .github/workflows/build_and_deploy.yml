@@ -1,18 +1,69 @@
-name: Deploy to VM
+name: Test and Deploy
 
 on:
   push:
     paths:
       - "apps/api/**"
       - "apps/web/**"
+      - "apps/admin/**"
       - "packages/**"
       - "ci/nginx/**"
       - "ci/docker-composes/docker-compose.prod.yaml"
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # 테스트 — GitHub 러너에서 실행. e2e 는 globalSetup 이 docker compose 로
+  # postgres/redis 를 자체 기동하므로 별도 서비스/시크릿이 필요 없다.
+  # 테스트용 env 는 커밋된 envs/.env.test(더미값)로 충당한다.
+  # ---------------------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.10.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 테스트가 import 하는 워크스페이스 패키지의 타입/런타임 산출물 준비
+      - name: Generate Prisma client
+        run: pnpm --filter @template/database db:generate
+
+      - name: Build workspace deps
+        run: |
+          pnpm --filter @template/shared build
+          pnpm --filter @template/database build
+
+      - name: Unit tests
+        run: pnpm --filter api test
+
+      # e2e: globalSetup 이 docker-compose.test.yaml 로 인프라를 띄우고 정리한다.
+      - name: E2E tests
+        run: pnpm --filter api test:e2e
+
+  # ---------------------------------------------------------------------------
+  # 배포 — main 에 push 될 때만, 그리고 테스트 통과 후에만 실행.
+  # PR 에서는 test 만 돌고 이 잡은 스킵된다.
+  # ---------------------------------------------------------------------------
   deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Docker build cache
