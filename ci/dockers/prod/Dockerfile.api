@@ -44,4 +44,6 @@ COPY --from=builder /app/packages/database/prisma.config.ts ./prisma/prisma.conf
 EXPOSE 3000
 ENV PORT=${SERVER_PORT:-4174}
 
-CMD ["sh", "-c", "cd ./prisma && node ../node_modules/.pnpm/node_modules/prisma/build/index.js db push --schema=./prisma && cd .. && node dist/src/main.js"]
+# 시작 시 미적용 마이그레이션을 적용(migrate deploy) 후 서버 기동.
+# db push(스키마 강제 동기화)와 달리 마이그레이션 이력 기반이라 안전하고 재현 가능.
+CMD ["sh", "-c", "cd ./prisma && node ../node_modules/.pnpm/node_modules/prisma/build/index.js migrate deploy --schema=./prisma && cd .. && node dist/src/main.js"]

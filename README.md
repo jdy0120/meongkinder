@@ -191,7 +191,7 @@ make prod
 ```
 `envs/.env.prod` 를 적용해 다음 컨테이너들을 기동합니다 (기본 접두사 `template-prod`):
 * **`<PROJECT_NAME>-db`**: PostgreSQL 데이터베이스
-* **`<PROJECT_NAME>-api`**: NestJS 백엔드 (기동 시 `prisma db push` 로 스키마 반영)
+* **`<PROJECT_NAME>-api`**: NestJS 백엔드 (기동 시 `prisma migrate deploy` 로 미적용 마이그레이션 반영)
 * **`<PROJECT_NAME>-web`**: Next.js 프론트엔드 (Standalone 빌드)
 * **`<PROJECT_NAME>-nginx`**: 리버스 프록시 (포트 80/443)
 
@@ -239,3 +239,20 @@ make prod
 ### 🗄️ 데이터베이스 스키마 수정 규칙
 * 데이터베이스 설계 변경 시 `packages/database/prisma/schema` 폴더 아래 각 영역별 파일(예: `user.prisma`, `file.prisma` 등)을 수정하거나 생성합니다.
 * 파일 수정 후 `pnpm run db:generate` 명령을 통해 로컬 타이핑을 갱신해 주어야 합니다.
+
+### 🔀 마이그레이션 워크플로 (Migrations)
+
+스키마 이력은 `packages/database/prisma/migrations/` 가 **단일 진실 소스**입니다. 운영(`migrate deploy`)과 e2e 테스트가 이 마이그레이션을 적용하므로, 스키마 변경은 반드시 마이그레이션으로 기록해야 운영에 반영됩니다.
+
+| 상황 | 명령 |
+| :--- | :--- |
+| 로컬에서 빠르게 스키마 실험 (이력 X) | `pnpm --filter @template/database db:push` |
+| 스키마 확정 → 마이그레이션 기록 | `pnpm --filter @template/database db:migrate --name <변경명>` |
+| 운영/CI 에서 마이그레이션 적용 | `pnpm --filter @template/database db:deploy` (운영은 컨테이너 기동 시 자동 실행) |
+
+> [!CAUTION]
+> **기존 DB 를 마이그레이션으로 전환할 때(베이스라이닝):** 이 저장소는 `db push` 로 스키마를 관리하다 `0_init` 마이그레이션을 도입했습니다. 이미 `db push` 로 테이블이 생성된 **기존 운영/개발 DB** 에 곧바로 `migrate deploy` 를 실행하면 "테이블이 이미 존재" 오류가 납니다. 해당 DB 에 최초 1회만 아래로 베이스라인을 잡아주세요(테이블은 그대로 두고 이력만 기록):
+> ```bash
+> DATABASE_URL=<대상 DB> pnpm --filter @template/database exec prisma migrate resolve --applied 0_init
+> ```
+> 볼륨을 새로 만드는 신규 환경(및 fork)은 이 단계가 필요 없습니다 — `migrate deploy` 가 빈 DB 에 `0_init` 을 그대로 적용합니다.

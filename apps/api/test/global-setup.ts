@@ -29,8 +29,9 @@ export default function globalSetup(): void {
   // 1. 테스트 인프라 기동
   execSync(`docker compose -f "${compose}" up -d --wait`, { stdio: "inherit" });
 
-  // 2. 스키마 동기화 (DATABASE_URL 은 .env.test → 테스트 DB)
-  execSync("pnpm --filter database db:push", {
+  // 2. 마이그레이션 적용 (DATABASE_URL 은 .env.test → 테스트 DB).
+  //    db push 대신 migrate deploy 로 실제 마이그레이션 파일을 검증한다.
+  execSync("pnpm --filter database db:deploy", {
     stdio: "inherit",
     cwd: root,
     env: process.env,
