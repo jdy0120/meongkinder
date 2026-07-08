@@ -88,10 +88,7 @@ export class AuthService {
       return createdUser;
     });
 
-    return {
-      message: "회원가입이 완료되었습니다.",
-      user,
-    };
+    return { user };
   }
 
   /** 로그인 — 비밀번호 검증 후 토큰 발급 (refresh 는 Redis 저장) */
@@ -123,12 +120,7 @@ export class AuthService {
       CONST.REFRESH_TOKEN_EXPIRED_IN_SEC,
     );
 
-    return {
-      message: "로그인이 완료되었습니다.",
-      accessToken,
-      refreshToken,
-      user,
-    };
+    return { accessToken, refreshToken, user };
   }
 
   /** 로그아웃 — Redis 에서 refresh 토큰 제거 */
@@ -136,9 +128,7 @@ export class AuthService {
     if (userId) {
       await this.redis.del(refreshKey(userId));
     }
-    return {
-      message: "로그아웃이 완료되었습니다.",
-    };
+    return null;
   }
 
   /** refresh 토큰 재발급 — Redis 저장 값과 대조 */
@@ -207,10 +197,7 @@ export class AuthService {
       }
     }
 
-    return {
-      message:
-        "가입된 이메일이라면 비밀번호 재설정 링크를 발송했습니다. 메일함을 확인해주세요.",
-    };
+    return null;
   }
 
   /**
@@ -233,7 +220,7 @@ export class AuthService {
     await this.redis.del(resetKey(dto.token));
     await this.redis.del(refreshKey(userId));
 
-    return { message: "비밀번호가 변경되었습니다. 다시 로그인해주세요." };
+    return null;
   }
 
   async mypage(userId: string | undefined) {
@@ -246,9 +233,6 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException("존재하지 않는 사용자입니다.");
     }
-    return {
-      message: "마이페이지 정보입니다.",
-      user,
-    };
+    return { user };
   }
 }

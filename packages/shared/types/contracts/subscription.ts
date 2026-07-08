@@ -6,7 +6,6 @@ export interface IssueBillingKeyRequest {
 }
 
 export interface IssueBillingKeyResponse {
-  message: string;
   cardName: string | null;
   cardNumber: string | null;
 }
@@ -16,12 +15,10 @@ export interface CreateSubscriptionRequest {
 }
 
 export interface CreateSubscriptionResponse {
-  message: string;
   subscription: UserSubscription;
 }
 
 export interface CancelSubscriptionResponse {
-  message: string;
   subscription: UserSubscription;
 }
 

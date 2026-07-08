@@ -10,6 +10,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { Public } from "../../shared/decorators/public.decorator";
+import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { CreateSubscriptionDto, IssueBillingKeyDto } from "../dtos";
 import { SUBSCRIPTION_ROUTES } from "../routes";
 import { SubscriptionService } from "../services/subscription.service";
@@ -33,6 +34,7 @@ export class SubscriptionController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "정기 결제용 빌링키(카드) 등록" })
+  @ResponseMessage("결제 수단이 등록되었습니다.")
   async registerBillingKey(
     @Req() req: Request,
     @Body() dto: IssueBillingKeyDto,
@@ -46,6 +48,7 @@ export class SubscriptionController {
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({ summary: "구독 신청 및 첫 결제 수행" })
+  @ResponseMessage("구독이 시작되었습니다.")
   async subscribe(@Req() req: Request, @Body() dto: CreateSubscriptionDto) {
     const userId = req.user?.userId || "";
     return this.subscriptionService.subscribe(userId, dto);
@@ -56,6 +59,9 @@ export class SubscriptionController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "이용 중인 구독 해지 신청" })
+  @ResponseMessage(
+    "구독이 해지 처리되었습니다. 이번 결제 주기 만료일 전까지는 혜택이 유지됩니다.",
+  )
   async cancel(@Req() req: Request) {
     const userId = req.user?.userId || "";
     return this.subscriptionService.cancel(userId);

@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { Public } from "../../shared/decorators/public.decorator";
+import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { PaginationQueryDto } from "../../shared/dtos";
 import { PAYMENT_ROUTES } from "../routes";
 import { PaymentService } from "../services";
@@ -23,6 +24,7 @@ export class PaymentController {
   // 주문 생성 (결제창 호출 전)
   @Post(PAYMENT_ROUTES.v1.CREATE_ORDER)
   @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage("주문이 생성되었습니다.")
   async createOrder(@Req() req: Request, @Body() dto: CreateOrderDto) {
     const userId = req.user?.userId || "";
     return this.paymentService.createOrder(userId, dto);
@@ -67,6 +69,7 @@ export class PaymentController {
   // 주문 조회
   @Get(PAYMENT_ROUTES.v1.GET_ORDER)
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage("주문 조회 성공")
   async getOrder(@Req() req: Request, @Param("orderId") orderId: string) {
     const userId = req.user?.userId || "";
     return this.paymentService.getOrder(userId, orderId);

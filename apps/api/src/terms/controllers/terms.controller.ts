@@ -10,6 +10,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { Public } from "../../shared/decorators/public.decorator";
+import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { SubmitTermsAgreementDto } from "../dtos";
 import { TERMS_ROUTES } from "../routes";
 import { TermsService } from "../services/terms.service";
@@ -33,6 +34,7 @@ export class TermsController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "약관 동의 내역 추가 제출" })
+  @ResponseMessage("약관 동의가 등록되었습니다.")
   async submitAgreements(
     @Req() req: Request,
     @Body() dto: SubmitTermsAgreementDto,

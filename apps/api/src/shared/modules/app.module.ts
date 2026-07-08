@@ -4,7 +4,7 @@ import {
   NestModule,
   OnApplicationShutdown,
 } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { PassportModule } from "@nestjs/passport";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
@@ -14,6 +14,7 @@ import { prismaDisconnect } from "@template/database";
 import { LoggerMiddleware } from "../middleware/logger.middleware";
 import { JwtAccessGuard } from "../guards/jwt-access.guard";
 import { RolesGuard } from "../guards/roles.guard";
+import { TransformInterceptor } from "../interceptors/transform.interceptor";
 import { JwtAccessStrategy, JwtRefreshStrategy } from "../configs";
 import { FileModule } from "../file/file.module";
 import { PaymentModule } from "../../payment/payment.module";
@@ -55,6 +56,11 @@ import { appLogger } from "../logger";
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    // 성공 응답을 BaseResponse 로 감싼다 (Reflector 주입 위해 DI 등록)
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
     },
     JwtAccessStrategy,
     JwtRefreshStrategy,

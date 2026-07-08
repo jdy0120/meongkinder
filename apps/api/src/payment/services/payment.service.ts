@@ -14,6 +14,7 @@ import {
   type PaginationQuery,
 } from "@template/shared";
 import { tossAuthHeader, tossConfig } from "../../shared/configs/toss.config";
+import { ResponseEnvelope } from "../../shared/dtos";
 import { ORDER_STATUS, PAYMENT_STATUS } from "../constants";
 import { CancelPaymentDto, ConfirmPaymentDto, CreateOrderDto } from "../dtos";
 
@@ -80,7 +81,6 @@ export class PaymentService {
     });
 
     return {
-      message: "주문이 생성되었습니다.",
       orderId: order.orderId,
       orderName: order.orderName,
       amount: order.amount,
@@ -232,11 +232,10 @@ export class PaymentService {
       }),
     ]);
 
-    return {
-      message: isFullCancel ? "결제가 취소되었습니다." : "부분 취소되었습니다.",
-      paymentKey,
-      status: tossPayment.status,
-    };
+    return new ResponseEnvelope(
+      { paymentKey, status: tossPayment.status },
+      isFullCancel ? "결제가 취소되었습니다." : "부분 취소되었습니다.",
+    );
   }
 
   /**
@@ -310,18 +309,20 @@ export class PaymentService {
     if (order.userId !== userId) {
       throw new ForbiddenException("본인의 주문이 아닙니다.");
     }
-    return { message: "주문 조회 성공", order };
+    return { order };
   }
 
   private toPaymentSummary(
     payment: { paymentKey: string; amount: number; status: string },
     message: string,
   ) {
-    return {
+    return new ResponseEnvelope(
+      {
+        paymentKey: payment.paymentKey,
+        amount: payment.amount,
+        status: payment.status,
+      },
       message,
-      paymentKey: payment.paymentKey,
-      amount: payment.amount,
-      status: payment.status,
-    };
+    );
   }
 }

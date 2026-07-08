@@ -14,6 +14,7 @@ import {
 import type { Request } from "express";
 import { ROLES } from "@template/shared";
 import { Roles } from "../../shared/decorators/roles.decorator";
+import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { PaginationQueryDto } from "../../shared/dtos";
 import { UpdateUserDto, UpdateUserRoleDto } from "../dtos";
 import { ADMIN_ROUTES } from "../routes";
@@ -34,11 +35,9 @@ export class AdminController {
   // 관리자 본인 확인 (admin 앱이 접근 권한 확인용으로 호출)
   @Get(ADMIN_ROUTES.v1.ME)
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage("관리자 인증 성공")
   me(@Req() req: Request) {
-    return {
-      message: "관리자 인증 성공",
-      user: req.user,
-    };
+    return { user: req.user };
   }
 
   // 사용자 목록 (페이지네이션·정렬·검색)
@@ -51,6 +50,7 @@ export class AdminController {
   // 사용자 정보 수정 (닉네임·계정 상태)
   @Patch(ADMIN_ROUTES.v1.UPDATE_USER)
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage("사용자 정보가 수정되었습니다.")
   async updateUser(@Param("id") id: string, @Body() dto: UpdateUserDto) {
     return this.adminService.updateUser(id, dto);
   }
@@ -58,6 +58,7 @@ export class AdminController {
   // 사용자 역할 변경 (승격/강등)
   @Patch(ADMIN_ROUTES.v1.UPDATE_USER_ROLE)
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage("역할이 변경되었습니다.")
   async updateUserRole(
     @Req() req: Request,
     @Param("id") id: string,

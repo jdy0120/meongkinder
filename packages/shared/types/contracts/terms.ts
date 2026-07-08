@@ -10,7 +10,6 @@ export interface SubmitTermsAgreementRequest {
 }
 
 export interface SubmitTermsAgreementResponse {
-  message: string;
   agreements: UserTermsAgreement[];
 }
 

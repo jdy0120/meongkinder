@@ -79,10 +79,7 @@ export class TermsService {
       return createdAgreements;
     });
 
-    return {
-      message: "약관 동의가 등록되었습니다.",
-      agreements,
-    };
+    return { agreements };
   }
 
   // ── 어드민 관리자 전용 비즈니스 로직 ──────────────────────────────────────

@@ -13,7 +13,6 @@ export interface UpdateUserRoleRequest {
 }
 
 export interface UpdateUserRoleResponse {
-  message: string;
   user: User;
 }
 
@@ -24,7 +23,6 @@ export interface UpdateUserRequest {
 }
 
 export interface UpdateUserResponse {
-  message: string;
   user: User;
 }
 
@@ -52,7 +50,6 @@ export interface CreateTermsRequest {
 }
 
 export interface CreateTermsResponse {
-  message: string;
   terms: Terms;
 }
 
@@ -61,6 +58,5 @@ export interface UpdateTermsActiveRequest {
 }
 
 export interface UpdateTermsActiveResponse {
-  message: string;
   terms: Terms;
 }

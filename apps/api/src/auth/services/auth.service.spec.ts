@@ -188,7 +188,7 @@ describe("AuthService", () => {
         expect.any(Number),
       );
       expect(mailer.sendMail).toHaveBeenCalledTimes(1);
-      expect(result.message).toEqual(expect.any(String));
+      expect(result).toBeNull();
     });
 
     it("존재하지 않는 이메일이어도 동일 메시지를 반환한다(계정 열거 방지)", async () => {
@@ -200,7 +200,7 @@ describe("AuthService", () => {
 
       expect(redis.set).not.toHaveBeenCalled();
       expect(mailer.sendMail).not.toHaveBeenCalled();
-      expect(result.message).toEqual(expect.any(String));
+      expect(result).toBeNull();
     });
   });
 
@@ -230,7 +230,7 @@ describe("AuthService", () => {
       /* eslint-enable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment */
       expect(redis.del).toHaveBeenCalledWith("reset:good-token");
       expect(redis.del).toHaveBeenCalledWith("refresh:u1");
-      expect(result.message).toEqual(expect.any(String));
+      expect(result).toBeNull();
     });
   });
 });

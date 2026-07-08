@@ -4,16 +4,15 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 
 import { HttpErrorFilter } from "../filters/http-exception.filter";
-import { TransformInterceptor } from "../interceptors/transform.interceptor";
 
 export const setupApplication = (app: INestApplication) => {
   const PROJECT_NAME = process.env.PROJECT_NAME || "template-dev";
 
   app.enableShutdownHooks();
 
-  // 글로벌 필터 및 인터셉터 등록
+  // 글로벌 필터 등록
+  // TransformInterceptor 는 Reflector 주입이 필요하므로 app.module 에서 APP_INTERCEPTOR 로 등록한다.
   app.useGlobalFilters(new HttpErrorFilter());
-  app.useGlobalInterceptors(new TransformInterceptor());
 
   // 1. 글로벌 프리픽스 설정
   app.setGlobalPrefix(`api/${PROJECT_NAME}`);

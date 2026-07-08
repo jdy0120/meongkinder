@@ -72,7 +72,7 @@ export class AdminService {
       data: { role },
     });
 
-    return { message: "역할이 변경되었습니다.", user };
+    return { user };
   }
 
   /** 사용자 정보 수정 (닉네임·계정 상태) — ADMIN 전용. 전달된 필드만 부분 수정. */
@@ -90,7 +90,7 @@ export class AdminService {
       },
     });
 
-    return { message: "사용자 정보가 수정되었습니다.", user };
+    return { user };
   }
 
   /** 구독 목록 (페이지네이션·정렬·검색) */

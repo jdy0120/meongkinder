@@ -23,15 +23,14 @@ export interface CancelPaymentRequest {
 export type ListOrdersQuery = PaginationQuery;
 
 // ── 응답 (data 페이로드) ──────────────────────────────
+// 성공 message 는 BaseResponse.message(봉투)에 담긴다. 아래 타입은 data 페이로드만 기술.
 export interface CreateOrderResponse {
-  message: string;
   orderId: string;
   orderName: string;
   amount: number;
 }
 
 export interface PaymentResultResponse {
-  message: string;
   paymentKey: string;
   amount?: number;
   status: string;

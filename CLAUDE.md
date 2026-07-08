@@ -54,7 +54,9 @@
 
 - Module Layout: `routes/` · `dtos/` · `controllers/` · `services/`.
 - Redis: Used for auth tokens/OTP (`apps/api/src/shared/redis`).
-- Response: Wrapped in `BaseResponse` by `TransformInterceptor` automatically.
+- Response: Wrapped in `BaseResponse<T>` (`{ result, message, data }`) by `TransformInterceptor` automatically. **The interceptor never inspects the payload** — the service/controller return value becomes `data` verbatim (so a payload may safely contain a `message` field).
+  - **Success message**: set it on the route, not in the payload. Static → `@ResponseMessage("...")` decorator on the controller method. Runtime-varying → return `new ResponseEnvelope(payload, message)` from the service. No decorator/envelope ⇒ default `"요청 성공"`.
+  - **Do not** return `{ message, ...data }` from services/controllers and **do not** hand-build a full `{ result, message, data }` — let the interceptor wrap. Error responses are shaped separately by `HttpErrorFilter` (`result: false`).
 - Error Typing: React Query's default error type is augmented globally via `global.d.ts` as `AxiosError<BaseResponse<unknown>>`. Rely on automatic type inference in callbacks (like `onError`) instead of specifying `any` or explicit typing.
 
 ## 7. Frontend Architecture (FSD)

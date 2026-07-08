@@ -108,7 +108,6 @@ export class SubscriptionService {
     });
 
     return {
-      message: "결제 수단이 등록되었습니다.",
       cardName: billingKey.cardName,
       cardNumber: billingKey.cardNumber,
     };
@@ -219,10 +218,7 @@ export class SubscriptionService {
       }),
     ]);
 
-    return {
-      message: "구독이 시작되었습니다.",
-      subscription,
-    };
+    return { subscription };
   }
 
   /** 구독 해지 신청 (결제 주기가 만료될 때까지 이용 가능, 이후 EXPIRED 로 전환) */
@@ -243,11 +239,7 @@ export class SubscriptionService {
       data: { status: "CANCELED" },
     });
 
-    return {
-      message:
-        "구독이 해지 처리되었습니다. 이번 결제 주기 만료일 전까지는 혜택이 유지됩니다.",
-      subscription: updated,
-    };
+    return { subscription: updated };
   }
 
   /** 현재 나의 구독 상태 확인 */
