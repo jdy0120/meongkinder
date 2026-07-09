@@ -9,6 +9,7 @@ import {
   CreditCard,
   LogOut,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -42,6 +43,11 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
       name: "약관 관리",
       href: "/terms",
       icon: ShieldCheck,
+    },
+    {
+      name: "시스템 설정",
+      href: "/system",
+      icon: Settings,
     },
   ];
 

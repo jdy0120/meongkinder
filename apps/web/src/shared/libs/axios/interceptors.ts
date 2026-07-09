@@ -1,4 +1,4 @@
-import { InternalAxiosRequestConfig, AxiosError } from "axios";
+import { InternalAxiosRequestConfig } from "axios";
 import axios from "axios";
 
 // Request interceptor
@@ -28,7 +28,7 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 }
 
 // Response interceptor for handling token expiration
-const refreshAccessToken = async (error: AxiosError) => {
+const refreshAccessToken = async (error: ApiError) => {
   const originalRequest = error.config as CustomAxiosRequestConfig | undefined;
 
   const isAuthRequest =

@@ -23,8 +23,10 @@ RUN pnpm install --frozen-lockfile
 # install 이후에 선언해 URL 이 바뀌어도 install 캐시는 유지되게 한다.
 ARG API_BASE_URL
 ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_PROJECT_NAME
 ENV API_BASE_URL=${API_BASE_URL}
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_PROJECT_NAME=${NEXT_PUBLIC_PROJECT_NAME}
 
 # 실제 소스 복사 후 빌드 (turbo가 database db:generate → database build →
 # shared build → web build 순서를 자동으로 보장)

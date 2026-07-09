@@ -1,4 +1,6 @@
 FROM node:20-alpine
+# 헬스체크(docker-compose)에서 curl 을 사용하므로 alpine 에 설치한다.
+RUN apk add --no-cache curl
 RUN npm install -g pnpm
 
 WORKDIR /app

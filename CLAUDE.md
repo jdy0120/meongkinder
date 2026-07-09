@@ -57,7 +57,10 @@
 - Response: Wrapped in `BaseResponse<T>` (`{ result, message, data }`) by `TransformInterceptor` automatically. **The interceptor never inspects the payload** — the service/controller return value becomes `data` verbatim (so a payload may safely contain a `message` field).
   - **Success message**: set it on the route, not in the payload. Static → `@ResponseMessage("...")` decorator on the controller method. Runtime-varying → return `new ResponseEnvelope(payload, message)` from the service. No decorator/envelope ⇒ default `"요청 성공"`.
   - **Do not** return `{ message, ...data }` from services/controllers and **do not** hand-build a full `{ result, message, data }` — let the interceptor wrap. Error responses are shaped separately by `HttpErrorFilter` (`result: false`).
-- Error Typing: React Query's default error type is augmented globally via `global.d.ts` as `AxiosError<BaseResponse<unknown>>`. Rely on automatic type inference in callbacks (like `onError`) instead of specifying `any` or explicit typing.
+- Error Typing: The common API error type is declared once in `global.d.ts` as `ApiError = AxiosError<BaseResponse<unknown>>` (via `declare global`), and React Query's `defaultError` is augmented to `ApiError`. Both `apps/web` and `apps/admin` share this pattern — keep the two `global.d.ts` files in sync.
+  - **React Query callbacks/props** (`onError`, the returned `error`, `throwOnError`, …): the error is **auto-inferred as `ApiError`**. Rely on inference — never use `any` or re-annotate. This applies to every new API you add, as long as it's called through a `useMutation`/`useQuery` hook (see §7).
+  - **Explicit annotations** (e.g. an interceptor's `refreshAccessToken(error: ApiError)` or a `.catch((err: ApiError) => …)`): use the `ApiError` alias, not the raw `AxiosError`. `AxiosError` should appear only inside the `ApiError` definition in `global.d.ts`.
+  - **Raw `try/catch`**: the caught variable is always `unknown` (TS `strict`) — the augmentation does **not** apply. Narrow it with the runtime guard `axios.isAxiosError(error)` before touching `error.response`; do not cast with `as`. Prefer wrapping the call in a mutation/query hook so you land on the auto-inferred path instead.
 
 ## 7. Frontend Architecture (FSD)
 
