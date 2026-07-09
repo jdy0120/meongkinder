@@ -95,3 +95,7 @@ Data & forms (enforced):
   ```
 - **Forms** use `react-hook-form` (`useForm`) for input state and delegate submit to the feature's mutation hook. Do not hand-roll `useState` for field/error/loading.
 - **Lists** use `usePaginatedList` in a widget (see §3); render rows/badges from `entities`.
+
+## Project Status
+
+## Summary of current implementation status
