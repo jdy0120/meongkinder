@@ -5,3 +5,4 @@ export type * from "../types/contracts";
 export * from "../types/domain";
 export * from "./pagination";
 export * from "./roles";
+export * from "./social";

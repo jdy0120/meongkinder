@@ -130,6 +130,30 @@ services:
       timeout: 5s
       retries: 5
 
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: ${PROJECT_NAME}-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    environment:
+      - PROJECT_NAME=${PROJECT_NAME}
+      - SERVER_PORT=${SERVER_PORT:-3000}
+      - WEB_PORT=${WEB_PORT:-3001}
+      - ADMIN_PORT=${ADMIN_PORT:-3002}
+      - SERVER_NAME=${PROJECT_NAME}.doyeonism.com
+      - NGINX_ENVSUBST_FILTER=PROJECT_NAME|SERVER_PORT|WEB_PORT|ADMIN_PORT|SERVER_NAME
+    volumes:
+      - ../nginx/devtemplates:/etc/nginx/templates:ro
+    depends_on:
+      server:
+        condition: service_started
+      web:
+        condition: service_started
+      admin:
+        condition: service_started
+    networks:
+      - custom-network
+
 networks:
   custom-network:
     name: ${NETWORK_NAME}

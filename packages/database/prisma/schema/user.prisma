@@ -56,22 +56,30 @@ model PointTransaction {
 }
 
 model SocialAccount {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  provider  String
-  accountId String
-  
-  // 추가해야 할 컬럼들
-  accessToken        String?  // 카카오 액세스 토큰
-  accessTokenExpiresAt DateTime? // 액세스 토큰 만료일
-  refreshToken       String?  // 카카오 리프레시 토큰
-  refreshTokenExpiresAt DateTime? // 리프레시 토큰 만료일
-  
+  id                String @id @default(uuid())
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  provider          String // "KAKAO" | "NAVER" | "DISCORD" (@template/shared SOCIAL_PROVIDERS 와 일치)
+  providerAccountId String // provider 가 준 고유 id. 항상 string (카카오 숫자 id 도 문자열로 저장)
+
+  // ── 유저별 소셜 토큰 (로그인 용도에는 불필요) ──────────────────────────────
+  // 알림톡 등 "사업자/봇 자격" 발송은 SaaS 키(env) 로 처리하므로 유저별 토큰이 필요 없다.
+  // 나중에 "유저 카카오톡 직접 메시지 / 친구목록 / 디스코드 서버 자동가입" 등
+  // 유저 본인 자격의 소셜 API 호출이 필요해지면 아래 주석을 해제하고 migrate 한다.
+  // accessToken           String?   // 소셜 액세스 토큰
+  // accessTokenExpiresAt  DateTime? // 액세스 토큰 만료일
+  // refreshToken          String?   // 소셜 리프레시 토큰
+  // refreshTokenExpiresAt DateTime? // 리프레시 토큰 만료일
+
+  // ── provider 별 raw 프로필 스냅샷 (선택) ──────────────────────────────────
+  // provider 마다 응답 구조가 다른 원본을 통째로 보관하고 싶을 때 사용. Postgres 에선 JSONB 로 매핑됨.
+  // 정규화된 식별 필드는 이미 User/컬럼에 저장하므로 로그인 용도에는 불필요. 필요 시 주석 해제.
+  // profile Json?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
-  @@unique([provider, accountId])
+  @@unique([provider, providerAccountId])
   @@index([userId])
   @@map("social_accounts")
 }

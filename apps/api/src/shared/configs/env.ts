@@ -53,6 +53,25 @@ const schema = z.object({
   REDIS_HOST: z.string().min(1).default("localhost"),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
+
+  // 🟢 소셜 로그인(선택): 값이 없으면 해당 provider 엔드포인트가 501(미설정) 을 반환한다.
+  //    개발자 콘솔에서 앱 생성 → Redirect URI 등록 → Client ID/Secret 발급 후 채운다.
+  //    Callback URL 미지정 시 `${API_PUBLIC_URL}/api/${PROJECT_NAME}/v1/auth/{provider}/callback` 로 조립.
+  API_PUBLIC_URL: z.string().optional(), // 브라우저에서 접근 가능한 API 주소 (콜백 조립용)
+  SOCIAL_LOGIN_SUCCESS_REDIRECT: z.string().optional(), // 로그인 성공 후 web 랜딩 (미지정 시 WEB_URL)
+  SOCIAL_LOGIN_FAILURE_REDIRECT: z.string().optional(), // 로그인 실패 후 web 랜딩 (미지정 시 WEB_URL/auth/login)
+
+  KAKAO_CLIENT_ID: z.string().optional(),
+  KAKAO_CLIENT_SECRET: z.string().optional(), // 카카오는 시크릿이 선택(콘솔에서 사용 설정 시)
+  KAKAO_CALLBACK_URL: z.string().optional(),
+
+  NAVER_CLIENT_ID: z.string().optional(),
+  NAVER_CLIENT_SECRET: z.string().optional(),
+  NAVER_CALLBACK_URL: z.string().optional(),
+
+  DISCORD_CLIENT_ID: z.string().optional(),
+  DISCORD_CLIENT_SECRET: z.string().optional(),
+  DISCORD_CALLBACK_URL: z.string().optional(),
 });
 
 const parsed = schema.safeParse(process.env);

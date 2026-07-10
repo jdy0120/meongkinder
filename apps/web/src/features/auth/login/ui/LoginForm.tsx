@@ -12,6 +12,8 @@ import {
 } from "@template/ui";
 import type { LoginRequest } from "@template/shared";
 
+import { SocialLoginButtons } from "@/features/auth/social-login";
+
 import { useLogin } from "../model/useLogin";
 
 /**
@@ -64,6 +66,14 @@ export const LoginForm = () => {
       <Button type='submit' disabled={login.isPending} className='w-full'>
         {login.isPending ? "로그인 중…" : "로그인"}
       </Button>
+
+      <div className='flex items-center gap-3 text-xs text-muted-foreground'>
+        <span className='h-px flex-1 bg-border' />
+        또는
+        <span className='h-px flex-1 bg-border' />
+      </div>
+
+      <SocialLoginButtons />
 
       <Link
         href='/auth/forgot-password'

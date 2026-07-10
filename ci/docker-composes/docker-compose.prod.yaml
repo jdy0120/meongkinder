@@ -115,8 +115,9 @@ services:
       - PROJECT_NAME=${PROJECT_NAME}
       - SERVER_PORT=${SERVER_PORT:-3000}
       - WEB_PORT=${WEB_PORT:-3001}
+      - ADMIN_PORT=${ADMIN_PORT:-3333}
       - SERVER_NAME=${SERVER_NAME}
-      - NGINX_ENVSUBST_FILTER=PROJECT_NAME|SERVER_PORT|WEB_PORT|SERVER_NAME
+      - NGINX_ENVSUBST_FILTER=PROJECT_NAME|SERVER_PORT|WEB_PORT|ADMIN_PORT|SERVER_NAME
     volumes:
       - ../nginx/templates:/etc/nginx/templates:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -124,6 +125,8 @@ services:
       api:
         condition: service_started
       web:
+        condition: service_started
+      admin:
         condition: service_started
     networks:
       - custom-network
