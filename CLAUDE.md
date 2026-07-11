@@ -96,6 +96,75 @@ Data & forms (enforced):
 - **Forms** use `react-hook-form` (`useForm`) for input state and delegate submit to the feature's mutation hook. Do not hand-roll `useState` for field/error/loading.
 - **Lists** use `usePaginatedList` in a widget (see §3); render rows/badges from `entities`.
 
+## 8. Next.js Routing Conventions (web & admin)
+
+Both `apps/web` and `apps/admin` follow the same route group structure.
+
+```
+src/app/
+├── (home)/                   # Shared layout (ReactQueryProvider, Toaster, etc.)
+│   ├── layout.tsx            # Common provider wrapper — no auth check
+│   ├── (checkauth)/          # ✅ Auth-required area
+│   │   ├── layout.tsx        # SSR: calls /v1/auth/mypage → redirects to /auth/login if unauthenticated
+│   │   └── <feature>/        # All pages that require login go here
+│   └── auth/                 # 🔓 Public area (login, forgot-password, reset-password, etc.)
+│       └── <page>/
+```
+
+### Rules
+
+| Situation                                            | Placement                                                 |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| Pages accessible only to authenticated users         | `(home)/(checkauth)/<feature>/page.tsx`                   |
+| Pages accessible without login (auth & public pages) | `(home)/auth/<page>/page.tsx` or `(home)/<page>/page.tsx` |
+
+### Guidelines
+
+1. **Auth-required routes**: Create a feature directory under `apps/web/src/app/(home)/(checkauth)/` or `apps/admin/src/app/(home)/(checkauth)/`.
+   - `(checkauth)/layout.tsx` validates the session cookie via SSR and redirects to `/auth/login` if unauthenticated.
+   - Do **not** add client-side guard code to `page.tsx` — the layout handles protection.
+
+2. **Public routes**: Place pages under `apps/web/src/app/(home)/auth/` (or a sibling directory of `(checkauth)`).
+   - These pages are outside the `(checkauth)` group and therefore bypass the session-validation layout.
+
+3. **Keep pages thin**: `page.tsx` should only call a view component in a single line (see FSD §7).
+
+   ```tsx
+   // (checkauth)/dashboard/page.tsx
+   import { DashboardPage } from "@/views/dashboard";
+   export default function Page() {
+     return <DashboardPage />;
+   }
+   ```
+
+4. **Do not modify `(checkauth)/layout.tsx`**: The auth logic (`getMe` → redirect) in this layout must not be changed. If an auth condition needs to change, always confirm with the user before editing.
+
+---
+
+## 9. Pre-implemented Modules — Reuse Before Building
+
+The following modules are **already fully implemented** in `apps/api`. Before writing any new service, controller, or endpoint, check whether the job is covered by one of these modules and **reuse it** instead of re-implementing the logic.
+
+> Swagger reference: `http://localhost:3000/api/template-dev/docs`
+
+| Module           | Source path                  | Base route         | Endpoints / Responsibility                                                                                        |
+| ---------------- | ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **health**       | `apps/api/src/health/`       | `GET v1/health`    | DB + Redis liveness check                                                                                         |
+| **auth**         | `apps/api/src/auth/`         | `v1/auth`          | Signup · Login · Logout · Token refresh · Mypage · Forgot/Reset password · Social OAuth (Kakao / Naver / Discord) |
+| **terms**        | `apps/api/src/terms/`        | `v1/terms`         | Terms list & user agreement submission (`v1/terms/agreements`)                                                    |
+| **payment**      | `apps/api/src/payment/`      | `v1/payments`      | Order creation · Payment confirmation · Cancel/Refund · Toss webhook · Order lookup                               |
+| **subscription** | `apps/api/src/subscription/` | `v1/subscriptions` | Subscription plans · Billing-key registration · Subscribe · Cancel · My subscription                              |
+| **file**         | `apps/api/src/shared/file/`  | `v1/file`          | Single-file upload to Azure Blob (`POST v1/file/upload`)                                                          |
+
+### Rules
+
+1. **Check first**: Before scaffolding a new module, verify whether the task relates to auth, payments, subscriptions, terms, file upload, or health. If it does, extend the existing module rather than creating a new one.
+2. **Extend, don't duplicate**: Add new endpoints inside the existing module's `controllers/` and `services/` following the same `routes/v1/` → `controllers/` → `services/` layout (see §6 Conventions).
+3. **Route constants**: Always define new paths in the module's `routes/v1/index.ts` route-constant file; never hardcode path strings in controllers.
+4. **Admin variants**: Admin-only endpoints for the above domains live in `apps/api/src/admin/`. Check there as well before adding admin logic.
+
+---
+
 ## Project Status
 
 ## Summary of current implementation status
