@@ -1,0 +1,17 @@
+# 전역 옵션
+{
+	# Let's Encrypt 발급/만료 알림 수신 이메일
+	email admin@example.com
+}
+
+# 프로젝트마다 아래 형식의 블록을 추가한 뒤 reload 하세요:
+#   docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+#
+#   <SERVER_NAME> {
+#       reverse_proxy <PROJECT_NAME>-nginx:80
+#   }
+#
+# 여기 명시된 도메인 외의 요청(임의 서브도메인 등)에는 Caddy 가 응답하지 않습니다.
+myapp.example.com {
+	reverse_proxy template-prod-nginx:80
+}

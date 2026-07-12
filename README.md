@@ -193,14 +193,45 @@ make prod
 * **`<PROJECT_NAME>-db`**: PostgreSQL 데이터베이스
 * **`<PROJECT_NAME>-api`**: NestJS 백엔드 (기동 시 `prisma migrate deploy` 로 미적용 마이그레이션 반영)
 * **`<PROJECT_NAME>-web`**: Next.js 프론트엔드 (Standalone 빌드)
-* **`<PROJECT_NAME>-nginx`**: 리버스 프록시 (포트 80/443)
+* **`<PROJECT_NAME>-nginx`**: 내부 리버스 프록시 (호스트 포트 미노출 — 엣지 프록시가 `edge` 네트워크로 접근)
 
 > [!NOTE]
-> nginx 는 `envs/.env.prod` 의 `SERVER_NAME` 과 호스트의 `/etc/letsencrypt/live/<SERVER_NAME>/` TLS 인증서를 사용합니다. 실제 HTTPS 서비스를 하려면 해당 도메인의 Let's Encrypt 인증서가 호스트에 준비되어 있어야 합니다.
+> 외부 트래픽(80/443)과 TLS 인증서는 프로젝트 스택이 아니라 **서버 공용 엣지 프록시(Caddy)** 가 담당합니다. 인증서 발급·자동 갱신은 Caddy 에 내장되어 있어 별도 작업이 필요 없습니다. 셋업 방법은 아래 "HTTPS / 멀티 프로젝트 (엣지 프록시)" 섹션을 참고하세요.
 
 > [!CAUTION]
 > 기존 PostgreSQL 볼륨에 다른 스키마 버전의 데이터가 남아있으면 마이그레이션 충돌이 발생할 수 있습니다.
-> 새로 가동할 때는 **`make down`** 으로 Docker 볼륨을 완전히 삭제한 뒤 `make prod` 를 실행하는 것을 권장합니다.
+> 새로 가동할 때는 **`make clean`** 으로 Docker 볼륨을 완전히 삭제한 뒤 `make prod` 를 실행하는 것을 권장합니다.
+
+---
+
+### 3-1. HTTPS / 멀티 프로젝트 (엣지 프록시)
+
+한 서버에서 여러 프로젝트를 HTTPS 로 서빙하기 위해, 80/443 은 서버당 1개의 **Caddy 엣지 프록시**가 소유하고 도메인별로 각 프로젝트의 nginx 로 라우팅합니다. TLS 발급·갱신(Let's Encrypt)은 Caddy 가 전자동으로 처리하며, 인증서는 엣지의 `caddy-data` 볼륨에 저장되므로 프로젝트를 `make clean` 해도 영향받지 않습니다.
+
+**서버 최초 셋업 (1회)** — `ci/edge/` 를 서버로 복사한 뒤:
+
+```bash
+docker network create edge
+cd edge && docker compose up -d
+```
+
+**프로젝트 추가 시 (프로젝트당 1회)**:
+
+1. 도메인 DNS A 레코드를 서버 IP 로 연결
+2. `envs/.env.prod` 의 `SERVER_NAME` 에 도메인 설정 후 `make prod`
+3. 엣지의 `Caddyfile` 에 블록 추가 후 reload:
+
+```
+myapp.example.com {
+    reverse_proxy <PROJECT_NAME>-nginx:80
+}
+```
+
+```bash
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Caddyfile 에 명시된 도메인 외의 요청(임의 서브도메인 등)에는 엣지가 응답하지 않으며, 프로젝트 nginx 도 `SERVER_NAME` 이외의 Host 를 차단합니다(444).
 
 ---
 
@@ -211,7 +242,8 @@ make prod
 | `./scripts/rename.sh <이름> [스코프]` | 템플릿 네이밍(`@template`, 루트명, `PROJECT_NAME`) 일괄 치환 후 `pnpm install` | Host CLI |
 | `make dev` | 개발용 컨테이너 기동 (`.env.dev` 사용) | Host CLI |
 | `make prod` | 운영용 컨테이너 빌드 및 백그라운드 기동 (`.env.prod` 사용) | Host CLI |
-| `make down` | 구동 중인 모든 개발/운영 컨테이너 정지 및 **도커 볼륨 영구 삭제** | Host CLI |
+| `make down` | 구동 중인 모든 개발/운영 컨테이너 정지 (볼륨 보존 — DB 데이터 유지) | Host CLI |
+| `make clean` | 컨테이너 정지 + **도커 볼륨 영구 삭제** (SSL 인증서는 엣지 볼륨에 있어 무관) | Host CLI |
 | `pnpm install` | 프로젝트 내 모든 모노레포 패키지 의존성 통합 설치 | Host CLI / Root |
 | `pnpm run build` | Turborepo 로 전체 패키지 빌드 (의존성 순서·캐싱 자동 처리) | Host CLI / Root |
 | `pnpm run type-check` | 전체 워크스페이스 타입 체크 | Host CLI / Root |

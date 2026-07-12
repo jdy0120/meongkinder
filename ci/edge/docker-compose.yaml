@@ -1,0 +1,37 @@
+# 엣지 프록시 (서버당 1개, 모든 프로젝트 공용) — 이 디렉토리를 서버로 복사해 사용
+#
+# 서버에서 80/443 을 소유하는 유일한 스택입니다. 도메인별로 각 프로젝트의
+# nginx 컨테이너로 라우팅하며, TLS 인증서(Let's Encrypt) 발급·갱신은 Caddy 가
+# 전자동으로 처리합니다 (인증서는 caddy-data 볼륨에 저장).
+#
+# 서버 최초 셋업 (1회):
+#   docker network create edge
+#   docker compose up -d
+#
+# 프로젝트 추가 시:
+#   1) Caddyfile 에 도메인 블록 추가
+#   2) docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: edge-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true
+    name: edge
+
+volumes:
+  caddy-data:
+  caddy-config:

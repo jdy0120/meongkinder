@@ -1,17 +1,16 @@
-server {
-    listen 80;
-    server_name ${SERVER_NAME};
-    return 301 https://$host$request_uri;
+# TLS 는 서버 공용 엣지 프록시(Caddy, ci/edge/)가 종료하고 HTTP 로 전달한다.
+# 이 nginx 는 호스트 포트를 열지 않으며 edge 네트워크에서만 접근된다.
 
+# ${SERVER_NAME} 이외의 도메인 요청 차단 (엣지 뒤의 방어선)
+server {
+    listen 80 default_server;
+    server_name _;
+    return 444;
 }
 
 server {
-    listen 443 ssl;
+    listen 80;
     server_name ${SERVER_NAME};
-
-    ssl_certificate /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
-
 
     # Allow large file uploads
     client_max_body_size 100M;
@@ -26,7 +25,7 @@ server {
         proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
     }
 
     # Backend static/uploaded resources
@@ -36,7 +35,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
     }
 
     # Frontend Web Application (Next.js)
@@ -49,6 +48,6 @@ server {
         proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
     }
 }
