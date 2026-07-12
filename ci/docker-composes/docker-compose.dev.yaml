@@ -133,8 +133,6 @@ services:
   nginx:
     image: nginx:1.25-alpine
     container_name: ${PROJECT_NAME}-nginx
-    ports:
-      - "${NGINX_PORT:-80}:80"
     environment:
       - PROJECT_NAME=${PROJECT_NAME}
       - SERVER_PORT=${SERVER_PORT:-3000}
@@ -158,6 +156,10 @@ networks:
   custom-network:
     name: ${NETWORK_NAME}
     external: true
+  # 엣지 프록시(Caddy)와 공유하는 네트워크. 서버 셋업 시 `docker network create edge` 필요.
+  edge:
+    external: true
+    name: ${EDGE_NETWORK_NAME:-edge}
 
 volumes:
   pgdata:
