@@ -12,12 +12,16 @@ server {
     listen 80;
     server_name ${SERVER_NAME};
 
+    # Re-resolve upstream hostnames dynamically using Docker DNS
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # Allow large file uploads
     client_max_body_size 100M;
 
     # Backend API requests
     location /api/ {
-        proxy_pass http://${PROJECT_NAME}-api:${SERVER_PORT};
+        set $upstream_api http://${PROJECT_NAME}-api:${SERVER_PORT};
+        proxy_pass $upstream_api;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -30,7 +34,8 @@ server {
 
     # Backend static/uploaded resources
     location /resources/ {
-        proxy_pass http://${PROJECT_NAME}-api:${SERVER_PORT};
+        set $upstream_api http://${PROJECT_NAME}-api:${SERVER_PORT};
+        proxy_pass $upstream_api;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -40,7 +45,8 @@ server {
 
     # Frontend Web Application (Next.js)
     location / {
-        proxy_pass http://${PROJECT_NAME}-web:${WEB_PORT};
+        set $upstream_web http://${PROJECT_NAME}-web:${WEB_PORT};
+        proxy_pass $upstream_web;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
