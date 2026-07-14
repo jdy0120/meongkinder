@@ -89,6 +89,7 @@ services:
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
       - API_BASE_URL=${API_BASE_URL}
       - ADMIN_PORT=${ADMIN_PORT}
+      - ADMIN_BASE_PATH=${ADMIN_BASE_PATH}
     ports:
       - ${ADMIN_PORT}:${ADMIN_PORT}
     networks:
