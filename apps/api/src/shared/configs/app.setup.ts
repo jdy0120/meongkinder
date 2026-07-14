@@ -1,5 +1,7 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"; // 👈 추가
+import { NestExpressApplication } from "@nestjs/platform-express";
+import { join } from "path";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 
@@ -50,4 +52,11 @@ export const setupApplication = (app: INestApplication) => {
 
   app.use(compression());
   app.use(cookieParser());
+
+  // 4. 정적 파일(/resources) 서빙 설정
+  const resourcePath = join(process.cwd(), "resources");
+  const expressApp = app as NestExpressApplication;
+  expressApp.useStaticAssets(resourcePath, {
+    prefix: "/resources/",
+  });
 };
