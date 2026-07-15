@@ -23,3 +23,33 @@ export type SocialProviderSlug = keyof typeof SOCIAL_PROVIDER_SLUGS;
 export const isSocialProviderSlug = (
   value: string,
 ): value is SocialProviderSlug => value in SOCIAL_PROVIDER_SLUGS;
+
+// ── 소셜 제공자별 원본(Raw) 프로필 응답 타입 ──────────────────────────────────
+export interface KakaoProfileResponse {
+  id?: string | number;
+  kakao_account?: {
+    email?: string;
+    profile?: {
+      nickname?: string;
+      profile_image_url?: string;
+    };
+  };
+}
+
+export interface NaverProfileResponse {
+  response?: {
+    id?: string;
+    email?: string;
+    nickname?: string;
+    name?: string;
+    profile_image?: string;
+  };
+}
+
+export interface DiscordProfileResponse {
+  id?: string;
+  email?: string;
+  username?: string;
+  global_name?: string;
+  avatar?: string;
+}

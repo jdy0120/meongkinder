@@ -24,6 +24,7 @@ services:
   test-redis:
     image: redis:7-alpine
     container_name: template-test-redis
+    command: redis-server --maxmemory 64mb --maxmemory-policy volatile-lru
     ports:
       - "6380:6379"
     healthcheck:

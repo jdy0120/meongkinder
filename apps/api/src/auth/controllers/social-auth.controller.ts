@@ -30,10 +30,7 @@ export class SocialAuthController {
   /** 1단계 — provider 인증 페이지로 302 redirect */
   @Public()
   @Get(AUTH_ROUTES.v1.SOCIAL_AUTHORIZE)
-  async authorize(
-    @Param("provider") provider: string,
-    @Res() res: Response,
-  ) {
+  async authorize(@Param("provider") provider: string, @Res() res: Response) {
     if (!isSocialProviderSlug(provider)) {
       throw new BadRequestException("지원하지 않는 소셜 로그인입니다.");
     }

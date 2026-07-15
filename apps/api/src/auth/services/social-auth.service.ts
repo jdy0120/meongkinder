@@ -9,6 +9,9 @@ import { prisma } from "@template/database";
 import {
   SOCIAL_PROVIDER_SLUGS,
   SOCIAL_PROVIDERS,
+  type DiscordProfileResponse,
+  type KakaoProfileResponse,
+  type NaverProfileResponse,
   type NormalizedSocialProfile,
   type SocialProvider,
   type SocialProviderSlug,
@@ -27,7 +30,7 @@ const refreshKey = (userId: string) => `refresh:${userId}`;
 const stateKey = (state: string) => `social_state:${state}`;
 const STATE_TTL_SEC = 5 * 60;
 
-interface ProviderConfig {
+interface ProviderConfig<TRaw = any> {
   clientId?: string;
   clientSecret?: string;
   callbackUrl?: string;
@@ -36,7 +39,7 @@ interface ProviderConfig {
   profileUrl: string;
   scope: string;
   // provider 별 raw 응답 → 공통 형태로 변환 (정규화 경계).
-  normalize: (raw: any, provider: SocialProvider) => NormalizedSocialProfile;
+  normalize: (raw: TRaw, provider: SocialProvider) => NormalizedSocialProfile;
 }
 
 @Injectable()
@@ -47,7 +50,7 @@ export class SocialAuthService {
 
   // ── provider 별 설정 ──────────────────────────────────────────────────────
   // authorize/token/profile URL 은 각 provider 문서 기준. scope·필드 매핑은 콘솔 설정에 맞춰 확인 필요.
-  private readonly configs: Record<SocialProvider, ProviderConfig> = {
+  private readonly configs: Record<SocialProvider, ProviderConfig<any>> = {
     [SOCIAL_PROVIDERS.KAKAO]: {
       clientId: env.KAKAO_CLIENT_ID,
       clientSecret: env.KAKAO_CLIENT_SECRET,
@@ -57,9 +60,9 @@ export class SocialAuthService {
       profileUrl: "https://kapi.kakao.com/v2/user/me",
       // TODO(scope): 콘솔 [동의 항목]에서 사용 설정한 값과 일치시킬 것.
       scope: "profile_nickname account_email",
-      normalize: (raw, provider) => ({
+      normalize: (raw: KakaoProfileResponse, provider) => ({
         provider,
-        providerAccountId: String(raw?.id),
+        providerAccountId: String(raw?.id ?? ""),
         email: raw?.kakao_account?.email ?? null,
         nickname: raw?.kakao_account?.profile?.nickname ?? null,
         avatarUrl: raw?.kakao_account?.profile?.profile_image_url ?? null,
@@ -73,10 +76,10 @@ export class SocialAuthService {
       tokenUrl: "https://nid.naver.com/oauth2.0/token",
       profileUrl: "https://openapi.naver.com/v1/nid/me",
       scope: "", // 네이버는 콘솔에서 제공 항목을 지정. 기본 비움.
-      normalize: (raw, provider) => ({
+      normalize: (raw: NaverProfileResponse, provider) => ({
         provider,
         // 네이버는 실제 데이터가 raw.response 안에 감싸져 온다.
-        providerAccountId: String(raw?.response?.id),
+        providerAccountId: String(raw?.response?.id ?? ""),
         email: raw?.response?.email ?? null,
         nickname: raw?.response?.nickname ?? raw?.response?.name ?? null,
         avatarUrl: raw?.response?.profile_image ?? null,
@@ -90,14 +93,15 @@ export class SocialAuthService {
       tokenUrl: "https://discord.com/api/oauth2/token",
       profileUrl: "https://discord.com/api/users/@me",
       scope: "identify email",
-      normalize: (raw, provider) => ({
+      normalize: (raw: DiscordProfileResponse, provider) => ({
         provider,
-        providerAccountId: String(raw?.id),
+        providerAccountId: String(raw?.id ?? ""),
         email: raw?.email ?? null,
         nickname: raw?.global_name ?? raw?.username ?? null,
-        avatarUrl: raw?.avatar
-          ? `https://cdn.discordapp.com/avatars/${raw.id}/${raw.avatar}.png`
-          : null,
+        avatarUrl:
+          raw?.avatar && raw?.id
+            ? `https://cdn.discordapp.com/avatars/${raw.id}/${raw.avatar}.png`
+            : null,
       }),
     },
   };
@@ -109,7 +113,8 @@ export class SocialAuthService {
   private resolveCallbackUrl(slug: SocialProviderSlug, cfg: ProviderConfig) {
     if (cfg.callbackUrl) return cfg.callbackUrl;
     const base =
-      env.API_PUBLIC_URL ?? `http://localhost:${process.env.SERVER_PORT ?? 3000}`;
+      env.API_PUBLIC_URL ??
+      `http://localhost:${process.env.SERVER_PORT ?? 3000}`;
     const project = process.env.PROJECT_NAME ?? "template-dev";
     return `${base}/api/${project}/v1/auth/social/${slug}/callback`;
   }
@@ -165,7 +170,10 @@ export class SocialAuthService {
     const rawProfile = await this.fetchProfile(cfg, accessToken);
     const profile = cfg.normalize(rawProfile, provider);
 
-    if (!profile.providerAccountId || profile.providerAccountId === "undefined") {
+    if (
+      !profile.providerAccountId ||
+      profile.providerAccountId === "undefined"
+    ) {
       throw new UnauthorizedException("소셜 프로필을 가져오지 못했습니다.");
     }
 
@@ -222,17 +230,18 @@ export class SocialAuthService {
   }
 
   /** provider access token → 프로필 원본 조회 */
-  private async fetchProfile(cfg: ProviderConfig, accessToken: string) {
+  private async fetchProfile(
+    cfg: ProviderConfig,
+    accessToken: string,
+  ): Promise<unknown> {
     const res = await fetch(cfg.profileUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) {
-      this.logger.error(
-        `프로필 조회 실패: ${res.status} ${await res.text()}`,
-      );
+      this.logger.error(`프로필 조회 실패: ${res.status} ${await res.text()}`);
       throw new UnauthorizedException("소셜 프로필 조회에 실패했습니다.");
     }
-    return res.json();
+    return (await res.json()) as unknown;
   }
 
   /**
