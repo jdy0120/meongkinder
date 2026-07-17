@@ -47,8 +47,8 @@ jobs:
 
       - name: Build workspace deps
         run: |
-          pnpm --filter @outsourcing/database build
-          pnpm --filter @outsourcing/shared build
+          pnpm --filter @template/database build
+          pnpm --filter @template/shared build
 
       - name: Unit tests
         run: pnpm --filter api test
