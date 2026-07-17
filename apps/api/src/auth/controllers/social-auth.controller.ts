@@ -12,12 +12,7 @@ import { Public } from "../../shared/decorators/public.decorator";
 import { AUTH_ROUTES } from "../routes";
 import { SocialAuthService } from "../services";
 import * as CONST from "../../shared/constants";
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const, // 소셜 리다이렉트(다른 도메인 → 우리 콜백)에서 쿠키가 실리도록 lax
-};
+import { getCookieOptions } from "../../shared/utils";
 
 /**
  * 소셜 로그인 컨트롤러 (서버 리다이렉트 흐름).
@@ -57,13 +52,14 @@ export class SocialAuthController {
     try {
       const { accessToken, refreshToken } =
         await this.socialAuth.handleCallback(provider, code, state);
+      const options = getCookieOptions();
 
       res.cookie("access_token", accessToken, {
-        ...cookieOptions,
+        ...options,
         maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
       });
       res.cookie("refresh_token", refreshToken, {
-        ...cookieOptions,
+        ...options,
         maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
       });
 

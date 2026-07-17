@@ -22,12 +22,7 @@ import {
   SignupDto,
 } from "../dtos";
 import * as CONST from "../../shared/constants";
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-};
+import { getCookieOptions } from "../../shared/utils";
 
 @Controller(AUTH_ROUTES.v1.BASE)
 export class AuthController {
@@ -68,13 +63,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(loginDto);
+    const options = getCookieOptions();
 
     res.cookie("access_token", result.accessToken, {
-      ...cookieOptions,
+      ...options,
       maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
     });
     res.cookie("refresh_token", result.refreshToken, {
-      ...cookieOptions,
+      ...options,
       maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
     });
 
@@ -88,8 +84,9 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const userId = req.user?.userId || "";
     await this.authService.logout(userId);
-    res.clearCookie("access_token", cookieOptions);
-    res.clearCookie("refresh_token", cookieOptions);
+    const options = getCookieOptions();
+    res.clearCookie("access_token", options);
+    res.clearCookie("refresh_token", options);
     return null;
   }
 
@@ -104,12 +101,13 @@ export class AuthController {
     const email = req.user?.email || "";
     const refreshToken = req.user?.refreshToken || "";
     const result = await this.authService.refresh({ email, refreshToken });
+    const options = getCookieOptions();
     res.cookie("access_token", result.accessToken, {
-      ...cookieOptions,
+      ...options,
       maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
     });
     res.cookie("refresh_token", result.refreshToken, {
-      ...cookieOptions,
+      ...options,
       maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
     });
     return result;

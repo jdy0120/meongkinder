@@ -54,6 +54,10 @@ const schema = z.object({
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
 
+  // 🟢 쿠키 & 도메인 설정(선택): 서브도메인 간 쿠키 공유용
+  SERVER_NAME: z.string().optional(),
+  COOKIE_DOMAIN: z.string().optional(),
+
   // 🟢 소셜 로그인(선택): 값이 없으면 해당 provider 엔드포인트가 501(미설정) 을 반환한다.
   //    개발자 콘솔에서 앱 생성 → Redirect URI 등록 → Client ID/Secret 발급 후 채운다.
   //    Callback URL 미지정 시 `${API_PUBLIC_URL}/api/${PROJECT_NAME}/v1/auth/{provider}/callback` 로 조립.
