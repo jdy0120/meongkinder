@@ -5,7 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@template/ui";
 
 /** 관리자 대시보드 통계 조회 (SSR — 쿠키를 직접 주입해 API 호출) */
 const getStats = async () => {
-  const { API_BASE_URL, PROJECT_NAME } = process.env;
+  const apiUrl =
+    process.env.API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "http://localhost:3000";
+  const proj =
+    process.env.PROJECT_NAME ||
+    process.env.NEXT_PUBLIC_PROJECT_NAME ||
+    "outsourcing";
   const cookieStore = await cookies();
   const cookieString = cookieStore
     .getAll()
@@ -16,13 +23,12 @@ const getStats = async () => {
 
   try {
     const [usersRes, subsRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/${PROJECT_NAME}/v1/admin/users?pageSize=1`, {
+      fetch(`${apiUrl}/api/${proj}/v1/admin/users?pageSize=1`, {
         headers,
       }),
-      fetch(
-        `${API_BASE_URL}/api/${PROJECT_NAME}/v1/admin/subscriptions?pageSize=1`,
-        { headers },
-      ),
+      fetch(`${apiUrl}/api/${proj}/v1/admin/subscriptions?pageSize=1`, {
+        headers,
+      }),
     ]);
 
     const usersData = usersRes.ok ? await usersRes.json() : null;

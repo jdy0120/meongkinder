@@ -14,7 +14,12 @@ interface LayoutProps {
  */
 
 const getMe = async () => {
-  const { API_BASE_URL, PROJECT_NAME } = process.env;
+  const apiUrl =
+    process.env.API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "http://localhost:3000";
+  const proj =
+    process.env.PROJECT_NAME || process.env.NEXT_PUBLIC_PROJECT_NAME || "myapp";
   const cookieStore = await cookies();
 
   const cookieString = cookieStore
@@ -22,19 +27,15 @@ const getMe = async () => {
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/${PROJECT_NAME}/v1/auth/mypage`,
-    {
-      method: "GET",
-      headers: {
-        Cookie: cookieString,
-      },
+  const response = await fetch(`${apiUrl}/api/${proj}/v1/auth/mypage`, {
+    method: "GET",
+    headers: {
+      Cookie: cookieString,
     },
-  );
+  });
 
   return response;
 };
-
 const layout = async ({ children }: LayoutProps) => {
   const response = await getMe();
 

@@ -8,6 +8,7 @@
     },
     "build": {
       "dependsOn": ["^build", "db:generate"],
+      "env": ["NEXT_PUBLIC_*", "WEB_URL", "API_BASE_URL", "PROJECT_NAME"],
       "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.spec.ts"],
       "outputs": ["dist/**", "generated/**", ".next/**", "!.next/cache/**"]
     },

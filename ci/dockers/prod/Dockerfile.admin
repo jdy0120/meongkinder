@@ -3,14 +3,14 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-# 1) Pruner: 모노레포에서 admin 서브셋(admin + 의존 패키지)만 추출한다.
+# 1) Pruner: 모노레포에서 web 서브셋(web + 의존 패키지)만 추출한다.
 #    out/json  = package.json + lockfile (install 레이어 캐싱용)
 #    out/full  = 실제 소스 (build 레이어용)
 FROM base AS pruner
 WORKDIR /app
 RUN npm install -g turbo@2.10.3
 COPY . .
-RUN turbo prune admin --docker
+RUN turbo prune web --docker
 
 # 2) Builder: 의존성 설치 → 소스 복사 → 빌드
 FROM base AS builder
@@ -21,20 +21,23 @@ RUN pnpm install --frozen-lockfile
 
 # NEXT_PUBLIC_* 는 빌드타임에 번들로 인라인되므로 build 직전에 주입한다.
 # install 이후에 선언해 URL 이 바뀌어도 install 캐시는 유지되게 한다.
+ARG PROJECT_NAME
 ARG API_BASE_URL
 ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_PROJECT_NAME
+ARG WEB_URL
+ENV PROJECT_NAME=${PROJECT_NAME}
 ENV API_BASE_URL=${API_BASE_URL}
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ENV NEXT_PUBLIC_PROJECT_NAME=${NEXT_PUBLIC_PROJECT_NAME}
-
+ENV WEB_URL=${WEB_URL}
 
 # 실제 소스 복사 후 빌드 (turbo가 database db:generate → database build →
-# shared build → admin build 순서를 자동으로 보장)
+# shared build → web build 순서를 자동으로 보장)
 COPY --from=pruner /app/out/full/ .
 # turbo prune 는 루트 공용 tsconfig 를 포함하지 않으므로 별도 복사한다 (모든 패키지가 extends).
 COPY tsconfig.base.json ./tsconfig.base.json
-RUN pnpm turbo run build --filter=admin
+RUN pnpm turbo run build --filter=web
 
 FROM base AS runner
 WORKDIR /app
@@ -43,14 +46,14 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Next.js Standalone 결과물만 복사
-COPY --from=builder /app/apps/admin/public ./apps/admin/public
-COPY --from=builder /app/apps/admin/.next/standalone ./
-COPY --from=builder /app/apps/admin/.next/static ./apps/admin/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 EXPOSE 3000
 
-ENV PORT=${ADMIN_PORT:-3333}
+ENV PORT=${WEB_PORT:-3001}
 ENV HOSTNAME="0.0.0.0"
 
-# Standalone은 apps/admin/server.js를 떨굽니다.
-CMD ["node", "apps/admin/server.js"]
+# Standalone은 apps/web/server.js를 떨굽니다.
+CMD ["node", "apps/web/server.js"]

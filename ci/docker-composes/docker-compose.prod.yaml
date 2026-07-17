@@ -65,8 +65,11 @@ services:
       context: ../../
       dockerfile: ci/dockers/prod/Dockerfile.web
       args:
+        - PROJECT_NAME=${PROJECT_NAME}
+        - API_BASE_URL=${API_BASE_URL}
         - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
         - NEXT_PUBLIC_PROJECT_NAME=${NEXT_PUBLIC_PROJECT_NAME}
+        - WEB_URL=${WEB_URL}
     container_name: ${PROJECT_NAME}-web
     environment:
       - PROJECT_NAME=${PROJECT_NAME}
@@ -76,6 +79,7 @@ services:
       - API_BASE_URL=${API_BASE_URL}
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
       - NEXT_PUBLIC_PROJECT_NAME=${NEXT_PUBLIC_PROJECT_NAME}
+      - WEB_URL=${WEB_URL}
       - PORT=${WEB_PORT:-3001}
     ports:
       - "${WEB_PORT:-3001}:${WEB_PORT:-3001}"
@@ -87,17 +91,19 @@ services:
       context: ../../
       dockerfile: ci/dockers/prod/Dockerfile.admin
       args:
+        - PROJECT_NAME=${PROJECT_NAME}
         - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
         - NEXT_PUBLIC_PROJECT_NAME=${NEXT_PUBLIC_PROJECT_NAME}
+        - API_BASE_URL=${API_BASE_URL}
     container_name: ${PROJECT_NAME}-admin
     environment:
       - PROJECT_NAME=${PROJECT_NAME}
       - NETWORK_NAME=${NETWORK_NAME}
       - ADMIN_PORT=${ADMIN_PORT:-3333}
       - APP_NAME=${APP_NAME}
-      - API_BASE_URL=${API_BASE_URL}
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
       - NEXT_PUBLIC_PROJECT_NAME=${NEXT_PUBLIC_PROJECT_NAME}
+      - API_BASE_URL=${API_BASE_URL}
       - PORT=${ADMIN_PORT:-3333}
 
     ports:
@@ -135,8 +141,7 @@ services:
     image: redis:7-alpine
     container_name: ${PROJECT_NAME}-redis
     # 운영 Redis 는 외부 포트를 노출하지 않고 내부 네트워크로만 접근합니다.
-    # 비밀번호(REDIS_PASSWORD)는 필수입니다.
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy volatile-lru
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
