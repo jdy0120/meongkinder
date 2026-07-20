@@ -1,5 +1,6 @@
 export * from "./app.setup";
 export * from "./azure.config";
+export * from "./s3.config";
 export * from "./passport.config";
 export * from "./redis.config";
 export * from "./serialization.config";

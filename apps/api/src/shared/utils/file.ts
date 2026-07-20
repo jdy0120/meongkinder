@@ -4,7 +4,9 @@ import { randomBytes } from "crypto";
 import { Domain } from "@template/shared";
 import * as fs from "fs";
 import { join, relative, extname } from "path";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { containerClient } from "../configs/azure.config";
+import { s3Client, s3Config } from "../configs/s3.config";
 import { mimeMap } from "../constants";
 import { fileLogger } from "../logger";
 
@@ -99,7 +101,8 @@ export const moveFiles = async (
     const newPath = join(directoryPath, fname);
 
     if (process.env.NODE_ENV === "production") {
-      await uploadToAzure(newPath, srcPath, file.mimeType);
+      // await uploadToBlob(newPath, srcPath, file.mimeType);
+      await uploadToS3(newPath, srcPath, file.mimeType);
     } else {
       await fs.promises.rename(srcPath, newPath);
     }
@@ -152,7 +155,7 @@ export const getMimeType = (filePath: string): string => {
   return mimeMap[ext] || "application/octet-stream";
 };
 
-export const uploadToAzure = async (
+export const uploadToBlob = async (
   newPath: string,
   oldPath: string,
   mimeType?: string,
@@ -190,14 +193,40 @@ export const uploadToAzure = async (
   }
 };
 
-export const uploadToS3 = (newPath: string) => {
+export const uploadToS3 = async (
+  newPath: string,
+  oldPath: string,
+  mimeType?: string,
+) => {
   try {
-    // Stubbed out for now
-    fileLogger.log(`Bypassed S3 upload: ${newPath}`);
+    if (!s3Client || !s3Config.bucketName) {
+      throw new Error(
+        "S3 client is not initialized. Check your environment variables.",
+      );
+    }
+
+    const relativePath = relative(process.cwd(), newPath);
+    const key = relativePath.replace(/\\/g, "/");
+    const contentType = mimeType || getMimeType(oldPath);
+    const fileBuffer = await fs.promises.readFile(oldPath);
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: s3Config.bucketName,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: contentType,
+      }),
+    );
+
+    fileLogger.log(
+      `Successfully uploaded to S3: ${oldPath} -> ${key} (${contentType})`,
+    );
   } catch (error) {
     fileLogger.error(
       "Error uploading to S3:",
       error instanceof Error ? error.stack : undefined,
     );
+    throw error;
   }
 };
