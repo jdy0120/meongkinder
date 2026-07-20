@@ -101,12 +101,31 @@ export const moveFiles = async (
     const newPath = join(directoryPath, fname);
 
     if (process.env.NODE_ENV === "production") {
-      // await uploadToBlob(newPath, srcPath, file.mimeType);
+      /**
+       * TODO: 원하는 저장소로 변경
+       *  - azure
+       *  - s3
+       *  - Local
+       */
       await uploadToS3(newPath, srcPath, file.mimeType);
     } else {
       await fs.promises.rename(srcPath, newPath);
     }
   }
+};
+
+export const removeFiles = async (removePath: string) => {
+  const targetPath = removePath.startsWith(resourcePath)
+    ? removePath
+    : join(process.cwd(), removePath);
+  if (fs.existsSync(targetPath)) {
+    await fs.promises.unlink(targetPath);
+  }
+};
+
+export const getMimeType = (filePath: string): string => {
+  const ext = extname(filePath).toLowerCase();
+  return mimeMap[ext] || "application/octet-stream";
 };
 
 export const moveFilesLocal = async (
@@ -139,20 +158,6 @@ export const moveFilesLocal = async (
     const newPath = join(directoryPath, fname);
     await fs.promises.rename(srcPath, newPath);
   }
-};
-
-export const removeFiles = async (removePath: string) => {
-  const targetPath = removePath.startsWith(resourcePath)
-    ? removePath
-    : join(process.cwd(), removePath);
-  if (fs.existsSync(targetPath)) {
-    await fs.promises.unlink(targetPath);
-  }
-};
-
-export const getMimeType = (filePath: string): string => {
-  const ext = extname(filePath).toLowerCase();
-  return mimeMap[ext] || "application/octet-stream";
 };
 
 export const uploadToBlob = async (
