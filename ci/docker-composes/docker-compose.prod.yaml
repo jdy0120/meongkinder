@@ -54,6 +54,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
+    volumes:
+      - api-resources:/app/resources
     depends_on:
       db:
         condition: service_healthy
@@ -169,3 +171,4 @@ networks:
 volumes:
   pgdata:
   redisdata:
+  api-resources:
