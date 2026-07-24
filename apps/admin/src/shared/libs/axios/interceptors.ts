@@ -75,10 +75,8 @@ const refreshAccessToken = async (error: ApiError) => {
     // If refresh failed or was not possible, logout and redirect
     // HttpOnly 쿠키는 JS로 삭제 불가 — 서버 로그아웃 API를 호출해 쿠키를 서버에서 제거
     if (typeof window !== "undefined") {
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-      document.cookie =
-        "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = `${proj}_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+      document.cookie = `${proj}_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
       try {
         await axios.post(
           `${originalRequest?.baseURL || ""}/api/${proj}/v1/auth/logout`,

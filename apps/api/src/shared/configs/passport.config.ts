@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import type { Role } from "@template/shared";
 
 import * as CONST from "../constants";
+import { getCookieName } from "../utils";
 
 interface JwtPayload {
   userId: string;
@@ -18,7 +19,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt") {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request): string | null => {
-          return (request?.cookies?.access_token as string) ?? null;
+          return (request?.cookies?.[getCookieName("access_token")] as string) ?? null;
         },
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
@@ -42,7 +43,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request): string | null => {
-          return (request?.cookies?.refresh_token as string) ?? null;
+          return (request?.cookies?.[getCookieName("refresh_token")] as string) ?? null;
         },
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
@@ -54,7 +55,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
 
   validate(req: Request, payload: JwtPayload) {
     const refreshToken =
-      (req.cookies?.refresh_token as string) ??
+      (req.cookies?.[getCookieName("refresh_token")] as string) ??
       req.get("Authorization")?.replace("Bearer ", "").trim() ??
       "";
 

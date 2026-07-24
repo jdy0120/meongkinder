@@ -12,7 +12,7 @@ import { Public } from "../../shared/decorators/public.decorator";
 import { AUTH_ROUTES } from "../routes";
 import { SocialAuthService } from "../services";
 import * as CONST from "../../shared/constants";
-import { getCookieOptions } from "../../shared/utils";
+import { getCookieName, getCookieOptions } from "../../shared/utils";
 
 /**
  * 소셜 로그인 컨트롤러 (서버 리다이렉트 흐름).
@@ -54,11 +54,11 @@ export class SocialAuthController {
         await this.socialAuth.handleCallback(provider, code, state);
       const options = getCookieOptions();
 
-      res.cookie("access_token", accessToken, {
+      res.cookie(getCookieName("access_token"), accessToken, {
         ...options,
         maxAge: CONST.ACCESS_TOKEN_EXPIRED_IN_MILL_SEC,
       });
-      res.cookie("refresh_token", refreshToken, {
+      res.cookie(getCookieName("refresh_token"), refreshToken, {
         ...options,
         maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
       });
