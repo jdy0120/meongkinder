@@ -23,7 +23,7 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
+  server:
     build:
       context: ../../
       dockerfile: ci/dockers/prod/Dockerfile.api
@@ -55,7 +55,7 @@ services:
     ports:
       - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
     volumes:
-      - api-resources:/app/resources
+      - server-resources:/app/resources
     depends_on:
       db:
         condition: service_healthy
@@ -131,7 +131,7 @@ services:
     volumes:
       - ../nginx/templates:/etc/nginx/templates:ro
     depends_on:
-      api:
+      server:
         condition: service_started
       web:
         condition: service_started
@@ -171,4 +171,4 @@ networks:
 volumes:
   pgdata:
   redisdata:
-  api-resources:
+  server-resources:
