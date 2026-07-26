@@ -27,7 +27,7 @@ services:
     build:
       context: ../../
       dockerfile: ci/dockers/prod/Dockerfile.api
-    container_name: ${PROJECT_NAME}-api
+    container_name: ${PROJECT_NAME}-server
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PROJECT_NAME}-db:5432/${POSTGRES_DB}
       - PROJECT_NAME=${PROJECT_NAME}
