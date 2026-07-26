@@ -156,6 +156,15 @@ The following modules are **already fully implemented** in `apps/api`. Before wr
 | **subscription** | `apps/api/src/subscription/` | `v1/subscriptions` | Subscription plans · Billing-key registration · Subscribe · Cancel · My subscription                              |
 | **file**         | `apps/api/src/shared/file/`  | `v1/file`          | Single-file upload to Azure Blob (`POST v1/file/upload`)                                                          |
 
+
+## 10. Prisma Schema Changes — Never `db push`, Always a Committed Migration
+
+Every change to `packages/database/prisma/schema/*.prisma` (new column, rename, drop, etc.) **must generate a migration file and commit it**. Breaking this rule produces a bug class that's very hard to catch: >
+
+- **Why it doesn't break in dev**: `prisma db push` (or an equivalent auto-sync) immediately ALTERs the connected database to match `schema.prisma`. With no migration file needed, the dev DB is already up to d>
+- **Why it breaks in production**: the container's boot script runs `prisma migrate deploy`, which never looks at `schema.prisma` at all — it only replays the SQL files already committed under `packages/databa>
+
+
 ### Rules
 
 1. **Check first**: Before scaffolding a new module, verify whether the task relates to auth, payments, subscriptions, terms, file upload, or health. If it does, extend the existing module rather than creating a new one.
