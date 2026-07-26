@@ -1,4 +1,4 @@
-import type { SubscriptionPlan, UserSubscription } from "@template/database";
+import type { SubscriptionPlan, UserSubscription } from "@pawlog/database";
 
 export interface IssueBillingKeyRequest {
   authKey: string;

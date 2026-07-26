@@ -16,9 +16,9 @@ graph TD
     end
 
     subgraph Packages [공유 패키지 레이어 - packages/]
-        UI["🎨 @template/ui<br>(Tailwind v4 / Radix UI)"]
-        Shared["🧩 @template/shared<br>(공통 Types / Models / Responses)"]
-        DB["🗄️ @template/database<br>(Prisma Client / PG Adapter)"]
+        UI["🎨 @pawlog/ui<br>(Tailwind v4 / Radix UI)"]
+        Shared["🧩 @pawlog/shared<br>(공통 Types / Models / Responses)"]
+        DB["🗄️ @pawlog/database<br>(Prisma Client / PG Adapter)"]
     end
 
     subgraph Data [데이터베이스 레이어]
@@ -122,7 +122,7 @@ graph TD
 
 ### 0. (선택) 템플릿을 내 프로젝트로 리네임
 
-이 템플릿은 npm 스코프 `@template/*`, 루트 패키지명 `template`, `PROJECT_NAME=template-*` 을 기본값으로 씁니다. 실제 프로젝트로 사용할 때는 아래 스크립트로 한 번에 치환하세요.
+이 템플릿은 npm 스코프 `@pawlog/*`, 루트 패키지명 `template`, `PROJECT_NAME=template-*` 을 기본값으로 씁니다. 실제 프로젝트로 사용할 때는 아래 스크립트로 한 번에 치환하세요.
 
 ```bash
 # ./scripts/rename.sh <새이름> [스코프]
@@ -134,7 +134,7 @@ pnpm install
 ```
 
 스크립트가 한 번에 바꿔주는 것:
-* `@template/*` → `@<스코프>/*` — 공유 패키지 3개 정의 + 모든 import 구문
+* `@pawlog/*` → `@<스코프>/*` — 공유 패키지 3개 정의 + 모든 import 구문
 * 루트 `package.json` 의 `"name"`
 * `envs/.env*` 의 `PROJECT_NAME` (접미사 `-dev`/`-prod` 는 유지)
 
@@ -168,7 +168,7 @@ pnpm install          # 의존성 설치
 pnpm run db:generate  # 데이터베이스 클라이언트 및 Zod 생성
 ```
 > [!IMPORTANT]
-> `make dev` 또는 로컬 실행 전, 반드시 `pnpm run db:generate`를 한 번 실행하여 공통 모듈용 `@template/database` 의 `generated` 결과물이 존재하도록 해야 타입 컴파일 에러가 발생하지 않습니다.
+> `make dev` 또는 로컬 실행 전, 반드시 `pnpm run db:generate`를 한 번 실행하여 공통 모듈용 `@pawlog/database` 의 `generated` 결과물이 존재하도록 해야 타입 컴파일 에러가 발생하지 않습니다.
 
 #### 2) 로컬 도커 가동
 ```bash
@@ -259,7 +259,7 @@ Caddyfile 에 명시된 도메인 외의 요청(임의 서브도메인 등)에�
 * **FSD (Feature-Sliced Design)** 구조를 엄격히 준수합니다.
 * `app/` 레이어는 순수한 Next.js 라우터, 글로벌 스타일 및 프로바이더 주입에 집중하며 페이지 실제 마크업이나 복잡한 비즈니스 로직은 작성하지 않습니다.
 * 페이지 메인 뷰는 `views/` 레이어 아래 컴포넌트로 분리하고 `app/page.tsx`는 분리된 뷰를 가져와 단순 렌더링하는 진입점 역할만 담당합니다.
-* **공통 UI 컴포넌트 제약**: UI 컴포넌트는 개별 웹앱 내부가 아닌 `packages/ui`에서 `@template/ui`를 통해 불러와 사용하며, 원본 UI 컴포넌트 코드의 ad-hoc 수정은 지양합니다.
+* **공통 UI 컴포넌트 제약**: UI 컴포넌트는 개별 웹앱 내부가 아닌 `packages/ui`에서 `@pawlog/ui`를 통해 불러와 사용하며, 원본 UI 컴포넌트 코드의 ad-hoc 수정은 지양합니다.
 
 ### ⚙️ 백엔드 개발 규칙 (구조적 통일화)
 * **API 구조 표준**: 모든 Response는 `BaseResponse<T>` 인터페이스 규격(성공 시 `result: true, message, data`, 실패 시 `result: false, message, data: HttpError`)을 만족해야 합니다.
@@ -278,13 +278,13 @@ Caddyfile 에 명시된 도메인 외의 요청(임의 서브도메인 등)에�
 
 | 상황 | 명령 |
 | :--- | :--- |
-| 로컬에서 빠르게 스키마 실험 (이력 X) | `pnpm --filter @template/database db:push` |
-| 스키마 확정 → 마이그레이션 기록 | `pnpm --filter @template/database db:migrate --name <변경명>` |
-| 운영/CI 에서 마이그레이션 적용 | `pnpm --filter @template/database db:deploy` (운영은 컨테이너 기동 시 자동 실행) |
+| 로컬에서 빠르게 스키마 실험 (이력 X) | `pnpm --filter @pawlog/database db:push` |
+| 스키마 확정 → 마이그레이션 기록 | `pnpm --filter @pawlog/database db:migrate --name <변경명>` |
+| 운영/CI 에서 마이그레이션 적용 | `pnpm --filter @pawlog/database db:deploy` (운영은 컨테이너 기동 시 자동 실행) |
 
 > [!CAUTION]
 > **기존 DB 를 마이그레이션으로 전환할 때(베이스라이닝):** 이 저장소는 `db push` 로 스키마를 관리하다 `0_init` 마이그레이션을 도입했습니다. 이미 `db push` 로 테이블이 생성된 **기존 운영/개발 DB** 에 곧바로 `migrate deploy` 를 실행하면 "테이블이 이미 존재" 오류가 납니다. 해당 DB 에 최초 1회만 아래로 베이스라인을 잡아주세요(테이블은 그대로 두고 이력만 기록):
 > ```bash
-> DATABASE_URL=<대상 DB> pnpm --filter @template/database exec prisma migrate resolve --applied 0_init
+> DATABASE_URL=<대상 DB> pnpm --filter @pawlog/database exec prisma migrate resolve --applied 0_init
 > ```
 > 볼륨을 새로 만드는 신규 환경(및 fork)은 이 단계가 필요 없습니다 — `migrate deploy` 가 빈 DB 에 `0_init` 을 그대로 적용합니다.

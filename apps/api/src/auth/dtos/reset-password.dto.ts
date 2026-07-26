@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, MinLength } from "class-validator";
-import type { ResetPasswordRequest } from "@template/shared";
+import type { ResetPasswordRequest } from "@pawlog/shared";
 
 export class ResetPasswordDto implements ResetPasswordRequest {
   @ApiProperty({ description: "재설정 토큰 (이메일 링크에 포함)" })

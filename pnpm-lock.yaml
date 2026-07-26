@@ -81,18 +81,18 @@ importers:
         specifier: ^5.0.11
         version: 5.0.12(@types/react@19.2.14)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
+      '@pawlog/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@pawlog/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@pawlog/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.2.2
-      '@template/database':
-        specifier: workspace:*
-        version: link:../../packages/database
-      '@template/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@template/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       babel-plugin-react-compiler:
         specifier: 1.0.0
         version: 1.0.0
@@ -138,10 +138,10 @@ importers:
       '@nestjs/throttler':
         specifier: ^6.5.0
         version: 6.5.0(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(reflect-metadata@0.2.2)
-      '@template/database':
+      '@pawlog/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@template/shared':
+      '@pawlog/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       axios:
@@ -338,18 +338,18 @@ importers:
         specifier: ^5.0.11
         version: 5.0.12(@types/react@19.2.14)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
+      '@pawlog/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@pawlog/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@pawlog/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.2.2
-      '@template/database':
-        specifier: workspace:*
-        version: link:../../packages/database
-      '@template/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@template/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       babel-plugin-react-compiler:
         specifier: 1.0.0
         version: 1.0.0
@@ -402,7 +402,7 @@ importers:
 
   packages/shared:
     devDependencies:
-      '@template/database':
+      '@pawlog/database':
         specifier: workspace:*
         version: link:../database
 

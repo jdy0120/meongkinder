@@ -2,8 +2,8 @@ import type { Server } from "node:http";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { ROLES } from "@template/shared";
-import { prisma, prismaConnect, prismaDisconnect } from "@template/database";
+import { ROLES } from "@pawlog/shared";
+import { prisma, prismaConnect, prismaDisconnect } from "@pawlog/database";
 
 import { AppModule } from "../src/shared/modules/app.module";
 import { setupApplication } from "../src/shared/configs/app.setup";

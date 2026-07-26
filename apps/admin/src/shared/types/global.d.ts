@@ -1,6 +1,6 @@
 import "@tanstack/react-query";
 import type { AxiosError } from "axios";
-import type { BaseResponse } from "@template/shared";
+import type { BaseResponse } from "@pawlog/shared";
 
 declare global {
   /**

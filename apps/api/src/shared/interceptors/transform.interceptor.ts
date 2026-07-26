@@ -7,7 +7,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import type { BaseResponse } from "@template/shared";
+import type { BaseResponse } from "@pawlog/shared";
 
 import { RESPONSE_MESSAGE_KEY } from "../decorators/response-message.decorator";
 import { ResponseEnvelope } from "../dtos/response-envelope";

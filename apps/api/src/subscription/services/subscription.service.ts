@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { prisma, Prisma } from "@template/database";
+import { prisma, Prisma } from "@pawlog/database";
 import * as crypto from "crypto";
 import { tossAuthHeader, tossConfig } from "../../shared/configs/toss.config";
 import { CreateSubscriptionDto, IssueBillingKeyDto } from "../dtos";

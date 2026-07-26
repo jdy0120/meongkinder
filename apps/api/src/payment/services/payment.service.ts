@@ -6,13 +6,13 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { prisma } from "@template/database";
+import { prisma } from "@pawlog/database";
 import * as crypto from "crypto";
 import {
   buildPaginatedData,
   resolvePagination,
   type PaginationQuery,
-} from "@template/shared";
+} from "@pawlog/shared";
 import { tossAuthHeader, tossConfig } from "../../shared/configs/toss.config";
 import { ResponseEnvelope } from "../../shared/dtos";
 import { ORDER_STATUS, PAYMENT_STATUS } from "../constants";

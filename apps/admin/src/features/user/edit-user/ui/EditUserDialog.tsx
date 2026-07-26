@@ -17,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@template/ui";
+} from "@pawlog/ui";
 
 import { useUpdateUser } from "../model/useUpdateUser";
 

@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { prisma } from "@template/database";
+import { prisma } from "@pawlog/database";
 import {
   buildPaginatedData,
   resolvePagination,
   type PaginationQuery,
   type Role,
   type UpdateUserRequest,
-} from "@template/shared";
+} from "@pawlog/shared";
 
 const USER_SORTABLE_FIELDS = [
   "createdAt",

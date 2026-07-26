@@ -3,7 +3,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@template/ui";
+} from "@pawlog/ui";
 
 import { LoginForm } from "@/features/auth/login";
 

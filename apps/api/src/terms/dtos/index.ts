@@ -13,7 +13,7 @@ import type {
   TermsAgreementInput,
   CreateTermsRequest,
   UpdateTermsActiveRequest,
-} from "@template/shared";
+} from "@pawlog/shared";
 
 export class TermsAgreementInputDto implements TermsAgreementInput {
   @ApiProperty({ description: "약관 ID" })

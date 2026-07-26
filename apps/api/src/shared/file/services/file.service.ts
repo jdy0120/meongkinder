@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { prisma, Prisma } from "@template/database";
-import { Domain } from "@template/shared";
+import { prisma, Prisma } from "@pawlog/database";
+import { Domain } from "@pawlog/shared";
 import * as path from "path";
 import * as UTILS from "../../utils/file";
 

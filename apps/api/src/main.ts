@@ -4,7 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./shared/modules/app.module";
 import { setupApplication } from "./shared/configs/app.setup"; // 👈 불러오기
-import { prismaConnect } from "@template/database";
+import { prismaConnect } from "@pawlog/database";
 
 import { WinstonLogger } from "./shared/logger/logger.service";
 import { bootstrapLogger } from "./shared/logger";

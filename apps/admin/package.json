@@ -25,9 +25,9 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@template/database": "workspace:*",
-    "@template/shared": "workspace:*",
-    "@template/ui": "workspace:*",
+    "@pawlog/database": "workspace:*",
+    "@pawlog/shared": "workspace:*",
+    "@pawlog/ui": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint-config-next": "16.1.6",

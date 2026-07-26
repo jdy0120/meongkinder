@@ -1,5 +1,5 @@
 // 인증 도메인 API 계약 (request / response) — 이메일 + 비밀번호 기반
-import type { User } from "@template/database";
+import type { User } from "@pawlog/database";
 import type { TermsAgreementInput } from "./terms";
 import type { SocialProvider } from "../../src/social";
 

@@ -26,10 +26,10 @@ apps/
     src/           # NestJS 모듈, 컨트롤러, 서비스 등 (자유롭게 확장)
     src/main.ts    # 서버 진입점
 packages/
-  ui/              # 디자인 시스템 및 shadcn UI 컴포넌트 (@template/ui)
-  database/        # Prisma 스키마 및 DB 클라이언트 (@template/database)
+  ui/              # 디자인 시스템 및 shadcn UI 컴포넌트 (@pawlog/ui)
+  database/        # Prisma 스키마 및 DB 클라이언트 (@pawlog/database)
     prisma/schema/ # 다중 파일 스키마
-  shared/          # 백엔드/프론트엔드 공통 타입, DTO, 모델 등 (@template/shared)
+  shared/          # 백엔드/프론트엔드 공통 타입, DTO, 모델 등 (@pawlog/shared)
 ```
 
 ---
@@ -71,7 +71,7 @@ export default function DashboardPage() {
 
 ### 디자인 및 UI 컴포넌트 규칙 (필수)
 
-- UI 컴포넌트는 반드시 `packages/ui` (`@template/ui`) 패키지에서 import 하여 사용합니다. (shadcn 기반)
+- UI 컴포넌트는 반드시 `packages/ui` (`@pawlog/ui`) 패키지에서 import 하여 사용합니다. (shadcn 기반)
 - `packages/ui` 내부의 컴포넌트는 모든 서비스에서 공통으로 쓰는 **디자인 시스템이므로 직접 수정하는 것을 지양**합니다. (버그 수정이나 명시적인 공통 디자인 시스템 확장 요구 시에만 수정)
 - 개별 페이지나 컴포넌트에서의 커스터마이징은 상위 레이어(features/widgets/views)에서 `className` (Tailwind CSS)을 주입하여 처리합니다.
 

@@ -1,4 +1,4 @@
-import type { SocialProviderSlug } from "@template/shared";
+import type { SocialProviderSlug } from "@pawlog/shared";
 
 // 소셜 로그인은 XHR 이 아니라 브라우저 전체 리다이렉트(OAuth) 로 동작하므로,
 // 버튼은 API 의 authorize 엔드포인트로 향하는 <a href> 링크다.

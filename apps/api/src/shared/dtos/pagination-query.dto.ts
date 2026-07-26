@@ -1,12 +1,12 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
-import { PAGINATION_DEFAULTS } from "@template/shared";
-import type { PaginationQuery, SortOrder } from "@template/shared";
+import { PAGINATION_DEFAULTS } from "@pawlog/shared";
+import type { PaginationQuery, SortOrder } from "@pawlog/shared";
 
 /**
  * 공통 목록 쿼리 DTO — 모든 목록 API 에서 재사용.
- * 실제 보정/skip·take 계산은 @template/shared 의 resolvePagination 이 담당한다.
+ * 실제 보정/skip·take 계산은 @pawlog/shared 의 resolvePagination 이 담당한다.
  */
 export class PaginationQueryDto implements PaginationQuery {
   @ApiPropertyOptional({

@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsIn } from "class-validator";
-import { ROLES } from "@template/shared";
-import type { Role, UpdateUserRoleRequest } from "@template/shared";
+import { ROLES } from "@pawlog/shared";
+import type { Role, UpdateUserRoleRequest } from "@pawlog/shared";
 
 export class UpdateUserRoleDto implements UpdateUserRoleRequest {
   @ApiProperty({ description: "변경할 역할", enum: [ROLES.USER, ROLES.ADMIN] })

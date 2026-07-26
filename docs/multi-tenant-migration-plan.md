@@ -19,7 +19,7 @@
 
 ### 첫 평가 대비 반영된 4대 보정
 1. **RLS 병행** — Prisma Extension 단독은 중첩 관계/`$queryRaw` 우회 구멍 있음 → RLS로 최종 방어
-2. **role은 `@template/shared` const** — Prisma `enum Role` 아님. `packages/shared/src/roles.ts` 수정
+2. **role은 `@pawlog/shared` const** — Prisma `enum Role` 아님. `packages/shared/src/roles.ts` 수정
 3. **email 유니크 변경** — `@@unique([email])` → `@@unique([tenantId, email])`
 4. **SUPER_ADMIN escape hatch** — 플랫폼 관리자는 테넌트 무소속, 자동 필터 우회 필요
 

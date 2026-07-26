@@ -5,7 +5,7 @@ import {
   NotImplementedException,
   UnauthorizedException,
 } from "@nestjs/common";
-import { prisma } from "@template/database";
+import { prisma } from "@pawlog/database";
 import {
   SOCIAL_PROVIDER_SLUGS,
   SOCIAL_PROVIDERS,
@@ -15,7 +15,7 @@ import {
   type NormalizedSocialProfile,
   type SocialProvider,
   type SocialProviderSlug,
-} from "@template/shared";
+} from "@pawlog/shared";
 import { env } from "../../shared/configs/env";
 import {
   generateAccessToken,

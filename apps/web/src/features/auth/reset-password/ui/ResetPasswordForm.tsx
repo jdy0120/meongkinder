@@ -9,7 +9,7 @@ import {
   FieldError,
   FieldLabel,
   Input,
-} from "@template/ui";
+} from "@pawlog/ui";
 
 import { useResetPassword } from "../model/useResetPassword";
 

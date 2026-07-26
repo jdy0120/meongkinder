@@ -5,7 +5,7 @@ import type {
   SubscriptionPlan,
   UserTermsAgreement,
   Terms,
-} from "@template/database";
+} from "@pawlog/database";
 import type { Role } from "../../src/roles";
 
 export interface UpdateUserRoleRequest {

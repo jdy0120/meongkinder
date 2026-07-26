@@ -1,4 +1,4 @@
-import type { Terms, UserTermsAgreement } from "@template/database";
+import type { Terms, UserTermsAgreement } from "@pawlog/database";
 
 export interface TermsAgreementInput {
   termsId: string;

@@ -43,12 +43,12 @@ jobs:
 
       # 테스트가 import 하는 워크스페이스 패키지의 타입/런타임 산출물 준비
       - name: Generate Prisma client
-        run: pnpm --filter @template/database db:generate
+        run: pnpm --filter @pawlog/database db:generate
 
       - name: Build workspace deps
         run: |
-          pnpm --filter @template/database build
-          pnpm --filter @template/shared build
+          pnpm --filter @pawlog/database build
+          pnpm --filter @pawlog/shared build
 
       - name: Unit tests
         run: pnpm --filter api test

@@ -6,7 +6,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import type { UpdateUserRequest } from "@template/shared";
+import type { UpdateUserRequest } from "@pawlog/shared";
 
 // 계정 상태 (User.status 컬럼과 일치)
 const USER_STATUSES = ["ACTIVE", "PENDING", "SUSPENDED"] as const;

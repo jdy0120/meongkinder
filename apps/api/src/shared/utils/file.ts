@@ -1,7 +1,7 @@
 import { diskStorage } from "multer"; // NestJS에 내장
 import { fileTypeFromBuffer } from "file-type";
 import { randomBytes } from "crypto";
-import { Domain } from "@template/shared";
+import { Domain } from "@pawlog/shared";
 import * as fs from "fs";
 import { join, relative, extname } from "path";
 import { PutObjectCommand } from "@aws-sdk/client-s3";

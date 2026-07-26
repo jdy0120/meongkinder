@@ -7,7 +7,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@template/ui";
+} from "@pawlog/ui";
 
 import { useHealthCheck } from "@/features/system/check-health";
 import { ServiceStatusBadge } from "@/entities/system";

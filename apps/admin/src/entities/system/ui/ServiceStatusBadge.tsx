@@ -1,4 +1,4 @@
-import { Badge } from "@template/ui";
+import { Badge } from "@pawlog/ui";
 
 import type { ServiceHealth } from "../model/types";
 

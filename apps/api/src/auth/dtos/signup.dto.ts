@@ -10,7 +10,7 @@ import {
   IsBoolean,
 } from "class-validator";
 import { Type } from "class-transformer";
-import type { SignupRequest, TermsAgreementInput } from "@template/shared";
+import type { SignupRequest, TermsAgreementInput } from "@pawlog/shared";
 
 export class TermsAgreementInputDto implements TermsAgreementInput {
   @ApiProperty({ description: "약관 ID" })

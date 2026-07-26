@@ -1,4 +1,4 @@
-import { Prisma, UserInfo as UserInfoModel } from "@template/database";
+import { Prisma, UserInfo as UserInfoModel } from "@pawlog/database";
 import { AsCreateRequest, AsUpdateRequest } from "../";
 
 // 1. validator 대신 satisfies를 사용하여 안전하게 객체를 정의합니다.

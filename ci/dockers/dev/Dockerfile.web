@@ -7,7 +7,7 @@ WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 
 # 2. 모든 소스 코드(apps, packages)를 폴더 구조 그대로 복사
-# 이는 모노레포 내부의 공유 패키지(@template/ui 등) 의존성을 해결하기 위함입니다.
+# 이는 모노레포 내부의 공유 패키지(@pawlog/ui 등) 의존성을 해결하기 위함입니다.
 COPY apps ./apps
 COPY packages ./packages
 COPY package.json ./package.json

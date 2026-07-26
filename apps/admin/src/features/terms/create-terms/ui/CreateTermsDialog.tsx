@@ -19,7 +19,7 @@ import {
   SelectValue,
   Input,
   Label,
-} from "@template/ui";
+} from "@pawlog/ui";
 
 import { TERMS_TYPE_OPTIONS } from "@/entities/terms";
 

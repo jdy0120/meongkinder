@@ -7,7 +7,7 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { isSocialProviderSlug } from "@template/shared";
+import { isSocialProviderSlug } from "@pawlog/shared";
 import { Public } from "../../shared/decorators/public.decorator";
 import { AUTH_ROUTES } from "../routes";
 import { SocialAuthService } from "../services";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@template/ui";
+import { Button } from "@pawlog/ui";
 
 import { SOCIAL_PROVIDERS_UI, socialAuthUrl } from "../model/providers";
 

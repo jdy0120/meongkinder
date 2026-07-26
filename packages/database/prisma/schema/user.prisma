@@ -3,7 +3,7 @@ model User {
   nickname  String
   email     String
 
-  // 역할: "USER"(서비스만) | "ADMIN"(서비스+관리자). @template/shared 의 ROLES 와 일치
+  // 역할: "USER"(서비스만) | "ADMIN"(서비스+관리자). @pawlog/shared 의 ROLES 와 일치
   role      String @default("USER")
   // bcrypt 해시된 비밀번호 (소셜 전용 계정은 없을 수 있어 nullable)
   password  String?
@@ -59,7 +59,7 @@ model SocialAccount {
   id                String @id @default(uuid())
   user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId            String
-  provider          String // "KAKAO" | "NAVER" | "DISCORD" (@template/shared SOCIAL_PROVIDERS 와 일치)
+  provider          String // "KAKAO" | "NAVER" | "DISCORD" (@pawlog/shared SOCIAL_PROVIDERS 와 일치)
   providerAccountId String // provider 가 준 고유 id. 항상 string (카카오 숫자 id 도 문자열로 저장)
 
   // ── 유저별 소셜 토큰 (로그인 용도에는 불필요) ──────────────────────────────

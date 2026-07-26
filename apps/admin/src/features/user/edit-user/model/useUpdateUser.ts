@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Patch } from "@/shared/libs/axios/request";
-import type { UpdateUserRequest } from "@template/shared";
+import type { UpdateUserRequest } from "@pawlog/shared";
 
 /**
  * 사용자 정보 수정 뮤테이션 (feature model). 성공 시 users 목록 캐시를 무효화한다.

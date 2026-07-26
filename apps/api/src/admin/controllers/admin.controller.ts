@@ -12,7 +12,7 @@ import {
   Req,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { ROLES } from "@template/shared";
+import { ROLES } from "@pawlog/shared";
 import { Roles } from "../../shared/decorators/roles.decorator";
 import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { PaginationQueryDto } from "../../shared/dtos";

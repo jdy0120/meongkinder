@@ -9,8 +9,8 @@ import {
   FieldError,
   FieldLabel,
   Input,
-} from "@template/ui";
-import type { ForgotPasswordRequest } from "@template/shared";
+} from "@pawlog/ui";
+import type { ForgotPasswordRequest } from "@pawlog/shared";
 
 import { useForgotPassword } from "../model/useForgotPassword";
 

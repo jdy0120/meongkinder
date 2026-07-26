@@ -14,8 +14,8 @@ import {
   CardContent,
   CardHeader,
   Spinner,
-} from "@template/ui";
-import type { UserWithAgreements } from "@template/shared";
+} from "@pawlog/ui";
+import type { UserWithAgreements } from "@pawlog/shared";
 
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { UserTermsBadges } from "@/entities/user";

@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { Post } from "@/shared/libs/axios/request";
-import type { ResetPasswordRequest, MessageResponse } from "@template/shared";
+import type { ResetPasswordRequest, MessageResponse } from "@pawlog/shared";
 
 /**
  * 비밀번호 재설정 뮤테이션 (feature model).

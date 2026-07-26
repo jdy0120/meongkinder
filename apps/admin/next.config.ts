@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   reactCompiler: true,
-  transpilePackages: ["@template/database"],
+  transpilePackages: ["@pawlog/database"],
   basePath,
   // nginx의 `location /admin/` (proxy_pass, 슬래시로 끝남)는 슬래시 없는 요청을
   // 항상 301로 슬래시를 붙여 리다이렉트한다(nginx 표준 동작). Next의 기본값인

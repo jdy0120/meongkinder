@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { Request } from "express";
 import { ExtractJwt, Strategy } from "passport-jwt";
-import type { Role } from "@template/shared";
+import type { Role } from "@pawlog/shared";
 
 import * as CONST from "../constants";
 import { getCookieName } from "../utils";

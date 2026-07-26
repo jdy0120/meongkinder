@@ -4,8 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { Post } from "@/shared/libs/axios/request";
-import { ROLES } from "@template/shared";
-import type { LoginRequest, LoginResponse } from "@template/shared";
+import { ROLES } from "@pawlog/shared";
+import type { LoginRequest, LoginResponse } from "@pawlog/shared";
 
 /** ADMIN 이 아닌 계정으로 로그인 시도 시 구분용 에러 코드 */
 export const NOT_ADMIN = "NOT_ADMIN";

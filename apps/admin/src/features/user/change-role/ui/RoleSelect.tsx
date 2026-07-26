@@ -6,8 +6,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@template/ui";
-import { ROLES } from "@template/shared";
+} from "@pawlog/ui";
+import { ROLES } from "@pawlog/shared";
 
 import { useUpdateUserRole } from "../model/useUpdateUserRole";
 

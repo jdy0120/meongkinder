@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { MailerService } from "@nestjs-modules/mailer";
-import { prisma } from "@template/database";
+import { prisma } from "@pawlog/database";
 import * as bcrypt from "bcryptjs";
 import {
   ForgotPasswordDto,

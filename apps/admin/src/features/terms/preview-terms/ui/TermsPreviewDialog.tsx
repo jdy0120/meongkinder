@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@template/ui";
+} from "@pawlog/ui";
 
 import { usePreviewTerms } from "../model/usePreviewTerms";
 

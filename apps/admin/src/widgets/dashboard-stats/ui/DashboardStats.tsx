@@ -1,7 +1,7 @@
 import React from "react";
 import { cookies } from "next/headers";
 import { Users, CreditCard, Calendar, ShieldCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@template/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@pawlog/ui";
 
 /** 관리자 대시보드 통계 조회 (SSR — 쿠키를 직접 주입해 API 호출) */
 const getStats = async () => {

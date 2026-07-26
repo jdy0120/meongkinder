@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   reactCompiler: true,
-  transpilePackages: ["@template/database"],
+  transpilePackages: ["@pawlog/database"],
 };
 
 export default nextConfig;

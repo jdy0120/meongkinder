@@ -4,14 +4,14 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
-import type { User } from "@template/database";
+import type { User } from "@pawlog/database";
 
 import { prismaMock, resetPrismaMock } from "../../../test/utils/prisma.mock";
 
 // 서비스가 직접 import 하는 전역 싱글턴 prisma 를 목으로 대체.
 // require 는 factory 지연 평가를 위해 필요(import 는 hoisting 되어 TDZ 문제 발생).
 /* eslint-disable @typescript-eslint/no-require-imports */
-jest.mock("@template/database", () =>
+jest.mock("@pawlog/database", () =>
   (
     require("../../../test/utils/prisma.mock") as typeof import("../../../test/utils/prisma.mock")
   ).createDatabaseMock(),

@@ -7,7 +7,7 @@ import {
   type BaseResponse,
   type PaginatedData,
   type PaginationQuery,
-} from "@template/shared";
+} from "@pawlog/shared";
 
 const Get = async <T, D>(
   url: string,
@@ -21,7 +21,7 @@ const Get = async <T, D>(
   return response;
 };
 
-// 공통 목록 조회 — @template/shared 유틸로 쿼리 생성 + 응답 타이핑
+// 공통 목록 조회 — @pawlog/shared 유틸로 쿼리 생성 + 응답 타이핑
 const GetList = async <T>(
   url: string,
   query: PaginationQuery = {},

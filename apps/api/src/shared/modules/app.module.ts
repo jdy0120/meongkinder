@@ -10,7 +10,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { AuthModule } from "../../auth/auth.module";
 import { MailModule } from "./mail.module";
-import { prismaDisconnect } from "@template/database";
+import { prismaDisconnect } from "@pawlog/database";
 import { LoggerMiddleware } from "../middleware/logger.middleware";
 import { JwtAccessGuard } from "../guards/jwt-access.guard";
 import { RolesGuard } from "../guards/roles.guard";

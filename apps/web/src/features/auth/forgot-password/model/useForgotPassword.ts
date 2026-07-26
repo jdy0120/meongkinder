@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import { Post } from "@/shared/libs/axios/request";
-import type { ForgotPasswordRequest, MessageResponse } from "@template/shared";
+import type { ForgotPasswordRequest, MessageResponse } from "@pawlog/shared";
 
 /**
  * 비밀번호 찾기 뮤테이션 (feature model).

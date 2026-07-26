@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@template/ui";
+import { Card, CardContent } from "@pawlog/ui";
 
 import { DashboardStats } from "@/widgets/dashboard-stats";
 

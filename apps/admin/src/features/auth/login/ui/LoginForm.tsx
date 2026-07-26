@@ -8,8 +8,8 @@ import {
   FieldError,
   FieldLabel,
   Input,
-} from "@template/ui";
-import type { LoginRequest } from "@template/shared";
+} from "@pawlog/ui";
+import type { LoginRequest } from "@pawlog/shared";
 
 import { NOT_ADMIN, useLogin } from "../model/useLogin";
 

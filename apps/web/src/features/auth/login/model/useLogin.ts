@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { Post } from "@/shared/libs/axios/request";
-import type { LoginRequest, LoginResponse } from "@template/shared";
+import type { LoginRequest, LoginResponse } from "@pawlog/shared";
 
 /**
  * 로그인 뮤테이션 (feature model).

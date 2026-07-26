@@ -1,5 +1,5 @@
 {
-  "name": "@template/shared",
+  "name": "@pawlog/shared",
   "version": "1.0.0",
   "description": "",
   "private": true,
@@ -12,7 +12,7 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@template/database": "workspace:*"
+    "@pawlog/database": "workspace:*"
   },
   "keywords": [],
   "author": "",
