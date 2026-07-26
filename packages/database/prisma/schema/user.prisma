@@ -22,6 +22,9 @@ model User {
   billingKey        BillingKey?
   subscriptions     UserSubscription[]
   termsAgreements   UserTermsAgreement[]
+  pets                 Pet[]
+  dailyReportsAuthored DailyReport[]        @relation("DailyReportAuthor")
+  subscriptionLedgers  SubscriptionLedger[]
 
   @@unique([email])
   @@map("users")

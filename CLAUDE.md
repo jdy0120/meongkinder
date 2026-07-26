@@ -176,4 +176,13 @@ Every change to `packages/database/prisma/schema/*.prisma` (new column, rename, 
 
 ## Project Status
 
+- Branch: `main`. Completed: job-001~003 (landing/`app` pages, post-login redirect), job-004 (Pet/DailyReport/ReportContent/Attendance/SubscriptionLedger schema + shared types + basic CRUD services).
+- Next: pet-owner-facing read views for daily reports/attendance (owner-scoped, currently ADMIN-only), and real attendance check-in → SubscriptionLedger deduction business logic.
+
 ## Summary of current implementation status
+
+- `apps/api`: auth, terms, payment, subscription (+ subscription-ledger), file-upload, health, pet, care (attendance/daily-report/report-content) modules implemented under `v1/` routing (see §9, §10).
+- `packages/database`: schema adds `Pet`, `Attendance`, `DailyReport`, `ReportContent`, `SubscriptionLedger` (see `pet.prisma`, `care.prisma`, `subscription.prisma`); migration `20260727003146_add_pet_care_subscription_ledger` committed.
+- `packages/shared`: model types under `types/models/{pet,care,subscription-ledger}` and request/response contracts under `types/contracts/{pet,care,subscription-ledger}.ts`.
+- `apps/web`: public auth flow under `(home)/auth/`; public landing page at `(home)/page.tsx`; authenticated `/app` route at `(home)/(checkauth)/app/page.tsx` (placeholder content); login redirects to `/app`.
+- `apps/admin`: authenticated dashboard + users/terms/subscriptions/system management under `(checkauth)/`.

@@ -1,0 +1,31 @@
+// 반려동물(펫) 정보 도메인
+
+model Pet {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name       String
+  species    String // 종 (DOG, CAT 등)
+  breed      String? // 품종
+  birthDate  DateTime? @map("birth_date") @db.Date
+  gender     String? // MALE | FEMALE
+  isNeutered Boolean?  @map("is_neutered")
+  weightKg   Float?    @map("weight_kg")
+
+  profileImageFileId String? @map("profile_image_file_id")
+  profileImageFile   File?   @relation(fields: [profileImageFileId], references: [id])
+
+  memo String?
+  // ACTIVE(이용중) | INACTIVE(비활성/등록해지)
+  status String @default("ACTIVE")
+
+  attendances  Attendance[]
+  dailyReports DailyReport[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("pets")
+}

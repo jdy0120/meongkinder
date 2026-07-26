@@ -10,6 +10,31 @@ model SubscriptionPlan {
   @@map("subscription_plans")
 }
 
+// 정기권/회수권 사용 및 잔여 횟수 변동 내역 (충전/차감/환불/소멸 원장)
+model SubscriptionLedger {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptionId String?
+  subscription   UserSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  attendanceId String?     @unique @map("attendance_id")
+  attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+
+  // CHARGE(충전) | USE(사용/차감) | REFUND(환불/복구) | EXPIRE(소멸)
+  type         String
+  amount       Int // 변동 횟수 (차감: 음수, 충전: 양수)
+  balanceAfter Int @map("balance_after") // 변동 후 잔여 횟수
+  description  String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@map("subscription_ledgers")
+}
+
 model BillingKey {
   id             String   @id @default(uuid())
   userId         String   @unique
@@ -43,6 +68,8 @@ model UserSubscription {
   startDate       DateTime         @map("start_date") // 구독 시작일
   endDate         DateTime         @map("end_date")   // 구독 만료일
   nextPaymentDate DateTime         @map("next_payment_date") // 다음 정기결제 예정일
+
+  ledgers         SubscriptionLedger[]
 
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")

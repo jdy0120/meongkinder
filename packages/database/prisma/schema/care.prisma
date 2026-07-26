@@ -1,0 +1,73 @@
+// 출석(등/하원) 및 일일 리포트 도메인
+
+model Attendance {
+  id    String @id @default(uuid())
+  petId String
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  date       DateTime  @db.Date // 출석 대상 일자
+  checkInAt  DateTime? @map("check_in_at")
+  checkOutAt DateTime? @map("check_out_at")
+
+  // SCHEDULED(예약) | CHECKED_IN(등원) | CHECKED_OUT(하원) | ABSENT(결석) | CANCELED(취소)
+  status String @default("SCHEDULED")
+
+  ledger      SubscriptionLedger?
+  dailyReport DailyReport?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([petId])
+  @@index([date])
+  @@map("attendances")
+}
+
+model DailyReport {
+  id    String @id @default(uuid())
+  petId String
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  attendanceId String?     @unique @map("attendance_id")
+  attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+
+  authorId String? @map("author_id") // 작성자(관리자/스태프) User id
+  author   User?   @relation("DailyReportAuthor", fields: [authorId], references: [id])
+
+  date    DateTime @db.Date
+  summary String? // 총평/한줄 요약
+
+  // DRAFT(작성중) | PUBLISHED(발행/보호자 공개)
+  status String @default("DRAFT")
+
+  contents ReportContent[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([petId])
+  @@index([date])
+  @@map("daily_reports")
+}
+
+model ReportContent {
+  id            String      @id @default(uuid())
+  dailyReportId String      @map("daily_report_id")
+  dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+
+  // 항목 구분: MEAL(식사) | ACTIVITY(활동) | HEALTH(건강/배변) | NOTE(특이사항) | PHOTO(사진)
+  type    String
+  title   String?
+  content String?
+
+  fileId String? @map("file_id")
+  file   File?   @relation(fields: [fileId], references: [id])
+
+  order Int @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([dailyReportId])
+  @@map("report_contents")
+}

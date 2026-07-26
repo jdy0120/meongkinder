@@ -25,6 +25,8 @@ import { TermsModule } from "../../terms/terms.module";
 import { HealthModule } from "../../health/health.module";
 import { LoggerModule } from "../logger/logger.module";
 import { appLogger } from "../logger";
+import { PetModule } from "../../pet/pet.module";
+import { CareModule } from "../../care/care.module";
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { appLogger } from "../logger";
     SubscriptionModule,
     TermsModule,
     HealthModule,
+    PetModule,
+    CareModule,
     // 전역 기본 rate limit: 1분당 100회 (일반 API 보호).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],
