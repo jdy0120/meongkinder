@@ -18,7 +18,10 @@ function NativeSelect({
   return (
     <div
       className={cn(
-        "group/native-select relative w-fit has-[select:disabled]:opacity-50",
+        // `w-fit` 이면 폼에서 셀렉트만 폭이 제각각이 된다 — 안쪽 select 가 `w-full` 이라
+        // 래퍼가 폭을 정하는데, 호출부는 대개 `<div className='flex flex-col'>` 안에
+        // Input 과 함께 두고 같은 폭을 기대한다. 필요하면 className 으로 좁히면 된다.
+        "group/native-select relative w-full has-[select:disabled]:opacity-50",
         className,
       )}
       data-slot='native-select-wrapper'
@@ -27,7 +30,10 @@ function NativeSelect({
       <select
         data-slot='native-select'
         data-size={size}
-        className='h-8 w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent py-1 pr-8 pl-2.5 text-sm transition-colors outline-none select-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-[size=sm]:py-0.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40'
+        // job-057: Input·Button 과 같은 눈금 (default 64px / sm 48px). 이 셀렉트는
+        // 폼 안에서 Input 과 위아래로 나란히 놓이므로, 여기만 32px 로 남으면 같은 폼의
+        // 칸 높이가 두 가지가 된다.
+        className='h-touch w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent py-1 pr-10 pl-4 text-body transition-colors outline-none select-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-12 data-[size=sm]:pl-3 data-[size=sm]:text-label dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40'
         {...props}
       />
       <ChevronDownIcon

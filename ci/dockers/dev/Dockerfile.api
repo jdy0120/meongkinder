@@ -1,6 +1,8 @@
 FROM node:20-alpine
 # 헬스체크(docker-compose)에서 curl 을 사용하므로 alpine 에 설치한다.
-RUN apk add --no-cache curl
+# vips-tools/vips-heif: HEIC 변환용 (job-053). sharp 번들 libvips 는 HEVC 디코더가 없어
+# HEIC 를 못 읽는다 — prod Dockerfile 의 같은 줄에 자세한 이유가 있다.
+RUN apk add --no-cache curl vips-tools vips-heif
 RUN npm install -g pnpm
 
 WORKDIR /app

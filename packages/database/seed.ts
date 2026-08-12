@@ -11,6 +11,10 @@ import { prisma, prismaConnect, prismaDisconnect } from "./index";
  *
  * 실행: ADMIN_EMAIL=... ADMIN_PASSWORD=... pnpm --filter database db:seed
  */
+// job-020: 멀티테넌트 전환 백필과 동일한 default-tenant 를 가리키는 고정 UUID.
+// (packages/database/prisma/migrations/20260730070000_backfill_default_tenant 참고)
+const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
+
 async function main() {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
@@ -23,21 +27,80 @@ async function main() {
 
   await prismaConnect();
 
-  // 기본 구독 플랜 2종 생성 (BASIC, PREMIUM)
+  // 최초 테넌트(default-tenant) 시드
+  const tenant = await prisma.tenant.upsert({
+    where: { subdomain: "default" },
+    update: {},
+    create: {
+      id: DEFAULT_TENANT_ID,
+      name: "Default Tenant",
+      subdomain: "default",
+    },
+  });
+  console.log(`✅ 기본 테넌트 준비 완료: ${tenant.subdomain} (${tenant.id})`);
+
+  // 기본 요금제 시드.
+  //
+  // job-034: scope 로 두 상품이 구분된다 — TENANT(보호자가 유치원에 내는 원생 이용권) vs
+  // PLATFORM(원장이 pawlog 에 내는 매장 개설권). 개설권이 없으면 온보딩 자체가 막히므로
+  // PLATFORM 플랜이 최소 1개는 시드되어야 로컬에서 매장을 열 수 있다.
+  //
+  // job-051: 여기에 두 가지가 더해졌다.
+  //   1) TENANT 요금제는 **유치원 소유**다(`tenantId` 필수). 예전에는 주인이 없어서
+  //      A유치원이 만든 요금제가 B유치원 목록에도 떴다.
+  //   2) 예전 시드의 "BASIC 요금제 9,900원"/"PREMIUM 요금제 29,900원"은 이름만 보면
+  //      SaaS 이용료처럼 읽히는데 scope 는 TENANT(= 보호자가 사는 원생 이용권)였다.
+  //      두 상품의 구분을 흐리는 데이터라, id 는 유지한 채(기존 FK 보존) 실제 유치원이
+  //      팔 법한 상품으로 바꿨다. 덤으로 일권/한달권 구분이 시드에서 바로 드러난다.
   const plans = [
     {
       id: "plan-basic",
-      name: "BASIC 요금제",
-      price: 9900,
+      name: "10회권",
+      price: 200000,
       interval: "MONTHLY",
-      description: "기본적인 서비스를 제공하는 베이직 요금제입니다.",
+      description: "등원 10회를 이용할 수 있는 회수권입니다. 유효기간 90일.",
+      scope: "TENANT",
+      planType: "COUNT",
+      totalCount: 10,
+      validityDays: 90,
+      tenantId: tenant.id,
     },
     {
       id: "plan-premium",
-      name: "PREMIUM 요금제",
-      price: 29900,
+      name: "월 무제한",
+      price: 350000,
       interval: "MONTHLY",
-      description: "모든 혜택을 제한 없이 제공하는 프리미엄 요금제입니다.",
+      description: "한 달 동안 횟수 제한 없이 등원할 수 있습니다.",
+      scope: "TENANT",
+      planType: "UNLIMITED",
+      totalCount: null,
+      validityDays: 30,
+      tenantId: tenant.id,
+    },
+    {
+      id: "plan-day-pass",
+      name: "1일권",
+      price: 25000,
+      interval: "MONTHLY",
+      description: "하루만 맡기는 단기 이용권입니다.",
+      scope: "TENANT",
+      planType: "PERIOD",
+      totalCount: 1,
+      validityDays: 1,
+      tenantId: tenant.id,
+    },
+    {
+      id: "plan-tenant-seat",
+      name: "매장 개설 요금제",
+      price: 49900,
+      interval: "MONTHLY",
+      description: "매장(유치원) 1개를 개설·운영할 수 있는 구독입니다.",
+      scope: "PLATFORM",
+      planType: "RECURRING",
+      totalCount: null,
+      validityDays: null,
+      // 개설권은 pawlog 가 파는 상품이라 주인이 없다. DB CHECK 제약이 이 조합을 강제한다.
+      tenantId: null,
     },
   ];
 
@@ -49,6 +112,11 @@ async function main() {
         price: plan.price,
         interval: plan.interval,
         description: plan.description,
+        scope: plan.scope,
+        planType: plan.planType,
+        totalCount: plan.totalCount,
+        validityDays: plan.validityDays,
+        tenantId: plan.tenantId,
       },
       create: plan,
     });
@@ -114,6 +182,7 @@ async function main() {
       },
       create: {
         id: fileId,
+        tenantId: tenant.id,
         originalName: terms.fileName,
         extension: path.extname(terms.fileName),
         mimeType: "text/plain",
@@ -147,14 +216,45 @@ async function main() {
   }
   console.log("✅ 기본 약관 및 파일 시드 생성 완료");
 
+  // job-033: 회원은 플랫폼 전역 정체성(email 전역 유니크)이고, 테넌트 역할은 멤버십이 갖는다.
+  //
+  // 이 계정은 두 층의 역할을 모두 갖는다 — 부트스트랩 계정이라 그렇다.
+  //   · 플랫폼 레벨 SUPER_ADMIN  → apps/admin(플랫폼 운영 콘솔) 접근. 승격 API 가 SUPER_ADMIN 을
+  //     부여하지 못하므로(닭·달걀) 여기서 심는 수밖에 없다.
+  //   · default 테넌트의 TENANT_ADMIN → apps/web 의 `/default/…` 매장 화면을 로컬에서 열어보기 위함.
+  //
+  // 운영에서는 CLAUDE.md §5 대로 SUPER_ADMIN 이 어떤 테넌트에도 속하지 않는 게 정상이다.
+  // 두 자격이 겹쳐도 RolesGuard 는 플랫폼 역할을 먼저 보고(roles.guard.ts:resolveEffectiveRole),
+  // 플랫폼 콘솔의 조회 대상(User·Tenant·Terms)은 테넌트 스코프 모델이 아니라서
+  // (tenant-scope.extension.ts:TENANT_SCOPED_MODELS) 활성 테넌트가 열려 있어도 결과가 좁혀지지 않는다.
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({
     where: { email },
-    update: { role: "ADMIN" }, // 기존 계정이면 ADMIN 으로 승격
-    create: { email, nickname, password: hashed, role: "ADMIN" },
+    // 기존 계정이면 플랫폼 운영자로 승격한다 (job-038 이전 시드는 USER 로 만들어졌다).
+    update: { role: "SUPER_ADMIN" },
+    create: {
+      email,
+      nickname,
+      password: hashed,
+      role: "SUPER_ADMIN",
+    },
   });
 
-  console.log(`✅ 관리자 계정 준비 완료: ${user.email} (role=${user.role})`);
+  const membership = await prisma.tenantMembership.upsert({
+    where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } },
+    update: { role: "TENANT_ADMIN", status: "ACTIVE" },
+    create: {
+      userId: user.id,
+      tenantId: tenant.id,
+      role: "TENANT_ADMIN",
+      status: "ACTIVE",
+      approvedAt: new Date(),
+    },
+  });
+
+  console.log(
+    `✅ 관리자 계정 준비 완료: ${user.email} (플랫폼 ${user.role} · ${tenant.subdomain} 에서 ${membership.role})`,
+  );
 
   // 테스트용 어드민의 약관 동의 이력 연동 (필수 약관 전체 및 마케팅 동의)
   for (const terms of termsList) {
@@ -175,14 +275,14 @@ async function main() {
   }
   console.log(`✅ 테스트용 어드민 약관 동의 정보 연동 완료`);
 
-  // 테스트용 어드민 구독 추가 (멱등성 확보)
+  // 테스트용 테넌트 구독 추가 (멱등성 확보). job-020 부터 구독 주체가 User -> Tenant 로 이동.
   const startDate = new Date();
   const endDate = new Date();
   endDate.setMonth(endDate.getMonth() + 1);
 
-  await prisma.userSubscription.upsert({
+  await prisma.tenantSubscription.upsert({
     where: {
-      id: "admin-subscription-test-id",
+      id: "default-tenant-subscription-test-id",
     },
     update: {
       status: "ACTIVE",
@@ -191,8 +291,8 @@ async function main() {
       nextPaymentDate: endDate,
     },
     create: {
-      id: "admin-subscription-test-id",
-      userId: user.id,
+      id: "default-tenant-subscription-test-id",
+      tenantId: tenant.id,
       planId: "plan-premium",
       status: "ACTIVE",
       startDate,
@@ -200,7 +300,7 @@ async function main() {
       nextPaymentDate: endDate,
     },
   });
-  console.log(`✅ 테스트용 어드민 구독 정보 연동 완료`);
+  console.log(`✅ 테스트용 테넌트 구독 정보 연동 완료`);
 
   await prismaDisconnect();
 }

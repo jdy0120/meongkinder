@@ -68,6 +68,10 @@ const schema = z.object({
   KAKAO_CLIENT_ID: z.string().optional(),
   KAKAO_CLIENT_SECRET: z.string().optional(), // 카카오는 시크릿이 선택(콘솔에서 사용 설정 시)
   KAKAO_CALLBACK_URL: z.string().optional(),
+  // job-059: 주소 → 좌표 변환(카카오 로컬 API). 미지정이면 KAKAO_CLIENT_ID 를 그대로
+  // 쓴다 — 콘솔에서 OAuth client_id 와 REST API 키가 같은 값이다.
+  KAKAO_REST_API_KEY: z.string().optional(),
+  KAKAO_LOCAL_TIMEOUT_MS: z.coerce.number().optional(),
 
   NAVER_CLIENT_ID: z.string().optional(),
   NAVER_CLIENT_SECRET: z.string().optional(),

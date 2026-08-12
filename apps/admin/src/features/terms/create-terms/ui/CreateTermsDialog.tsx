@@ -74,7 +74,7 @@ export const CreateTermsDialog = () => {
           신규 약관 등록
         </Button>
       </DialogTrigger>
-      <DialogContent className='border-slate-800 bg-slate-900 text-slate-100 max-w-md backdrop-blur-md rounded-2xl'>
+      <DialogContent className='border-slate-800 bg-slate-900 text-slate-100 backdrop-blur-md sm:max-w-lg rounded-2xl'>
         <DialogHeader>
           <DialogTitle className='text-xl font-bold text-white flex items-center gap-2'>
             <ScrollText className='w-5 h-5 text-blue-500' />

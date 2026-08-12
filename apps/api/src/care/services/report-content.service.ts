@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { prisma } from "@pawlog/database";
+import { prisma, requireTenantId, tenantTransaction } from "@pawlog/database";
 import {
   buildPaginatedData,
   resolvePagination,
@@ -22,6 +22,7 @@ export class ReportContentService {
 
     const reportContent = await prisma.reportContent.create({
       data: {
+        tenantId: requireTenantId(),
         dailyReportId,
         type: dto.type,
         title: dto.title,
@@ -46,15 +47,16 @@ export class ReportContentService {
       ? (sort as string)
       : "order";
 
-    const [items, total] = await prisma.$transaction([
-      prisma.reportContent.findMany({
+    const [items, total] = await tenantTransaction(prisma, async (tx) => {
+      const items = await tx.reportContent.findMany({
         where,
         skip,
         take,
         orderBy: { [sortField]: order },
-      }),
-      prisma.reportContent.count({ where }),
-    ]);
+      });
+      const total = await tx.reportContent.count({ where });
+      return [items, total] as const;
+    });
 
     return buildPaginatedData(items, { page, pageSize, total });
   }

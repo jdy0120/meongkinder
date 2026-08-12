@@ -34,10 +34,26 @@ export const resetPrismaMock = (): void => {
 /**
  * `jest.mock("@pawlog/database", ...)` 팩토리에서 반환할 객체.
  * 서비스가 import 하는 named export 를 모두 목으로 대체한다.
+ *
+ * ALS 테넌트 컨텍스트 관련 export 는 유닛 테스트에선 미들웨어가 개입하지 않으므로
+ * "컨텍스트 없음(bypass)"에 해당하는 단순 통과 구현으로 목킹한다:
+ * - getTenantId()/getTenantContext() 는 항상 미해석(null/bypass) 을 반환
+ * - runWithTenant/runWithoutTenant/tenantTransaction 은 ALS 를 실제로 열지 않고 콜백만 그대로 실행
  */
 export const createDatabaseMock = () => ({
   __esModule: true,
   prisma: prismaMock,
   prismaConnect: jest.fn(),
   prismaDisconnect: jest.fn(),
+  getTenantId: jest.fn(() => null),
+  isBypass: jest.fn(() => true),
+  getTenantContext: jest.fn(() => ({ tenantId: null, bypass: true })),
+  requireTenantId: jest.fn(() => {
+    throw new Error("테넌트 컨텍스트 없음 (유닛 테스트 목)");
+  }),
+  runWithTenant: jest.fn((_tenantId: string, fn: () => unknown) => fn()),
+  runWithoutTenant: jest.fn((fn: () => unknown) => fn()),
+  tenantTransaction: jest.fn(
+    (client: PrismaMock, fn: (tx: PrismaMock) => unknown) => fn(client),
+  ),
 });

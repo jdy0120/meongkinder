@@ -1,6 +1,12 @@
 model File {
   id String @id @default(uuid())
 
+  // job-033: 어느 테넌트에도 속하지 않은 회원도 펫 프로필 사진을 올릴 수 있어야 하므로 nullable.
+  //   null    = 개인 업로드 (소유권 검사는 uploadedBy 로)
+  //   값 있음 = 해당 테넌트의 파일
+  tenantId String? @map("tenant_id") @db.Uuid
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   originalName String
   extension String
   
@@ -24,13 +30,21 @@ model File {
   terms     Terms[]
   pets           Pet[]
   reportContents ReportContent[]
+  feedMedia      FeedMedia[]
 
   @@unique([id])
+  @@index([tenantId])
   @@map("files")
 }
 
 model FileTemp {
   id String @id @default(uuid())
+
+  // job-033: 어느 테넌트에도 속하지 않은 회원도 펫 프로필 사진을 올릴 수 있어야 하므로 nullable.
+  //   null    = 개인 업로드 (소유권 검사는 uploadedBy 로)
+  //   값 있음 = 해당 테넌트의 파일
+  tenantId String? @map("tenant_id") @db.Uuid
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   originalName String
   extension String
@@ -40,10 +54,13 @@ model FileTemp {
 
   localPath String?
 
+  uploadedBy String? // user or service id
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([id])
+  @@index([tenantId])
   @@map("file_temps")
 }
 

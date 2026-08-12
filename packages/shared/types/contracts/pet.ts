@@ -1,4 +1,11 @@
 import type { Pet } from "@pawlog/database";
+import type { VaccinationRecord } from "../../src/pet-safety";
+
+export interface PickupAuthorizedPerson {
+  name: string;
+  phone: string;
+  relation?: string; // 관계 (예: 아빠, 이모, 조부모)
+}
 
 export interface CreatePetRequest {
   name: string;
@@ -9,11 +16,134 @@ export interface CreatePetRequest {
   isNeutered?: boolean;
   weightKg?: number;
   profileImageFileId?: string;
-  memo?: string;
+  careNote?: string; // 자유 서술. 아래 구조화 필드에 담기지 않는 것만 (투약 방법, 보호자 당부 등)
+
+  // ── 안전 정보 (job-052) ────────────────────────────────────────────
+  // 카드 표면에 올리고 필터를 걸어야 하므로 careNote 자유 텍스트에서 꺼낸 것들이다.
+  allergies?: string[]; // 예: ["닭고기"]
+  temperaments?: string[]; // **상황 서술**로 적는다. "소심함" ✗ / "대형견 무서워함" ○
+  marksIndoors?: boolean; // 실내 마킹
+  mountingBehavior?: boolean; // 마운팅
+  hasBiteHistory?: boolean; // 공격/입질 이력 — 이것만 긴급도가 critical 이다
+  vaccinations?: VaccinationRecord[]; // 만료/임박 판정은 저장하지 않고 조회 시 계산한다
+  adaptationStartedAt?: string; // ISO 날짜. 있으면 "적응 N일차"를 계산한다
+
+  // ── 픽업 (job-052) — 원생 목록의 기본 정렬 키 ────────────────────────
+  pickupTime?: string; // "HH:mm" (KST)
+  pickupMethod?: string; // GUARDIAN | SHUTTLE — @pawlog/shared PICKUP_METHOD
+  shuttleNumber?: number; // pickupMethod 가 SHUTTLE 일 때만 의미가 있다
+
+  guardianName?: string; // 보호자 이름
+  guardianPhone?: string; // 보호자 연락처
+  emergencyContactName?: string; // 비상 연락처 이름
+  emergencyContactPhone?: string; // 비상 연락처 전화번호
+  pickupAuthorizedPersons?: PickupAuthorizedPerson[]; // 픽업 권한자 목록
+  scheduleType?: string; // 등원 스케줄 방식 (WEEKLY 기본 | MONTHLY) — @pawlog/shared SCHEDULE_TYPE
+  scheduleDays?: number[]; // 요일별 등원 스케줄 (0=일 ~ 6=토). scheduleType 이 WEEKLY 일 때만 읽는다
+  photoConsent?: string; // 초상권 동의 범위 (PRIVATE | CLASS 기본 | PUBLIC) — @pawlog/shared PHOTO_CONSENT
 }
 
 export type UpdatePetRequest = Partial<CreatePetRequest>;
 
 export interface PetResponse {
   pet: Pet;
+}
+
+// ── 등원 (job-033) ────────────────────────────────────
+// 펫은 항상 보호자 소유이고, 유치원 소속은 별개의 조작이다.
+// 보호자가 ACTIVE GUARDIAN 으로 소속된 테넌트에만 등록할 수 있다.
+
+export interface EnrollPetRequest {
+  tenantId: string;
+}
+
+export interface EnrollPetResponse {
+  pet: Pet;
+}
+
+/** 등원 해지 — 펫의 tenantId 를 null 로 되돌린다. 출석/리포트 이력은 테넌트에 남는다. */
+export interface UnenrollPetResponse {
+  pet: Pet;
+}
+
+// ── 원생 등록 단일 진입점 (job-040) ──────────────────────────────────
+// 원장은 등록을 시작할 때 "이 보호자가 가입했는지"를 모른다. 아는 것은 전화번호뿐이다.
+// 그래서 화면을 두 개(회원용 펫 등록 / 비회원용 초대장)로 나누지 않고, 번호를 먼저 받아
+// **서버가 갈라준다**. 상태 값은 @pawlog/shared 의 PET_INTAKE_* 상수를 쓴다.
+
+/** 등록 후보로 보여줄 아이 (보호자가 이미 등록해 둔 아이) */
+export interface PetIntakeCandidatePet {
+  id: string;
+  name: string;
+  species: string;
+  breed: string | null;
+  birthDate: string | null;
+  /** 이미 우리 매장 원생인지 — true 면 다시 등록할 수 없다(선택 불가로 표시). */
+  enrolled: boolean;
+}
+
+export interface PetIntakeLookupResponse {
+  /** PET_INTAKE_GUARDIAN_STATUS */
+  status: string;
+  /** 회원일 때만. 이름 확인용 최소 정보이며 이메일은 내려주지 않는다. */
+  guardian: { id: string; nickname: string } | null;
+  /** 우리 매장에서의 멤버십 상태(ACTIVE/PENDING/…). 구성원이 아니면 null. */
+  membershipStatus: string | null;
+  /** 우리 매장 구성원일 때만 채워진다. 그 외에는 언제나 빈 배열. */
+  pets: PetIntakeCandidatePet[];
+}
+
+export interface PetIntakeRequest {
+  /** 하이픈 유무 무관. 서버에서 숫자만 남겨 정규화한다. */
+  phone: string;
+  guardianName?: string;
+  /** 기존 아이를 우리 매장 원생으로 받을 때. `pet` 과 동시에 보낼 수 없다. */
+  petId?: string;
+  /** 새 아이를 등록할 때. `petId` 와 동시에 보낼 수 없다. */
+  pet?: CreatePetRequest;
+}
+
+export interface PetIntakeResponse {
+  /** PET_INTAKE_MODE */
+  mode: string;
+  pet: Pet;
+  /** 이번 호출로 멤버십이 새로 만들어졌는지 (원장에게 안내 문구가 달라진다) */
+  membershipCreated: boolean;
+  /** 미가입 보호자였다면 남겨진 초대장 id. 가입 시 이 초대가 계정을 연결한다. */
+  invitationId: string | null;
+}
+
+// ── 등원 스케줄 (job-053) ────────────────────────────────────────────
+// 스케줄은 펫 수정(`PATCH v1/admin/pets/:id`)과 분리된 자기 엔드포인트를 쓴다.
+// 날짜 지정(MONTHLY)의 편집 단위가 **한 달**이라서다 — 펫 페이로드에 날짜 배열을 통째로
+// 실으면 8월 달력을 고치는 요청이 9월 예정일까지 지워 버린다. `month` 를 함께 받아
+// "이 달만 이걸로 교체"를 명시한다.
+
+/** `"YYYY-MM-DD"` 로컬 날짜 문자열. `Date` 를 실으면 UTC 변환으로 하루가 밀린다. */
+export type DateKey = string;
+
+export interface PetScheduleResponse {
+  /** SCHEDULE_TYPE */
+  scheduleType: string;
+  /** WEEKLY 일 때의 요일 패턴 (0=일 ~ 6=토) */
+  scheduleDays: number[];
+  /** 조회한 달 (`"YYYY-MM"`) */
+  month: string;
+  /**
+   * 그 달의 등원 예정일.
+   *   WEEKLY  → 요일 패턴에서 계산한 날짜 (DB 에 행이 없다. 미리보기다)
+   *   MONTHLY → 저장된 `PetSchedule` 행
+   */
+  dates: DateKey[];
+}
+
+export interface UpdatePetScheduleRequest {
+  /** SCHEDULE_TYPE */
+  scheduleType: string;
+  /** WEEKLY 일 때만 반영. 빈 배열이면 "등원일 없음"으로 저장된다. */
+  scheduleDays?: number[];
+  /** MONTHLY 일 때 필수 — 교체 대상 달 (`"YYYY-MM"`). */
+  month?: string;
+  /** MONTHLY 일 때 그 달의 등원일 전체. 빈 배열이면 그 달을 비운다. */
+  dates?: DateKey[];
 }

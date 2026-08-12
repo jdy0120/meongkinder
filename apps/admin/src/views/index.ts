@@ -1,5 +1,6 @@
 export * from "./auth/login/Login";
 export * from "./dashboard/Dashboard";
+export * from "./tenants/Tenants";
 export * from "./users/Users";
 export * from "./subscriptions/Subscriptions";
 export * from "./terms/Terms";

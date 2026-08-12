@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import type { User } from "@pawlog/database";
 
 import { prismaMock, resetPrismaMock } from "../../../test/utils/prisma.mock";
@@ -21,6 +22,7 @@ jest.mock("@pawlog/database", () =>
 import { AuthService } from "./auth.service";
 import type { RedisService } from "../../shared/redis/redis.service";
 import type { MailerService } from "@nestjs-modules/mailer";
+import type { InvitationService } from "../../membership/services/invitation.service";
 
 type RedisMock = {
   set: jest.Mock;
@@ -29,6 +31,8 @@ type RedisMock = {
 };
 
 type MailerMock = { sendMail: jest.Mock };
+// job-034: 가입 직후 대기 중인 초대를 소속 처리한다. 유닛 테스트에서는 "매칭된 초대 없음"으로 둔다.
+type InvitationMock = { claimForUser: jest.Mock };
 
 const asUser = (u: Partial<User>): User => u as unknown as User;
 
@@ -36,14 +40,17 @@ describe("AuthService", () => {
   let service: AuthService;
   let redis: RedisMock;
   let mailer: MailerMock;
+  let invitations: InvitationMock;
 
   beforeEach(() => {
     resetPrismaMock();
     redis = { set: jest.fn(), get: jest.fn(), del: jest.fn() };
     mailer = { sendMail: jest.fn() };
+    invitations = { claimForUser: jest.fn().mockResolvedValue([]) };
     service = new AuthService(
       redis as unknown as RedisService,
       mailer as unknown as MailerService,
+      invitations as unknown as InvitationService,
     );
   });
 
@@ -81,6 +88,43 @@ describe("AuthService", () => {
           agreements: [], // 필수 약관 동의 없음
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    // job-033: 회원가입은 어떤 테넌트에도 속하지 않는 전역 계정을 만든다.
+    // (예전에는 서브도메인/헤더로 테넌트를 찾고, 없으면 default-tenant 로 폴백했다)
+    it("테넌트에 속하지 않는 회원을 만들고 약관 동의를 함께 저장한다", async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      prismaMock.terms.findMany.mockResolvedValue([] as never);
+      // 인터랙티브 트랜잭션 목 — 콜백에 목 클라이언트를 그대로 넘겨 실행한다.
+      // 오버로드가 여러 개라 시그니처를 좁히기 어려워 호출부에서만 캐스팅한다.
+      (prismaMock.$transaction as unknown as jest.Mock).mockImplementation(
+        (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock),
+      );
+      prismaMock.user.create.mockResolvedValue(
+        asUser({ id: "u-new", email: "new@example.com", role: "USER" }),
+      );
+
+      const result = await service.signup({
+        email: "new@example.com",
+        password: "password1234",
+        nickname: "new",
+        agreements: [{ termsId: "t1", isAgreed: true }],
+      });
+
+      expect(result.user.id).toBe("u-new");
+
+      // 생성 데이터에 tenantId 가 실리면 안 된다.
+      const createArg = prismaMock.user.create.mock.calls[0]?.[0] as {
+        data: Record<string, unknown>;
+      };
+      expect(createArg.data).not.toHaveProperty("tenantId");
+      expect(createArg.data.email).toBe("new@example.com");
+
+      // 약관 동의도 테넌트에 매이지 않는다.
+      const agreementArg = prismaMock.userTermsAgreement.createMany.mock
+        .calls[0]?.[0] as { data: Record<string, unknown>[] };
+      expect(agreementArg.data[0]).not.toHaveProperty("tenantId");
+      expect(agreementArg.data[0].userId).toBe("u-new");
     });
   });
 
@@ -132,6 +176,30 @@ describe("AuthService", () => {
         result.refreshToken,
         expect.any(Number),
       );
+    });
+
+    // job-033: 한 회원이 여러 테넌트에 속할 수 있어 토큰이 테넌트를 지목할 수 없다.
+    // 활성 테넌트는 요청마다 서브도메인/X-Tenant-Id 로 정해지고 미들웨어가 멤버십을 검증한다.
+    it("액세스 토큰에 tenantId 클레임을 담지 않는다", async () => {
+      const hashed = await bcrypt.hash("password1234", 10);
+      prismaMock.user.findUnique.mockResolvedValue(
+        asUser({
+          id: "u1",
+          email: "user@example.com",
+          password: hashed,
+          role: "USER",
+        }),
+      );
+
+      const { accessToken } = await service.login({
+        email: "user@example.com",
+        password: "password1234",
+      });
+
+      const claims = jwt.decode(accessToken) as Record<string, unknown>;
+      expect(claims).not.toHaveProperty("tenantId");
+      expect(claims.userId).toBe("u1");
+      expect(claims.role).toBe("USER");
     });
   });
 

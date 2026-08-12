@@ -42,6 +42,15 @@ export class SignupDto implements SignupRequest {
   nickname: string;
 
   @ApiPropertyOptional({
+    description:
+      "휴대폰 번호. 유치원이 이 번호로 미리 초대해 뒀다면 가입 즉시 소속 처리된다.",
+    example: "010-1234-5678",
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({
     description: "약관 동의 내역",
     type: [TermsAgreementInputDto],
   })

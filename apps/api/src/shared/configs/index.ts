@@ -3,6 +3,7 @@ export * from "./azure.config";
 export * from "./s3.config";
 export * from "./passport.config";
 export * from "./redis.config";
+export * from "./seat.config";
 export * from "./serialization.config";
 export * from "./toss.config";
 export * from "./winston.config";

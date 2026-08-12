@@ -1,7 +1,9 @@
 // 출석(등/하원) 및 일일 리포트 도메인
 
 model Attendance {
-  id    String @id @default(uuid())
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   petId String
   pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
 
@@ -9,7 +11,7 @@ model Attendance {
   checkInAt  DateTime? @map("check_in_at")
   checkOutAt DateTime? @map("check_out_at")
 
-  // SCHEDULED(예약) | CHECKED_IN(등원) | CHECKED_OUT(하원) | ABSENT(결석) | CANCELED(취소)
+  // SCHEDULED(예약) | CHECKED_IN(등원) | CHECKED_OUT(하원) | ABSENT(결석) | MAKEUP(보강) | CANCELED(취소)
   status String @default("SCHEDULED")
 
   ledger      SubscriptionLedger?
@@ -18,13 +20,17 @@ model Attendance {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([petId, date])
   @@index([petId])
   @@index([date])
+  @@index([tenantId])
   @@map("attendances")
 }
 
 model DailyReport {
-  id    String @id @default(uuid())
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   petId String
   pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
 
@@ -37,6 +43,9 @@ model DailyReport {
   date    DateTime @db.Date
   summary String? // 총평/한줄 요약
 
+  // 입력된 리포트 항목 기반 AI 코멘트 초안 (규칙 기반 자동 생성, 스태프가 검수 후 summary 로 확정)
+  aiCommentDraft String? @map("ai_comment_draft")
+
   // DRAFT(작성중) | PUBLISHED(발행/보호자 공개)
   status String @default("DRAFT")
 
@@ -47,15 +56,18 @@ model DailyReport {
 
   @@index([petId])
   @@index([date])
+  @@index([tenantId])
   @@map("daily_reports")
 }
 
 model ReportContent {
-  id            String      @id @default(uuid())
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   dailyReportId String      @map("daily_report_id")
   dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
 
-  // 항목 구분: MEAL(식사) | ACTIVITY(활동) | HEALTH(건강/배변) | NOTE(특이사항) | PHOTO(사진)
+  // 항목 구분: MEAL(식사) | TOILET(배변) | NAP(낮잠) | ACTIVITY(활동) | HEALTH(건강) | NOTE(특이사항) | PHOTO(사진)
   type    String
   title   String?
   content String?
@@ -69,5 +81,6 @@ model ReportContent {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([dailyReportId])
+  @@index([tenantId])
   @@map("report_contents")
 }

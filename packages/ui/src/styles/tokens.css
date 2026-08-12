@@ -1,0 +1,345 @@
+/* ==========================================================================
+ * 디자인 토큰 — 단일 출처 (design-system.md §2)
+ *
+ * ⚠️ **HEX 리터럴이 허용되는 유일한 파일이다.** 컴포넌트 코드에서는 토큰 이름만 쓴다.
+ *
+ * 왜 `tailwind.config.ts` / `tokens.ts` 가 아니라 CSS 인가:
+ *   이 저장소는 **Tailwind v4** 라 설정이 CSS 안에 있다(`@theme`). v3 시절의
+ *   `tailwind.config.ts` 는 존재하지 않고, 별도 `tokens.ts` 를 두면 CSS 와 TS 두 곳이
+ *   같은 값을 들고 있다가 반드시 갈라진다. 값이 필요한 TS 코드는 `var(--color-*)` 를
+ *   읽는다.
+ *
+ * 대비값은 전부 배경 `--bg`(#FAF8F4) 기준 WCAG 2.1 상대휘도 실측이다.
+ * ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------- 컬러 */
+
+  /* Primary — 딥 그린틸.
+     예방접종·건강 데이터를 다루므로 의료/안전 신호로 읽히는 초록이 도메인에 맞고,
+     채도를 낮춰 원색 특유의 유치함 없이 SaaS 톤을 낸다.
+     '따뜻함'은 Primary 가 아니라 아래 Caution(애프리콧) + 웜 오프화이트 배경이 담당한다. */
+  --primary: #1e5f55; /* 배경 7.01:1 / 흰 글씨 7.44:1 (AAA) */
+  --primary-hover: #2a7a6b; /* 4.84:1 (AA) */
+  --primary-tint: #e9f2ee; /* 선택 상태, "정상" 배지 배경 */
+  --primary-on-tint: #134a42; /* primary-tint 위 텍스트 */
+
+  /* Caution — 애프리콧.
+     ⚠️ 스펙에서는 `secondary` 로 불리지만 이 저장소에서 `--secondary` 는 이미
+     shadcn 의 "차분한 표면"(버튼 variant='secondary' 등 다수)을 가리킨다.
+     같은 이름을 애프리콧으로 돌려버리면 `bg-secondary text-secondary-foreground`
+     조합이 전부 2.54:1 이 되어 **스펙 자신의 MUST NOT 을 어긴다**. 그래서 역할
+     이름(caution)으로 분리해 둔다 — §3.1 배지 레벨 이름과도 그대로 맞는다. */
+  --caution-fill: #e8843c; /* 2.54:1 — 채움 전용. 텍스트 금지 */
+  --caution-text: #9c4e12; /* 5.64:1 (AA) */
+  --caution-tint: #fcf0e4; /* "주의" 배지 배경 */
+
+  /* 표면 / 텍스트.
+     순백 배경을 쓰지 않는 이유: 반사 휘도가 높아 장시간 사용 시 눈부심이 크다.
+     카드만 순백으로 띄워 위계를 만든다.
+     순검정 텍스트를 쓰지 않는 이유: 흰 배경 위 순검정은 할레이션(글자 번짐)을
+     유발한다. 웜 다크로 배경과 색온도를 통일한다. */
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --text: #24211e; /* 15.10:1 (AAA) */
+  --text-muted: #6e6660; /* 5.30:1 (AA) */
+  --line: #e6e1d8; /* 1.23:1 — 구분선 전용. 텍스트/아이콘 금지 */
+
+  /* 상태 */
+  --danger: #c0453b; /* 4.76:1 (AA) */
+  --warning-fill: #e8a33b; /* 2.03:1 — 채움 전용 */
+  --warning-text: #96590a; /* 5.31:1 (AA) */
+
+  /* 중립 표면 (shadcn `secondary`/`muted` 역할). 위 팔레트에서 파생한 웜 그레이. */
+  --neutral-surface: #f1ece3;
+  --neutral-surface-strong: #e9e3d8;
+
+  /* --------------------------------------------------- shadcn 시맨틱 매핑
+     기존 29개 화면과 @pawlog/ui 컴포넌트가 이 이름들을 쓴다. 위 팔레트를 여기에
+     연결해 두면 화면을 한 줄도 고치지 않고 새 팔레트를 입는다. */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary: var(--neutral-surface);
+  --secondary-foreground: var(--text);
+  --muted: var(--neutral-surface);
+  --muted-foreground: var(--text-muted);
+  /* accent = 선택/호버. primary-tint 를 쓰면 "선택됨"이 색으로 읽힌다. */
+  --accent: var(--primary-tint);
+  --accent-foreground: var(--primary-on-tint);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--primary);
+
+  /* 차트 — secondary(채움 전용)를 주축으로. 텍스트로 쓰지 않으므로 대비 제약이 없다. */
+  --chart-1: var(--primary);
+  --chart-2: var(--caution-fill);
+  --chart-3: var(--primary-hover);
+  --chart-4: var(--warning-fill);
+  --chart-5: var(--text-muted);
+
+  --sidebar: var(--bg);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--primary-tint);
+  --sidebar-accent-foreground: var(--primary-on-tint);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--primary);
+
+  /* ------------------------------------------------------------ 타이포그래피
+     Pretendard Variable. 굵기는 400/600 두 단계만 쓴다(아래 --font-weight-* 참고). */
+  --font-sans:
+    "Pretendard Variable", Pretendard, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+
+  /* ------------------------------------------------------------------ 그림자
+     웜 그림자. 회색/파란 그림자는 배경(웜 오프화이트)과 색온도가 어긋나 뜬다. */
+  --shadow-color: 36 33 30; /* --text 의 RGB */
+  --shadow-2xs: 0 1px 2px rgb(var(--shadow-color) / 0.04);
+  --shadow-xs: 0 1px 3px rgb(var(--shadow-color) / 0.06);
+  --shadow-sm: 0 1px 3px rgb(var(--shadow-color) / 0.06);
+  --shadow: 0 1px 3px rgb(var(--shadow-color) / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(var(--shadow-color) / 0.08);
+  --shadow-lg: 0 8px 24px -6px rgb(var(--shadow-color) / 0.1);
+  --shadow-xl: 0 16px 36px -12px rgb(var(--shadow-color) / 0.12);
+  --shadow-2xl: 0 24px 48px -16px rgb(var(--shadow-color) / 0.14);
+
+  --tracking-normal: 0em;
+  --spacing: 0.25rem; /* 기본 단위 4px */
+}
+
+/* 다크 테마.
+   현재 `.dark` 를 붙이는 코드는 없지만(theme.store 는 미사용), @pawlog/ui 컴포넌트들이
+   `dark:` variant 를 들고 있어 값이 비면 팔레트가 갈라진다. 같은 팔레트에서 파생해 둔다. */
+.dark {
+  --bg: #1b1917;
+  --surface: #24211e;
+  --text: #f5f1ea;
+  --text-muted: #a8a09a;
+  --line: #3a3531;
+  --primary: #4e9c8c;
+  --primary-hover: #62b3a2;
+  --primary-tint: #1f3b36;
+  --primary-on-tint: #a9d8cc;
+  --caution-fill: #e8843c;
+  --caution-text: #f0b183;
+  --caution-tint: #3a2a1c;
+  --danger: #e0685d;
+  --warning-fill: #e8a33b;
+  --warning-text: #e2b573;
+  --neutral-surface: #2e2a26;
+  --neutral-surface-strong: #3a3531;
+
+  --primary-foreground: #10221f;
+  --destructive-foreground: #1b1917;
+
+  --shadow-color: 0 0 0;
+  --shadow-2xs: 0 1px 2px rgb(var(--shadow-color) / 0.2);
+  --shadow-xs: 0 1px 3px rgb(var(--shadow-color) / 0.28);
+  --shadow-sm: 0 1px 3px rgb(var(--shadow-color) / 0.28);
+  --shadow: 0 1px 3px rgb(var(--shadow-color) / 0.28);
+  --shadow-md: 0 4px 12px -2px rgb(var(--shadow-color) / 0.35);
+  --shadow-lg: 0 8px 24px -6px rgb(var(--shadow-color) / 0.4);
+  --shadow-xl: 0 16px 36px -12px rgb(var(--shadow-color) / 0.45);
+  --shadow-2xl: 0 24px 48px -16px rgb(var(--shadow-color) / 0.5);
+}
+
+/* ==========================================================================
+ * Tailwind 테마 — 값이 테마별로 바뀌는 것들.
+ * `inline` 이라 유틸리티가 위 CSS 변수를 그대로 참조하고, 그래서 `.dark` 오버라이드가
+ * 유틸리티까지 따라온다.
+ * ========================================================================== */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* 스펙 이름 그대로 노출 — 배지/상태 표현이 이 이름을 쓴다 (§3.1). */
+  --color-surface: var(--surface);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-tint: var(--primary-tint);
+  --color-primary-on-tint: var(--primary-on-tint);
+  --color-caution: var(--caution-fill);
+  --color-caution-text: var(--caution-text);
+  --color-caution-tint: var(--caution-tint);
+  --color-danger: var(--danger);
+  --color-warning-fill: var(--warning-fill);
+  --color-warning-text: var(--warning-text);
+  --color-text-muted: var(--text-muted);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+  --shadow-card: var(--shadow-xs);
+}
+
+/* ==========================================================================
+ * Tailwind 테마 — 테마와 무관한 것들 (크기·굵기·모서리).
+ *
+ * `inline` 을 **쓰지 않는다**: 유틸리티가 `var(--text-body)` 를 참조하게 두어야
+ * 아래 미디어 쿼리 한 블록으로 태블릿 타이포 스케일을 올릴 수 있다.
+ * ========================================================================== */
+@theme {
+  /* ----------------------------------------------------------- 타이포 스케일
+     스펙의 5단계. 한 줄 최대 길이는 한글 기준 40자(`max-w-prose-ko`). */
+  --text-label: 15px; /* 최소 크기 — 이보다 작은 글자는 없다 */
+  --text-label--line-height: 1.5;
+  --text-body: 17px;
+  --text-body--line-height: 1.65;
+  --text-name: 21px; /* 반려견/직원 이름 */
+  --text-name--line-height: 1.4;
+  --text-title: 24px; /* 섹션 제목 */
+  --text-title--line-height: 1.35;
+  --text-display: 32px; /* 대시보드 핵심 수치 */
+  --text-display--line-height: 1.25;
+
+  /* 기본 스케일을 위 5단계로 **접는다**.
+     이유: 화면 194곳이 이미 `text-xs`(12px)·`text-sm`(14px)을 쓰고 있었고, 둘 다
+     스펙의 15px 하한을 어긴다. 화면마다 클래스를 갈아끼우면 다시 갈라지므로
+     (job-050 에서 같은 실수를 했다) **정의 자체를 고쳐** 손대지 않은 화면도
+     규격을 만족하게 한다. 결과적으로 고를 수 있는 크기가 5개뿐이다. */
+  --text-xs: var(--text-label);
+  --text-xs--line-height: 1.5;
+  --text-sm: var(--text-label);
+  --text-sm--line-height: 1.5;
+  --text-base: var(--text-body);
+  --text-base--line-height: 1.65;
+  --text-lg: var(--text-name);
+  --text-lg--line-height: 1.4;
+  --text-xl: var(--text-name);
+  --text-xl--line-height: 1.4;
+  --text-2xl: var(--text-title);
+  --text-2xl--line-height: 1.35;
+  --text-3xl: var(--text-display);
+  --text-3xl--line-height: 1.25;
+  /* 4xl 이상은 랜딩(마케팅) 히어로 전용이며 ERP 화면에서는 쓰지 않는다. */
+  --text-4xl: 36px;
+  --text-4xl--line-height: 1.2;
+  --text-5xl: 44px;
+  --text-5xl--line-height: 1.15;
+
+  /* --------------------------------------------------------------- 굵기
+     400(Regular)과 600(SemiBold) 두 단계만. 300 이하 금지, 700 이상도 쓰지 않는다.
+     기존 화면이 쓰던 font-medium(41곳)·font-bold(18곳)·font-extrabold(6곳)이
+     여기서 전부 600 으로 접힌다 — 타이포 스케일과 같은 이유로 정의를 고친다. */
+  --font-weight-thin: 400;
+  --font-weight-extralight: 400;
+  --font-weight-light: 400;
+  --font-weight-normal: 400;
+  --font-weight-medium: 600;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 600;
+  --font-weight-extrabold: 600;
+  --font-weight-black: 600;
+
+  /* ------------------------------------------------------------- 모서리
+     카드 16 / 버튼 14 / 알약 999. 기존 컨벤션(job-048)의 2xl=카드, xl=버튼·입력,
+     full=아바타·칩 이 그대로 이 세 값에 대응하도록 스케일을 다시 잡는다. */
+  --radius: 16px;
+  --radius-none: 0px;
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 14px; /* 버튼·입력·목록 행 */
+  --radius-2xl: 16px; /* 카드·시트·다이얼로그 */
+  --radius-3xl: 16px;
+  --radius-4xl: 999px; /* @pawlog/ui Badge 가 쓴다 → 자동으로 알약이 된다 */
+  --radius-card: 16px;
+  --radius-btn: 14px;
+  --radius-pill: 999px;
+
+  /* ------------------------------------------------- 스페이싱 (4px 배수)
+     이름 있는 값만 추가한다. 숫자 스케일(0.5/1/2/3/4/5/6/8/10/14/16)은 기본 그대로. */
+  --spacing-touch: 64px; /* 터치 타겟 최소 — 젖은 손·장갑 보정 */
+  --spacing-row: 96px; /* 리스트 행 최소 높이 (아바타 56 + 배지 2줄) */
+  --spacing-avatar: 56px;
+  --spacing-avatar-lg: 60px;
+  /* 데스크톱(lg+) 좌측 내비 폭. 폭이 두 곳(사이드바 자신 `w-nav` + 본문 오프셋
+     `lg:pl-nav`)에 쓰이므로 값을 여기 한 번만 둔다 — 갈리면 본문이 사이드바에 깔린다.
+     이름을 `sidebar` 로 하지 않은 이유: 위에 이미 shadcn 의 `--color-sidebar-*` 가 있어
+     `w-sidebar`(폭)와 `bg-sidebar`(색)가 같은 단어로 다른 뜻이 된다. */
+  --spacing-nav: 240px;
+
+  /* 한글 본문 한 줄 최대 40자 ≈ 40 × 17px */
+  --container-prose-ko: 40ch;
+}
+
+/* 태블릿 이상에서 한 단계 키운다.
+   위 `@theme` 이 non-inline 이라 유틸리티가 `var(--text-*)` 를 참조하고, 그래서
+   변수만 바꿔도 `text-body`·`text-sm` 등 **모든 사용처가 함께** 커진다. */
+@media (min-width: 768px) {
+  :root {
+    --text-label: 16px;
+    --text-body: 18px;
+    --text-name: 22px;
+    --text-title: 26px;
+    --text-display: 36px;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    /* 픽업 시각·잔여 회차가 세로로 나열되므로 자릿수 정렬이 필수다. */
+    font-variant-numeric: tabular-nums;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-body;
+  }
+}

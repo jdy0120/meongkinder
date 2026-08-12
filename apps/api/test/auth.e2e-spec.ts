@@ -2,11 +2,14 @@ import type { Server } from "node:http";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { ROLES } from "@pawlog/shared";
 import { prisma, prismaConnect, prismaDisconnect } from "@pawlog/database";
 
 import { AppModule } from "../src/shared/modules/app.module";
 import { setupApplication } from "../src/shared/configs/app.setup";
+import {
+  openTenant,
+  signupAndLogin as newSignupAndLogin,
+} from "./utils/tenant-setup";
 
 // setupApplication 이 붙이는 글로벌 프리픽스: api/${PROJECT_NAME}
 const PREFIX = `/api/${process.env.PROJECT_NAME}`;
@@ -118,26 +121,38 @@ describe("Auth (e2e)", () => {
       await session.get(`${V1_ADMIN}/me`).expect(403);
     });
 
-    it("admin: ADMIN 역할은 200", async () => {
-      const email = "admin-role@example.com";
-      const session = request.agent(server());
-      await session
-        .post(`${V1_AUTH}/signup`)
-        .send({ email, password, nickname: "admin" })
-        .expect(201);
-
-      // USER → ADMIN 승격 후 재로그인(새 토큰에 role=ADMIN 반영)
-      await prisma.user.update({
-        where: { email },
-        data: { role: ROLES.ADMIN },
+    /**
+     * job-033: 테넌트 역할은 User.role 이 아니라 TenantMembership 이 갖는다.
+     * 따라서 관리자 라우트를 통과하려면 (1) 매장의 TENANT_ADMIN 멤버십과
+     * (2) 활성 테넌트 지정(X-Tenant-Id)이 모두 필요하다.
+     */
+    it("admin: 활성 테넌트의 TENANT_ADMIN 멤버십이 있으면 200", async () => {
+      const owner = await newSignupAndLogin(server(), {
+        email: "admin-role@example.com",
+        nickname: "admin",
       });
-      await session
-        .post(`${V1_AUTH}/login`)
-        .send({ email, password })
-        .expect(200);
+      const tenant = await openTenant(owner, {
+        name: "auth-admin-tenant",
+        subdomain: "auth-admin",
+      });
 
-      const res = await session.get(`${V1_ADMIN}/me`).expect(200);
-      expect((res.body as ApiBody).data.user.role).toBe(ROLES.ADMIN);
+      await owner.session
+        .get(`${V1_ADMIN}/me`)
+        .set("X-Tenant-Id", tenant.id)
+        .expect(200);
+    });
+
+    it("admin: 멤버십이 있어도 활성 테넌트를 지정하지 않으면 403 (개인 스코프)", async () => {
+      const owner = await newSignupAndLogin(server(), {
+        email: "admin-no-ctx@example.com",
+        nickname: "admin2",
+      });
+      await openTenant(owner, {
+        name: "auth-noctx-tenant",
+        subdomain: "auth-noctx",
+      });
+
+      await owner.session.get(`${V1_ADMIN}/me`).expect(403);
     });
   });
 });

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Patch,
   Post,
   Body,
   HttpCode,
@@ -20,6 +21,8 @@ import {
   LoginDto,
   ResetPasswordDto,
   SignupDto,
+  CompleteProfileDto,
+  UpdateProfileDto,
 } from "../dtos";
 import * as CONST from "../../shared/constants";
 import { getCookieName, getCookieOptions } from "../../shared/utils";
@@ -119,5 +122,29 @@ export class AuthController {
   async mypage(@Req() req: Request) {
     const userId = req.user?.userId;
     return this.authService.mypage(userId);
+  }
+
+  /**
+   * 내 정보 수정 — 닉네임·전화번호.
+   * 전화번호를 등록하면 그 번호로 와 있던 매장 초대가 자동으로 소속 처리된다.
+   */
+  @Patch(AUTH_ROUTES.v1.UPDATE_PROFILE)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("내 정보가 수정되었습니다.")
+  async updateProfile(@Req() req: Request, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(req.user!.userId, dto);
+  }
+
+  /**
+   * 최초 진입 완료 (job-041) — 필수 약관 동의 + (선택) 전화번호.
+   *
+   * 카카오 로그인은 약관 동의를 거치지 않으므로 `apps/web` 사용자는 전원 이 경로를 지난다.
+   * 전화번호를 함께 넣으면 그 번호로 등록돼 있던 아이·매장 초대가 계정에 연결된다.
+   */
+  @Post(AUTH_ROUTES.v1.COMPLETE_PROFILE)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("설정이 완료되었습니다.")
+  async completeProfile(@Req() req: Request, @Body() dto: CompleteProfileDto) {
+    return this.authService.completeProfile(req.user!.userId, dto);
   }
 }

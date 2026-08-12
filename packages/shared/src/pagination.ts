@@ -92,19 +92,38 @@ export function resolvePagination(query: PaginationQuery = {}) {
   return { ...normalized, skip, take };
 }
 
+const PAGINATION_QUERY_KEYS = new Set([
+  "page",
+  "pageSize",
+  "sort",
+  "order",
+  "search",
+]);
+
 /**
  * 클라이언트(web)에서 쿼리스트링을 만들 때 사용.
  * undefined/빈 값은 제외한 문자열 맵을 반환한다.
+ * page/pageSize/sort/order/search 외에 엔드포인트별로 추가된 필터(petId, date 등)도
+ * 그대로 통과시켜 쿼리스트링에 포함한다.
  */
-export function toQueryParams(query: PaginationQuery = {}): Record<string, string> {
+export function toQueryParams(
+  query: Record<string, unknown> = {},
+): Record<string, string> {
   const params: Record<string, string> = {};
-  const normalized = normalizePagination(query);
+  const normalized = normalizePagination(query as PaginationQuery);
 
   params.page = String(normalized.page);
   params.pageSize = String(normalized.pageSize);
   params.order = normalized.order;
   if (normalized.sort) params.sort = normalized.sort;
   if (normalized.search) params.search = normalized.search;
+
+  for (const [key, value] of Object.entries(query)) {
+    if (PAGINATION_QUERY_KEYS.has(key) || value === undefined || value === null) {
+      continue;
+    }
+    params[key] = String(value);
+  }
 
   return params;
 }

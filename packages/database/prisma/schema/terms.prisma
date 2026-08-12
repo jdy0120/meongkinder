@@ -19,14 +19,16 @@ model Terms {
   @@map("terms")
 }
 
+// job-033: 약관(Terms)은 플랫폼 공용이고 동의는 회원 본인의 행위이므로 테넌트에 매이지 않는다.
+// (기존 tenant_id 컬럼 제거 — 회원이 여러 테넌트에 속해도 약관 동의는 한 번이면 된다)
 model UserTermsAgreement {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   termsId   String
   terms     Terms    @relation(fields: [termsId], references: [id])
-  
+
   isAgreed  Boolean  @default(true)  // 동의 여부 (선택 약관 철회 처리 대비)
   agreedAt  DateTime @default(now()) @map("agreed_at") // 동의/철회 시점
 

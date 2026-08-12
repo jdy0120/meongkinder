@@ -1,10 +1,10 @@
 // 소셜 로그인 provider (api·web 공통)
 // role(ROLES) 과 동일하게 Prisma enum 이 아닌 문자열 상수로 관리한다.
 // provider 를 추가할 때 여기 한 곳만 수정하면 되고 DB 마이그레이션이 필요 없다.
+// job-036: 인증은 카카오 소셜 로그인 단일 경로로 통일했다.
+// (네이버/디스코드 설정과 이메일 로그인 UI 제거 — 계정 생성도 카카오 최초 로그인 시 자동 생성)
 export const SOCIAL_PROVIDERS = {
   KAKAO: "KAKAO",
-  NAVER: "NAVER",
-  DISCORD: "DISCORD",
 } as const;
 
 export type SocialProvider =
@@ -14,8 +14,6 @@ export type SocialProvider =
 // 예: URL 은 /v1/auth/kakao, DB provider 는 "KAKAO".
 export const SOCIAL_PROVIDER_SLUGS = {
   kakao: SOCIAL_PROVIDERS.KAKAO,
-  naver: SOCIAL_PROVIDERS.NAVER,
-  discord: SOCIAL_PROVIDERS.DISCORD,
 } as const;
 
 export type SocialProviderSlug = keyof typeof SOCIAL_PROVIDER_SLUGS;

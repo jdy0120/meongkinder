@@ -3,6 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import type { PaginatedData, PaginationQuery } from "@pawlog/shared";
 
 import { GetList } from "@/shared/libs/axios/request";
+import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
 
 import { emptyPage } from "./emptyPage";
 
@@ -21,8 +22,11 @@ export function useInfiniteList<T>(
   url: string,
   query: Omit<PaginationQuery, "page"> = {},
 ) {
+  const tenantId = useTenantStore((state) => state.tenantId);
+
   return useInfiniteQuery({
-    queryKey: [key, "infinite", query],
+    // tenantId를 키에 포함해 테넌트 전환/SUPER_ADMIN 뷰 전환 시 캐시가 섞이지 않도록 한다.
+    queryKey: [key, "infinite", tenantId, query],
     queryFn: async ({ pageParam }) => {
       const res = await GetList<T>(url, { ...query, page: pageParam });
       return res.data.data ?? emptyPage<T>();

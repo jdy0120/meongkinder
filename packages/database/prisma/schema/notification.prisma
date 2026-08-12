@@ -1,0 +1,46 @@
+// 알림(카카오 알림톡/SMS) 발송 도메인
+
+model NotificationLog {
+  id String @id @default(uuid())
+
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // 수신 보호자의 User id (Pet.userId). job-040: NOT NULL -> nullable.
+  // 미가입 보호자에게도 발송되므로 계정이 없을 수 있다. **실제 수신처는 언제나
+  // recipientPhone 이고 userId 는 부가 정보다** — 이 칸이 비어도 감사 추적은 유지된다.
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  petId String? @map("pet_id")
+  pet   Pet?    @relation(fields: [petId], references: [id], onDelete: SetNull)
+
+  // 연관된 출석/일일 리포트 id (조회용 참조. FK 아님 — 삭제되어도 로그는 보존)
+  attendanceId  String? @map("attendance_id")
+  dailyReportId String? @map("daily_report_id")
+
+  // CHECK_IN(등원) | CHECK_OUT_REPORT(하원+리포트 링크) | REMAINING_COUNT_LOW(잔여횟수 임박) | RESERVATION_REMINDER(예약 리마인드)
+  type String
+
+  // ALIMTALK(카카오 알림톡) | SMS(문자, 알림톡 실패 시 폴백 또는 단독 발송)
+  channel String
+
+  recipientPhone String  @map("recipient_phone")
+  templateCode   String? @map("template_code") // 알림톡 템플릿 코드 (SMS 단독 발송 시 null)
+  content        String // 실제 발송(시도)된 내용 — 알림톡은 치환 변수 JSON, SMS 는 본문 텍스트
+
+  // SUCCESS(발송 성공) | FAILED(알림톡·SMS 모두 실패)
+  status String
+
+  provider          String  @default("SOLAPI") // 알림 중계사
+  providerMessageId String? @map("provider_message_id")
+  errorMessage      String? @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([petId])
+  @@index([type])
+  @@index([tenantId])
+  @@map("notification_logs")
+}

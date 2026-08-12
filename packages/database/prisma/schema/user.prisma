@@ -1,9 +1,20 @@
+// job-033: 회원은 플랫폼 전역 정체성이 되었고, 테넌트 소속은 TenantMembership 으로 분리됐다.
+// - 어느 테넌트에도 속하지 않은 회원이 존재할 수 있다 (자기 펫만 관리하는 개인 보호자).
+// - 한 회원이 여러 테넌트에 서로 다른 자격(TENANT_ADMIN/STAFF/GUARDIAN)으로 소속될 수 있다.
 model User {
-  id        String @id @default(uuid())
+  id        String  @id @default(uuid())
   nickname  String
-  email     String
+  // 플랫폼 전역 유니크. 테넌트별 중복 가입 개념이 사라졌다(회원 1명 = 계정 1개).
+  email     String  @unique
 
-  // 역할: "USER"(서비스만) | "ADMIN"(서비스+관리자). @pawlog/shared 의 ROLES 와 일치
+  // 휴대폰 번호 (job-034). 숫자만 정규화해 저장한다("010-1234-5678" -> "01012345678").
+  // 유치원이 미가입 보호자를 전화번호로 초대해 두면, 그 번호로 가입하는 순간
+  // TenantInvitation 과 자동 매칭되므로 조회 경로가 필요하다.
+  // 아직 유니크는 아니다 — 기존 계정에 번호가 없고 본인인증 절차도 없기 때문.
+  phone     String?
+
+  // 플랫폼 레벨 역할만 보관: "USER" | "SUPER_ADMIN". @pawlog/shared 의 PLATFORM_ROLES 와 일치.
+  // 테넌트 안에서의 역할(TENANT_ADMIN/STAFF/GUARDIAN)은 TenantMembership.role 이 갖는다.
   role      String @default("USER")
   // bcrypt 해시된 비밀번호 (소셜 전용 계정은 없을 수 있어 nullable)
   password  String?
@@ -17,22 +28,64 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
   socialAccounts SocialAccount[]
   userInfo UserInfo?
-  pointTransactions PointTransaction[]
   orders            Order[]
-  billingKey        BillingKey?
-  subscriptions     UserSubscription[]
   termsAgreements   UserTermsAgreement[]
   pets                 Pet[]
+  memberships          TenantMembership[]
+  // job-034: 매장 개설권 구독 (원생 이용권과 달리 회원이 직접 결제한다)
+  billingKey           UserBillingKey?
+  userSubscriptions    UserSubscription[]
   dailyReportsAuthored DailyReport[]        @relation("DailyReportAuthor")
+  feedPostsAuthored    FeedPost[]           @relation("FeedPostAuthor")
   subscriptionLedgers  SubscriptionLedger[]
+  notificationLogs     NotificationLog[]
 
-  @@unique([email])
+  @@index([phone])
   @@map("users")
 }
 
+/**
+ * 회원의 테넌트 소속 (job-033).
+ *
+ * 한 회원이 여러 테넌트에 각기 다른 자격으로 속할 수 있다 — 예를 들어 A유치원의 STAFF 이면서
+ * B유치원에는 자기 강아지를 맡긴 GUARDIAN 일 수 있다. 그래서 역할은 User 가 아니라 이 조인
+ * 테이블이 갖는다.
+ *
+ * 활성 테넌트는 요청의 서브도메인/`X-Tenant-Id` 헤더로 정해지고, TenantMiddleware 가 그 테넌트에
+ * 대한 ACTIVE 멤버십을 확인한 뒤에야 ALS 컨텍스트를 연다. JWT 는 더 이상 tenantId 를 담지 않는다.
+ */
+model TenantMembership {
+  id       String @id @default(uuid())
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // 이 테넌트 안에서의 역할: "TENANT_ADMIN" | "STAFF" | "GUARDIAN".
+  // @pawlog/shared 의 MEMBERSHIP_ROLES 와 일치한다.
+  role String
+
+  // "PENDING"(보호자 가입 신청, 관리자 승인 대기) | "ACTIVE"(정상) | "REJECTED"(반려) | "LEFT"(탈퇴)
+  // PENDING/REJECTED/LEFT 는 테넌트 리소스에 접근할 수 없다 — ACTIVE 만 통과한다.
+  status String @default("PENDING")
+
+  approvedAt DateTime? @map("approved_at")
+  // 승인/반려를 처리한 관리자. 감사 추적용이라 관리자가 탈퇴해도 기록은 남긴다.
+  approvedBy String?   @map("approved_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("tenant_memberships")
+}
+
 model UserInfo {
-  id String @id @default(uuid())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id   String @id @default(uuid())
+  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -41,21 +94,6 @@ model UserInfo {
   @@unique([userId])
   @@index([userId])
   @@map("user_infos")
-}
-
-
-// 포인트 변동 내역 모델 신설
-model PointTransaction {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  amount    Int      // 변동 금액 (충전: +, 사용: -)
-  type      String   // 종류 (CHARGE, USE, REFUND 등)
-  description String? // 상세 내용
-  
-  createdAt DateTime @default(now()) @map("created_at")
-  @@index([userId])
-  @@map("point_transactions")
 }
 
 model SocialAccount {

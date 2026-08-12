@@ -34,6 +34,18 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# job-053: HEIC(아이폰 기본 촬영 포맷) 변환용 libvips.
+#
+# sharp 에 번들된 libvips 로는 HEIC 를 **디코딩할 수 없다** — HEVC(H.265) 디코더가
+# 특허 라이선스 때문에 빠져 있어서, `sharp.format.heif.input.fileSuffix` 가 [".avif"] 뿐이다.
+# (`SHARP_FORCE_GLOBAL_LIBVIPS=1` 도 시도했지만 alpine 의 libvips 8.17.3 이 sharp 0.35 의
+#  요구 버전에 못 미쳐 번들 라이브러리로 되돌아간다.)
+#
+# 그래서 HEIC 만 `vips` CLI 를 자식 프로세스로 호출해 처리한다. 자식 프로세스라
+# Node 이벤트 루프를 막지 않는다 — 변환 중에도 API 는 다른 요청을 정상 처리한다.
+# 동시 실행 수는 IMAGE_CONVERT_CONCURRENCY 로 제한한다(아래 파일 유틸 주석 참고).
+RUN apk add --no-cache vips-tools vips-heif
+
 # pruned 폴더의 결과물만 복사
 COPY --from=builder /app/pruned ./
 

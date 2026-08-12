@@ -9,12 +9,11 @@ import { prisma } from "@pawlog/database";
 import {
   SOCIAL_PROVIDER_SLUGS,
   SOCIAL_PROVIDERS,
-  type DiscordProfileResponse,
   type KakaoProfileResponse,
-  type NaverProfileResponse,
   type NormalizedSocialProfile,
   type SocialProvider,
   type SocialProviderSlug,
+  type PlatformRole,
 } from "@pawlog/shared";
 import { env } from "../../shared/configs/env";
 import {
@@ -23,12 +22,21 @@ import {
 } from "../../shared/utils/jwt";
 import * as CONST from "../../shared/constants";
 import { RedisService } from "../../shared/redis/redis.service";
+import { InvitationService } from "../../membership/services/invitation.service";
 
 // refresh 토큰은 이메일 로그인과 동일하게 Redis 에서 관리한다.
 const refreshKey = (userId: string) => `refresh:${userId}`;
 // CSRF 방지용 state 토큰 (5분 TTL). authorize 시 저장, callback 에서 대조.
+// job-036: 값에 "슬러그:출발앱" 을 함께 담는다 — 소셜 로그인은 브라우저 전체 리다이렉트라
+// 콜백 시점에 어디서 시작했는지 알 방법이 이것뿐이고, admin 에서 시작한 로그인이 web 으로
+// 튕기면 안 되기 때문이다.
 const stateKey = (state: string) => `social_state:${state}`;
 const STATE_TTL_SEC = 5 * 60;
+
+/** 소셜 로그인을 시작한 앱. 콜백 후 돌아갈 곳을 정한다. */
+export type SocialLoginOrigin = "web" | "admin";
+const isOrigin = (value: string): value is SocialLoginOrigin =>
+  value === "web" || value === "admin";
 
 interface ProviderConfig<TRaw = any> {
   clientId?: string;
@@ -46,7 +54,10 @@ interface ProviderConfig<TRaw = any> {
 export class SocialAuthService {
   private readonly logger = new Logger(SocialAuthService.name);
 
-  constructor(private readonly redis: RedisService) {}
+  constructor(
+    private readonly redis: RedisService,
+    private readonly invitationService: InvitationService,
+  ) {}
 
   // ── provider 별 설정 ──────────────────────────────────────────────────────
   // authorize/token/profile URL 은 각 provider 문서 기준. scope·필드 매핑은 콘솔 설정에 맞춰 확인 필요.
@@ -66,42 +77,6 @@ export class SocialAuthService {
         email: raw?.kakao_account?.email ?? null,
         nickname: raw?.kakao_account?.profile?.nickname ?? null,
         avatarUrl: raw?.kakao_account?.profile?.profile_image_url ?? null,
-      }),
-    },
-    [SOCIAL_PROVIDERS.NAVER]: {
-      clientId: env.NAVER_CLIENT_ID,
-      clientSecret: env.NAVER_CLIENT_SECRET,
-      callbackUrl: env.NAVER_CALLBACK_URL,
-      authorizeUrl: "https://nid.naver.com/oauth2.0/authorize",
-      tokenUrl: "https://nid.naver.com/oauth2.0/token",
-      profileUrl: "https://openapi.naver.com/v1/nid/me",
-      scope: "", // 네이버는 콘솔에서 제공 항목을 지정. 기본 비움.
-      normalize: (raw: NaverProfileResponse, provider) => ({
-        provider,
-        // 네이버는 실제 데이터가 raw.response 안에 감싸져 온다.
-        providerAccountId: String(raw?.response?.id ?? ""),
-        email: raw?.response?.email ?? null,
-        nickname: raw?.response?.nickname ?? raw?.response?.name ?? null,
-        avatarUrl: raw?.response?.profile_image ?? null,
-      }),
-    },
-    [SOCIAL_PROVIDERS.DISCORD]: {
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
-      callbackUrl: env.DISCORD_CALLBACK_URL,
-      authorizeUrl: "https://discord.com/oauth2/authorize",
-      tokenUrl: "https://discord.com/api/oauth2/token",
-      profileUrl: "https://discord.com/api/users/@me",
-      scope: "identify email",
-      normalize: (raw: DiscordProfileResponse, provider) => ({
-        provider,
-        providerAccountId: String(raw?.id ?? ""),
-        email: raw?.email ?? null,
-        nickname: raw?.global_name ?? raw?.username ?? null,
-        avatarUrl:
-          raw?.avatar && raw?.id
-            ? `https://cdn.discordapp.com/avatars/${raw.id}/${raw.avatar}.png`
-            : null,
       }),
     },
   };
@@ -131,13 +106,16 @@ export class SocialAuthService {
    * 1단계 — provider 인증 페이지로 보낼 authorize URL 을 만든다.
    * CSRF 방지용 state 를 Redis 에 저장한다.
    */
-  async buildAuthorizeUrl(slug: SocialProviderSlug): Promise<string> {
+  async buildAuthorizeUrl(
+    slug: SocialProviderSlug,
+    origin: SocialLoginOrigin = "web",
+  ): Promise<string> {
     const provider = this.toProvider(slug);
     const cfg = this.configs[provider];
     this.ensureConfigured(cfg, provider);
 
     const state = randomBytes(16).toString("hex");
-    await this.redis.set(stateKey(state), slug, STATE_TTL_SEC);
+    await this.redis.set(stateKey(state), `${slug}:${origin}`, STATE_TTL_SEC);
 
     const params = new URLSearchParams({
       client_id: cfg.clientId as string,
@@ -159,12 +137,15 @@ export class SocialAuthService {
     const cfg = this.configs[provider];
     this.ensureConfigured(cfg, provider);
 
-    // state 검증 (CSRF 방지)
-    const savedSlug = await this.redis.get(stateKey(state));
-    if (!savedSlug || savedSlug !== slug) {
+    // state 검증 (CSRF 방지) + 출발 앱 복원
+    const saved = await this.redis.get(stateKey(state));
+    const [savedSlug, savedOrigin] = (saved ?? "").split(":");
+    if (!saved || savedSlug !== slug) {
       throw new UnauthorizedException("유효하지 않은 소셜 로그인 요청입니다.");
     }
     await this.redis.del(stateKey(state));
+    const origin: SocialLoginOrigin =
+      savedOrigin && isOrigin(savedOrigin) ? savedOrigin : "web";
 
     const accessToken = await this.exchangeCodeForToken(slug, cfg, code);
     const rawProfile = await this.fetchProfile(cfg, accessToken);
@@ -179,7 +160,17 @@ export class SocialAuthService {
 
     const { user, isNewUser } = await this.upsertUser(profile);
 
-    const payload = { userId: user.id, email: user.email, role: user.role };
+    // job-036: 인증이 카카오 단일 경로가 되면서, 이메일 회원가입에만 걸려 있던 초대 매칭이
+    // 아예 실행되지 않게 됐다. 유치원이 미리 등록해 둔 초대를 여기서 소속으로 실현한다.
+    // 매 로그인마다 확인한다 — 이미 가입한 회원을 나중에 초대하는 경우도 커버해야 하고,
+    // 대기 중인 초대가 없으면 조회 한 번으로 끝난다.
+    await this.invitationService.claimForUser(user.id, user.email, user.phone);
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as PlatformRole,
+    };
     const jwtAccess = generateAccessToken(payload);
     const jwtRefresh = generateRefreshToken(payload);
     await this.redis.set(
@@ -192,6 +183,7 @@ export class SocialAuthService {
       accessToken: jwtAccess,
       refreshToken: jwtRefresh,
       result: { user, isNewUser },
+      origin,
     };
   }
 
@@ -258,7 +250,7 @@ export class SocialAuthService {
           providerAccountId: profile.providerAccountId,
         },
       },
-      include: { user: true },
+      include: { user: { omit: { password: true } } },
     });
     if (existing) {
       return { user: existing.user, isNewUser: false };
@@ -270,8 +262,12 @@ export class SocialAuthService {
       profile.email ??
       `${profile.provider.toLowerCase()}_${profile.providerAccountId}@social.local`;
 
+    // job-033: 이메일이 플랫폼 전역 유니크이므로 테넌트와 무관하게 연결한다.
     const linkedUser = profile.email
-      ? await prisma.user.findUnique({ where: { email } })
+      ? await prisma.user.findUnique({
+          where: { email },
+          omit: { password: true },
+        })
       : null;
 
     if (linkedUser) {
@@ -297,12 +293,22 @@ export class SocialAuthService {
           },
         },
       },
+      omit: { password: true },
     });
     return { user, isNewUser: true };
   }
 
   // ── 리다이렉트 대상 (컨트롤러에서 사용) ──────────────────────────────────
-  get successRedirect() {
+  // 출발 앱에 따라 돌아갈 곳이 다르다. admin 에서 시작한 로그인을 web 으로 보내면
+  // 매장 관리자가 보호자 화면에 떨어진다.
+  private baseUrl(origin: SocialLoginOrigin): string {
+    if (origin === "admin") {
+      return (
+        process.env.ADMIN_URL ??
+        process.env.SOCIAL_LOGIN_ADMIN_REDIRECT ??
+        "http://localhost:3333"
+      );
+    }
     return (
       env.SOCIAL_LOGIN_SUCCESS_REDIRECT ??
       process.env.WEB_URL ??
@@ -310,10 +316,23 @@ export class SocialAuthService {
     );
   }
 
-  get failureRedirect() {
-    return (
-      env.SOCIAL_LOGIN_FAILURE_REDIRECT ??
-      `${process.env.WEB_URL ?? "http://localhost:3001"}/auth/login?error=social`
-    );
+  /**
+   * 로그인 성공 후 착지점.
+   *
+   * job-032: web 은 랜딩(`/`)이 아니라 로그인한 사람의 화면으로 바로 들어가야 한다.
+   * job-042: 그 화면이 `/app` 으로 고정이 아니라 **소속에 따라 갈린다**(운영 중인 매장이
+   * 하나면 그 매장으로 직행, 여럿이면 고르기, 없으면 개인 홈). 그 판단은 여기가 아니라
+   * `/launch` 가 한다 — 매장 주소 규칙(`/tenant/<subdomain>/…`)은 web 의 것이고,
+   * API 가 그것을 알고 조립하기 시작하면 경로가 바뀔 때마다 양쪽을 같이 고쳐야 한다.
+   *
+   * admin 은 플랫폼 콘솔 성격상 별도 대시보드 진입점이 없어 기존대로 루트로 보낸다.
+   */
+  successRedirect(origin: SocialLoginOrigin = "web") {
+    const base = this.baseUrl(origin);
+    return origin === "web" ? `${base}/launch` : base;
+  }
+
+  failureRedirect(origin: SocialLoginOrigin = "web") {
+    return `${this.baseUrl(origin)}/auth/login?error=social`;
   }
 }

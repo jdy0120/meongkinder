@@ -180,6 +180,10 @@ make dev
 * **`<PROJECT_NAME>-server`**: NestJS 백엔드 서버 (포트 `SERVER_PORT`, 기본 3000) — 소스 볼륨 마운트로 핫리로드
 * **`<PROJECT_NAME>-web`**: Next.js 프론트엔드 (포트 `WEB_PORT`, 기본 3001) — 핫리로드
 
+> [!TIP]
+> 테넌트 서브도메인(`acme.pawlog-dev.doyeonism.com` 등) 동작을 실제 DNS 없이 로컬에서 시험하려면
+> [`docs/local-tenant-dev.md`](./docs/local-tenant-dev.md)(`lvh.me` / `*.localhost` 세팅)를 참고하세요.
+
 ---
 
 ### 3. 운영 환경 실행 (Production)

@@ -6,7 +6,9 @@ import type { CookieOptions } from "express";
  *   서브도메인(admin.xxx, www.xxx) 간 쿠키 공유를 위해 `.${SERVER_NAME}` 형태의 도메인을 자동 적용합니다.
  * - SameSite는 서브도메인 간 API 통신 및 페이지 이동 시 쿠키 유실을 막기 위해 기본값 "lax"를 사용합니다.
  */
-export const getCookieName = (base: "access_token" | "refresh_token"): string => {
+export const getCookieName = (
+  base: "access_token" | "refresh_token",
+): string => {
   const prefix = process.env.PROJECT_NAME;
   return prefix ? `${prefix}_${base}` : base;
 };

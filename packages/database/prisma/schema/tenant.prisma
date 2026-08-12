@@ -1,0 +1,156 @@
+// 멀티테넌트(B2B SaaS) 최상위 테넌트(가맹점/매장) 모델
+// packages/database/prisma/schema/*.prisma 의 스코프 대상 모델들이 이 모델을 참조합니다.
+// docs/multi-tenant-migration-plan.md Phase 1 참고.
+
+model Tenant {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String
+  subdomain String  @unique // 테넌트 식별자 (서브도메인)
+
+  /**
+   * 매장 대표 연락처 (job-047).
+   *
+   * 알림톡을 받은 **미가입 보호자**가 유일하게 여는 화면(공개 알림장 `/r/<token>`)에
+   * 매장에 물어볼 방법이 없었다. 그 사람은 앱도 계정도 없어서 화면을 나가면 되돌아올
+   * 길이 없다. 저장은 숫자만(job-043).
+   */
+  contactPhone String? @map("contact_phone")
+  isActive  Boolean @default(true) @map("is_active") // 구독 상태로 갱신, 미들웨어 게이트
+
+  // ── 위치 (job-059) ──────────────────────────────────────────────────
+  //
+  // 보호자가 매장을 찾는 유일한 방법이 **이름 검색**이었다 — 즉 이미 아는 매장만
+  // 찾을 수 있었다. 지도로 찾으려면 좌표가 필요하고, 좌표는 주소에서 나온다.
+  //
+  // 전부 nullable 이다. 이미 개설된 매장이 주소 없이 존재하고, 주소를 넣지 않은
+  // 매장도 목록·운영에는 아무 문제가 없어야 한다 — 지도에만 안 뜬다.
+  postalCode    String? @map("postal_code") // 우편번호 (주소검색 API 가 함께 준다)
+  roadAddress   String? @map("road_address") // 도로명 주소. 지도 핀에 노출되는 공개 정보
+
+  /**
+   * 상세주소(층/호).
+   *
+   * ⚠️ **공개 디렉터리에 실지 않는다.** 지도 핀에는 도로명까지면 충분하고, 층/호는
+   * 실제로 방문할 사람에게만 필요하다. 소규모 매장은 주소가 곧 자택인 경우가 있어
+   * 공개 범위를 좁게 잡는다.
+   */
+  addressDetail String? @map("address_detail")
+
+  /**
+   * 좌표 — **주소를 저장하는 시점에 지오코딩해서 함께 넣는다.**
+   *
+   * 조회할 때마다 주소→좌표를 변환하면 지도를 움직일 때마다 매장 수만큼 외부 API 를
+   * 부르게 되고, 그 API 가 죽으면 지도가 통째로 빈다. 좌표는 주소가 바뀔 때만 바뀌므로
+   * 저장 시점에 확정하는 것이 맞다.
+   *
+   * 지오코딩에 실패해도 주소는 저장한다(좌표만 null) — 사람이 읽는 주소가 먼저다.
+   */
+  latitude  Float?
+  longitude Float?
+
+  /**
+   * 공개 매장 찾기(지도·목록) 노출 여부.
+   *
+   * 주소를 넣으면 기본적으로 노출된다. 끄는 스위치를 두는 이유는 가정집에서 운영하는
+   * 소규모 유치원이 있기 때문 — 그 경우 주소 공개가 곧 자택 공개다.
+   */
+  isListed Boolean @default(true) @map("is_listed")
+
+  // job-033: 회원과의 관계는 TenantMembership 을 통한다 (users 직접 관계 제거).
+  // 약관 동의/UserInfo 도 회원에 귀속되어 테넌트와의 관계가 사라졌다.
+  memberships         TenantMembership[]
+  pets                Pet[]
+  petSchedules        PetSchedule[]
+  attendances         Attendance[]
+  dailyReports        DailyReport[]
+  reportContents      ReportContent[]
+  notificationLogs    NotificationLog[]
+  feedPosts           FeedPost[]
+  feedMedia           FeedMedia[]
+  feedTags            FeedTag[]
+  feedTagCorrections  FeedTagCorrection[]
+  files               File[]
+  fileTemps           FileTemp[]
+  orders              Order[]
+  payments            Payment[]
+  subscriptionLedgers SubscriptionLedger[]
+  subscriptions       TenantSubscription[]
+  // job-051: 이 유치원이 파는 요금제(개설권은 여기 속하지 않는다) + 매출 원장
+  plans               SubscriptionPlan[]
+  sales               TenantSale[]
+  billingKey          TenantBillingKey?
+
+  invitations         TenantInvitation[]
+  openedBy            UserSubscription?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 지도 뷰포트 안의 매장을 찾는 유일한 조회 패턴(bounding box). 매장 수가 수만 규모까지는
+  // 이 인덱스로 충분하고, "가까운 순 정렬"이 필요해지면 그때 PostGIS 를 본다.
+  @@index([latitude, longitude])
+  @@map("tenants")
+}
+
+/**
+ * 테넌트 구성원 초대 (job-034).
+ *
+ * 초대 대상이 이미 pawlog 회원이면 곧바로 TenantMembership 이 만들어지므로 이 레코드는 필요 없다.
+ * 이 모델은 **아직 회원이 아닌 사람**을 위한 것이다 — 유치원이 현장에서 받은 보호자 연락처와
+ * 아이 정보를 미리 저장해 두고, 그 사람이 나중에 같은 이메일/전화번호로 가입하면 자동으로
+ * 매칭되어 멤버십과 펫이 생성된다(초대장을 대체하는 자리표시자).
+ *
+ * 매칭 키는 email 또는 phone 이며 둘 중 하나는 반드시 있어야 한다(서비스 레이어에서 강제).
+ */
+model TenantInvitation {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // 초대받은 사람이 갖게 될 자격: "GUARDIAN" | "STAFF" | "TENANT_ADMIN"
+  role String @default("GUARDIAN")
+
+  // ── 매칭 키 (둘 중 하나 이상 필수) ──────────────────────────────────
+  email String?
+  phone String?
+
+  // ── 이미 생성된 원생과의 연결 (job-040) ─────────────────────────────
+  // 매장이 전화번호만으로 원생을 등록하면 Pet(userId = null) 이 **먼저** 만들어진다.
+  // 그래야 가입을 기다리지 않고 그날부터 출석·사진·알림톡이 돌아간다.
+  //
+  // 이 칸이 있으면 초대 수락 시 펫을 새로 만들지 않고 **이 펫에 계정을 연결**한다.
+  // 없으면 아래 선등록 정보로 새로 만든다(기존 job-034 경로). 이 구분이 없으면 매장이
+  // 등록해 둔 아이와 가입 시 생성된 아이가 **같은 아이인데 두 마리로 갈라진다** —
+  // 그날까지 쌓인 출석·알림장·사진이 전부 보호자에게 안 보이는 쪽에 남는다.
+  petId String? @map("pet_id")
+  pet   Pet?    @relation(fields: [petId], references: [id], onDelete: SetNull)
+
+  // ── 미가입자용 선등록 정보 ──────────────────────────────────────────
+  // 가입 전이라 User/Pet 로우를 만들 수 없으므로, 현장에서 받은 정보를 여기 담아둔다.
+  // 초대가 수락되는 순간 이 값들로 Pet 이 생성된다. (petId 가 있으면 그쪽이 우선)
+  guardianName String? @map("guardian_name")
+  petName      String? @map("pet_name")
+  petSpecies   String? @map("pet_species")
+  petBreed     String? @map("pet_breed")
+  petBirthDate DateTime? @map("pet_birth_date") @db.Date
+  note         String? // 알러지/투약 등 현장 메모
+
+  // PENDING(대기) | ACCEPTED(수락됨) | CANCELED(취소) | EXPIRED(만료)
+  status String @default("PENDING")
+
+  // 초대 링크용 일회성 토큰. 이메일/문자로 보낼 수 있다.
+  token String @unique
+
+  invitedBy      String    @map("invited_by") // 초대한 관리자 User id (감사 추적)
+  acceptedUserId String?   @map("accepted_user_id") // 수락한 회원 (가입 후 매칭된 계정)
+  acceptedAt     DateTime? @map("accepted_at")
+  expiresAt      DateTime  @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@index([email])
+  @@index([phone])
+  @@map("tenant_invitations")
+}

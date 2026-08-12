@@ -29,7 +29,7 @@ export const LoginForm = () => {
   const serverError = !login.isError
     ? null
     : login.error?.message === NOT_ADMIN
-      ? "관리자 권한이 없는 계정입니다."
+      ? "플랫폼 운영자 권한이 없는 계정입니다."
       : "이메일 또는 비밀번호가 올바르지 않습니다.";
 
   return (

@@ -14,9 +14,8 @@ export interface SocialProviderMeta {
   label: string;
 }
 
-// 노출할 provider 목록. 콘솔 앱 키가 준비된 것만 남기거나 순서를 조정하면 된다.
+// job-036: 인증은 카카오 단일 경로다. 다른 provider 를 추가하려면 @pawlog/shared 의
+// SOCIAL_PROVIDERS 와 apps/api 의 providerConfigs 에도 함께 등록해야 한다.
 export const SOCIAL_PROVIDERS_UI: SocialProviderMeta[] = [
   { slug: "kakao", label: "카카오로 계속하기" },
-  { slug: "naver", label: "네이버로 계속하기" },
-  { slug: "discord", label: "Discord로 계속하기" },
 ];

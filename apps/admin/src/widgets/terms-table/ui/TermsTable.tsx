@@ -26,6 +26,7 @@ import {
 } from "@pawlog/ui";
 
 import { Get } from "@/shared/libs/axios/request";
+import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
 import {
   TermsCategoryBadge,
   typeLabelMap,
@@ -41,9 +42,10 @@ import { TermsPreviewDialog } from "@/features/terms/preview-terms";
 export const TermsTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const tenantId = useTenantStore((state) => state.tenantId);
 
   const { data: termsList = [], isLoading } = useQuery<TermsItem[]>({
-    queryKey: ["terms", "all"],
+    queryKey: ["terms", "all", tenantId],
     queryFn: async () => {
       const res = await Get<TermsItem[], unknown>("/v1/admin/terms");
       return res.data.data || [];
@@ -107,6 +109,7 @@ export const TermsTable = () => {
           <div className='flex gap-2 max-w-sm w-full'>
             <Input
               type='text'
+              inputSize='sm'
               placeholder='약관명, 구분 또는 버전 검색'
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

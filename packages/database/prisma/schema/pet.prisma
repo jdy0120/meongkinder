@@ -1,9 +1,29 @@
 // 반려동물(펫) 정보 도메인
 
 model Pet {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
+
+  // 소유자(보호자) 계정 (job-040: NOT NULL -> nullable).
+  //   값 있음 = 보호자가 이 서비스 회원이고, 앱에서 자기 아이를 볼 수 있다
+  //   null    = **아직 가입하지 않은 보호자의 아이**. 매장이 전화번호만 받아 등록한 상태로,
+  //             연락처는 guardianPhone 이 갖는다. 알림톡/문자는 계정이 아니라 번호로 나가므로
+  //             이 상태에서도 등하원 알림과 알림장 발송이 정상 동작한다.
+  //
+  // 왜 nullable 이어야 하는가: 이 서비스의 경쟁 상대는 카톡 단톡방이고, 단톡방을 이기려면
+  // 보호자에게 앱 설치를 선행 조건으로 요구할 수 없다. userId 를 NOT NULL 로 두면 "가입한
+  // 보호자의 아이만 원생이 될 수 있다"가 되어, 매장이 서비스를 도입하는 순간 원생 전원을
+  // 가입시켜야 시작할 수 있다.
+  //
+  // 보호자가 나중에 같은 번호로 가입하면 InvitationService.claimForUser 가 이 칸을 채운다.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 등원 중인 유치원 (job-033: NOT NULL -> nullable).
+  //   null      = 아직 어느 유치원에도 등록하지 않은 개인 펫
+  //   값 있음   = 해당 테넌트의 원생 (보호자가 ACTIVE GUARDIAN 인 테넌트에만 등록 가능)
+  // 테넌트를 해지해도 펫과 보호자 기록은 남아야 하므로 Cascade 가 아닌 SetNull 이다.
+  tenantId String? @map("tenant_id") @db.Uuid
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   name       String
   species    String // 종 (DOG, CAT 등)
@@ -16,16 +36,147 @@ model Pet {
   profileImageFileId String? @map("profile_image_file_id")
   profileImageFile   File?   @relation(fields: [profileImageFileId], references: [id])
 
-  memo String?
+  careNote String? @map("care_note") // 케어 노트 (자유 서술. 아래 구조화 필드에 담기지 않는 것만)
+
+  // ── 안전 정보 (job-052) ────────────────────────────────────────────────
+  //
+  // 전부 `careNote` 자유 텍스트 안에 섞여 있던 것들이다. 그래서는 **카드 표면에 올릴 수도,
+  // 필터를 걸 수도 없었다** — "알러지 있는 아이만", "마킹 잦은 아이만"을 뽑으려면 사람이
+  // 메모를 읽어야 했다. 사고 예방 정보는 사후 확인이 무의미하므로 구조를 갖는다
+  // (design-system.md §5 MUST).
+
+  /** 예: ["닭고기", "소고기"]. 급여 전에 봐야 하므로 카드 표면 배지로 나간다. */
+  allergies String[] @default([])
+
+  /**
+   * 성향. **형용사가 아니라 상황 서술로 적는다** — "소심함"이 아니라 "대형견 무서워함".
+   * 훈련사가 합사 그룹을 나눌 때 그대로 쓸 수 있어야 하고, 형용사는 그게 안 된다.
+   */
+  temperaments String[] @default([])
+
+  /** 실내 마킹. 시설 운영(배치·청소)에 직접 영향을 주므로 자유 메모와 분리한다. */
+  marksIndoors Boolean @default(false) @map("marks_indoors")
+
+  /** 마운팅. 위와 같은 이유 — 합사 조합을 짤 때 필터가 걸려야 한다. */
+  mountingBehavior Boolean @default(false) @map("mounting_behavior")
+
+  /**
+   * 공격/입질 이력. `temperaments` 안의 문자열로 두지 않는 이유는 이것만 **긴급도가
+   * critical** 이기 때문이다(§3.1) — 카드 테두리를 승격시키는 두 조건 중 하나라
+   * 문자열 매칭으로 판정하면 표기가 조금만 달라져도 조용히 빠진다.
+   */
+  hasBiteHistory Boolean @default(false) @map("has_bite_history")
+
+  /**
+   * 예방접종 기록: [{ type: "comprehensive"|"rabies"|"kennel_cough"|"corona",
+   *                  expiresAt: "YYYY-MM-DD" }]
+   * 만료/임박(D-14) 판정은 저장하지 않고 조회 시점에 계산한다 — 저장해 두면 날짜가
+   * 지나도 갱신되지 않아 "만료됐는데 정상으로 표시되는" 최악의 실패가 난다.
+   */
+  vaccinations Json?
+
+  /**
+   * 적응 기간 시작일. 값이 있으면 "적응 N일차"를 계산해 배지로 띄운다.
+   * 일수를 저장하면 매일 배치로 올려야 하므로 시작일만 갖는다.
+   */
+  adaptationStartedAt DateTime? @map("adaptation_started_at") @db.Date
+
+  // ── 픽업 (job-052) ─────────────────────────────────────────────────────
+  // 원생 목록의 **기본 정렬 키**다. 유치원은 등하원 시각이 제각각이고 15~18시가 가장
+  // 혼잡해서, 픽업 시각 순 목록이 그대로 오후 작업 순서표가 된다(이름순은 검색이 대체).
+
+  /** "HH:mm" (KST). 요일마다 다른 경우는 아직 다루지 않는다. */
+  pickupTime String? @map("pickup_time")
+
+  /** GUARDIAN(보호자 직접) | SHUTTLE(셔틀) */
+  pickupMethod String? @map("pickup_method")
+
+  /** 셔틀 호차. pickupMethod 가 SHUTTLE 일 때만 의미가 있다. */
+  shuttleNumber Int? @map("shuttle_number")
+
+  // 보호자 연락처 (계정 소유자와 별도로 명시하는 현장 보호자 정보)
+  guardianName  String? @map("guardian_name")
+  guardianPhone String? @map("guardian_phone")
+
+  // 비상 연락처
+  emergencyContactName  String? @map("emergency_contact_name")
+  emergencyContactPhone String? @map("emergency_contact_phone")
+
+  // 픽업 권한자 목록: [{ name, phone, relation? }]
+  pickupAuthorizedPersons Json? @map("pickup_authorized_persons")
+
+  // 등원 스케줄 입력 방식 (job-053). "오늘의 출석부"가 어느 쪽을 읽을지 정한다.
+  //   WEEKLY  매주 같은 요일 반복 — scheduleDays 가 진실. 달이 바뀌어도 그대로 이어진다
+  //   MONTHLY 그 달 달력에서 고른 날짜만 — PetSchedule 행이 진실. 다음 달은 비어 있다
+  //
+  // 왜 한쪽으로 통일하지 않는가: 유치원 원생은 두 부류가 실제로 섞여 있다. 주 3회 정기권
+  // 아이는 매달 같은 요일에 오므로 매달 달력을 다시 칠하게 하면 20마리 × 12개월의 반복
+  // 노동이 되고, 파트타임/일일권 아이는 다음 주 일정이 그때그때 정해져 요일 패턴 자체가
+  // 없다. 하나로 강제하면 둘 중 한쪽이 반드시 앱 밖(수첩·단톡방)으로 나간다.
+  scheduleType String @default("WEEKLY") @map("schedule_type")
+
+  // 요일별 등원 스케줄 (0=일 ~ 6=토). scheduleType = WEEKLY 일 때만 읽는다.
+  scheduleDays Int[] @default([]) @map("schedule_days")
+
+  // 초상권 동의 범위 (job-034). 단체 사진에 여러 아이가 함께 찍히는 구조라
+  // "누구까지 이 아이가 나온 사진을 볼 수 있는가"를 아이별로 갖고 있어야 한다.
+  //   PRIVATE   본인 보호자만 — 이 아이가 태그된 게시물은 다른 보호자에게 보이지 않는다
+  //   CLASS     같은 원 보호자들 (기본값) — 합사해서 노는 아이들끼리
+  //   PUBLIC    유치원 전체 + 마케팅 활용까지 허용
+  // 나중에 붙이면 이미 쌓인 사진의 노출 범위를 소급 판정할 수 없으므로 처음부터 둔다.
+  photoConsent String @default("CLASS") @map("photo_consent")
+
   // ACTIVE(이용중) | INACTIVE(비활성/등록해지)
   status String @default("ACTIVE")
 
-  attendances  Attendance[]
-  dailyReports DailyReport[]
+  // 날짜 지정 등원일 (job-053). scheduleType = MONTHLY 일 때만 읽는다.
+  schedules        PetSchedule[]
+  attendances      Attendance[]
+  dailyReports     DailyReport[]
+  notificationLogs NotificationLog[]
+  feedTags         FeedTag[]
+  // 이 아이를 가리키는 초대장 (job-040). 보호자가 가입하면 이 경로로 계정이 연결된다.
+  invitations      TenantInvitation[]
+  // 이용권 원장 (job-045). 잔액은 아이 단위로 체인된다.
+  subscriptionLedgers SubscriptionLedger[]
+  // job-051: 이 아이가 산 이용권과 그 판매(매출) 기록.
+  subscriptions       TenantSubscription[]
+  sales               TenantSale[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([tenantId])
+  // 원생 목록의 기본 질의: 매장별 픽업 시각 오름차순 (job-052).
+  @@index([tenantId, pickupTime])
+  // "우리 매장에서 아직 계정이 연결되지 않은 아이"(가입 유도 대상) 조회용.
+  @@index([tenantId, userId])
   @@map("pets")
+}
+
+/**
+ * 날짜 지정 등원일 (job-053) — `Pet.scheduleType = MONTHLY` 인 아이의 등원 예정일.
+ *
+ * 요일 패턴(`Pet.scheduleDays`)을 미리 날짜로 펼쳐 넣지 **않는다.** 펼쳐 두면 ① 패턴을
+ * 고칠 때마다 미래 행을 다시 써야 하고 ② 펼치는 작업이 한 번 밀리면 그 달 출석부가
+ * 조용히 비어 버린다. 반복은 반복인 채로 두면 어긋날 수가 없다. 그래서 이 테이블에는
+ * **원장이 달력에서 직접 고른 날짜만** 들어간다.
+ */
+model PetSchedule {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  petId    String @map("pet_id")
+  pet      Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 같은 아이의 같은 날짜가 두 번 들어가면 출석부가 그 아이를 두 번 만든다.
+  @@unique([petId, date])
+  // "이 매장 · 이 달"이 유일한 조회 패턴이다(달력 화면 + 출석부 자동 생성).
+  @@index([tenantId, date])
+  @@map("pet_schedules")
 }

@@ -1,21 +1,23 @@
-import { SubscriptionsTable } from "@/widgets/subscriptions-table";
+import { PlatformSubscriptionsTable } from "@/widgets/platform-subscriptions-table";
 
 /**
- * 구독 관리 페이지 (view). 헤더 + 목록 위젯 조합만 담당한다.
+ * 전 플랫폼 구독 현황 페이지 (view).
+ * 매장 개설권(SaaS 요금) 구독을 다룬다 — 보호자가 사는 원생 이용권과는 별개다.
  */
 export const SubscriptionsPage = () => {
   return (
     <div className='space-y-6'>
       <div className='flex flex-col gap-1'>
         <h1 className='text-2xl font-bold tracking-tight text-white'>
-          구독 관리
+          구독 현황
         </h1>
-        <p className='text-slate-400 text-sm'>
-          유저들의 현재 요금제 구독 현황 및 다음 정기 결제 일정을 모니터링합니다.
+        <p className='text-sm text-slate-400'>
+          매장 개설권 구독 전체를 조회합니다. 매장이 연결되지 않은 건은 아직
+          사용하지 않은 개설권입니다.
         </p>
       </div>
 
-      <SubscriptionsTable />
+      <PlatformSubscriptionsTable />
     </div>
   );
 };

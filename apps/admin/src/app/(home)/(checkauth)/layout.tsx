@@ -1,7 +1,9 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { ROLES } from "@pawlog/shared";
 import { Sidebar } from "@/widgets/sidebar";
+import { TenantSync } from "@/shared/libs/tenant/TenantSync";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -47,12 +49,23 @@ const layout = async ({ children }: LayoutProps) => {
 
   const data = await response.json();
   const user = data.data.user;
+  // job-033: mypage 는 이제 소속 목록을 함께 내려준다. JWT 에 tenantId 가 없으므로
+  // 활성 매장은 이 목록에서 골라 헤더로 알려줘야 한다.
+  const memberships = data.data.memberships ?? [];
 
   if (user.status !== "ACTIVE") {
-    if (user.status === "PENDING") {
-      redirect("/auth/pending");
-    }
-    redirect("/auth/not-auth");
+    redirect("/auth/login?error=inactive");
+  }
+
+  // job-038: admin 앱은 플랫폼 운영자 전용이다. 매장 운영 화면은 전부 apps/web 의
+  // `/[tenant]/…` 로 옮겨졌으므로, 여기서 통과해야 할 계정은 SUPER_ADMIN 하나뿐이다.
+  //
+  // 로그인 폼(useLogin)의 역할 검사만으로는 부족하다 — 쿠키는 프로덕션에서
+  // `.${SERVER_NAME}` 도메인으로 발급되므로(apps/api/src/shared/utils/cookie.ts),
+  // apps/web 에서 로그인한 일반 회원의 세션이 admin 서브도메인에도 그대로 전달된다.
+  // 즉 로그인 폼을 거치지 않고 URL 로 바로 들어오는 경로가 존재한다.
+  if (user.role !== ROLES.SUPER_ADMIN) {
+    redirect("/auth/login?error=forbidden");
   }
 
   const handleLogout = async () => {
@@ -65,6 +78,7 @@ const layout = async ({ children }: LayoutProps) => {
 
   return (
     <div className='flex h-screen w-screen overflow-hidden bg-slate-950'>
+      <TenantSync memberships={memberships} />
       <Sidebar user={user} onLogout={handleLogout} />
       <main className='flex-1 overflow-y-auto bg-slate-950 p-8 text-slate-100'>
         {children}

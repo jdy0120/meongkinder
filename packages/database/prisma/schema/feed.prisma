@@ -1,0 +1,149 @@
+// 피드(사진 기록) 도메인 — job-034.
+//
+// 기존 DailyReport 는 "아이 1명 = 리포트 1건"인 폼 구조라 20마리면 20번 써야 한다.
+// 피드는 반대다: **사진 1장에 여러 아이가 찍히므로 게시물 1건이 여러 보호자에게 팬아웃된다.**
+// 선생님이 12장 올리면 20명의 보호자가 각자 "우리 아이 사진"을 받는다.
+//
+//   FeedPost ─┬─ FeedMedia[]  사진/영상 (한 게시물에 여러 장)
+//             └─ FeedTag[]    이 게시물에 등장한 아이들 → 팬아웃 대상
+//
+// 저녁에 FeedDigestService 가 아이별로 그날의 태그를 모아 DailyReport 를 자동 생성한다.
+// 즉 이 도메인은 DailyReport 를 대체하는 게 아니라 **입력 방식만 바꾼다**.
+
+model FeedPost {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // 올린 선생님/관리자. 계정이 지워져도 게시물은 남아야 하므로 SetNull.
+  authorId String? @map("author_id")
+  author   User?   @relation("FeedPostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  // 대상 일자. 커버리지("오늘 사진 0장인 아이")와 하루 마감 요약의 기준축이라
+  // createdAt 과 별도로 둔다 (어제 사진을 오늘 올리는 경우가 실제로 있다).
+  date DateTime @db.Date
+
+  caption String?
+
+  // AI 캡션 초안. 선생님이 그대로 쓰거나 고쳐 쓰며, caption 과 달라졌다면
+  // 초안이 부정확했다는 신호라 품질 추적에 쓴다.
+  aiCaptionDraft String? @map("ai_caption_draft")
+
+  // DRAFT(작성중, 보호자에게 안 보임) | PUBLISHED(게시, 팬아웃 완료)
+  status      String    @default("DRAFT")
+  publishedAt DateTime? @map("published_at")
+
+  media       FeedMedia[]
+  tags        FeedTag[]
+  corrections FeedTagCorrection[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, date])
+  @@index([tenantId, status])
+  @@map("feed_posts")
+}
+
+model FeedMedia {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  postId String   @map("post_id")
+  post   FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  fileId String @map("file_id")
+  file   File   @relation(fields: [fileId], references: [id])
+
+  // IMAGE | VIDEO. 영상은 15초 제한(서비스 레이어)이며 보관 정책이 사진과 다르다.
+  type String @default("IMAGE")
+
+  order Int @default(0)
+
+  // 이 사진에 찍힌 아이들. 팬아웃 단위가 게시물이 아니라 여기다.
+  tags FeedTag[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([postId])
+  @@index([tenantId])
+  @@map("feed_media")
+}
+
+/**
+ * **사진 한 장**에 등장한 아이 태그 — 팬아웃의 유일한 근거.
+ *
+ * 태그가 게시물이 아니라 사진에 붙는 것이 이 도메인의 핵심이다. 게시물 단위였다면 사진 12장을
+ * 한 번에 올릴 때 12장 전부가 태그된 모든 아이에게 가버려서, "사진 12장이면 원생 20마리가 다
+ * 채워진다"는 계산도 성립하지 않고 초코만 나온 사진이 두부 보호자에게 가는 오배포가 생긴다.
+ *
+ * 태그가 곧 "그 아이가 오늘 여기 있었다"는 기록이므로 출석부도 여기서 파생된다.
+ */
+model FeedTag {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // 게시물은 조회 편의를 위한 비정규화다 (media.postId 로도 갈 수 있지만 목록 질의가 한 단계 짧아진다).
+  postId String   @map("post_id")
+  post   FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // 태그의 진짜 대상. NOT NULL 인 이유는 "게시물 전체 태그"와 "사진별 태그"가 섞이면
+  // 집계가 두 갈래로 갈리고, nullable 유니크는 Postgres 에서 NULL 을 서로 다르게 취급해
+  // 중복을 막지도 못하기 때문이다.
+  mediaId String    @map("media_id")
+  media   FeedMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  petId String @map("pet_id")
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  // AI(자동 제안) | MANUAL(사람이 직접 추가)
+  source String @default("MANUAL")
+
+  // AI 제안일 때의 확신도 0~1. 낮으면 화면에서 "이 아이 맞나요?" 확인을 받는다.
+  confidence Float?
+
+  // 사람이 눈으로 확인했는지. AI 제안을 그대로 게시하면 게시 시점에 true 가 된다.
+  confirmed Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([mediaId, petId])
+  @@index([postId])
+  @@index([petId])
+  @@index([tenantId])
+  @@map("feed_tags")
+}
+
+/**
+ * AI 태그 제안에 대한 사람의 수정 이력 — 곧 학습 데이터다.
+ *
+ * "오인식 수정이 곧 학습 데이터"라는 것이 이 제품의 자산 논리이므로, 수정 순간을
+ * 버리지 않고 남긴다. 지금은 정확도 측정에만 쓰지만 나중에 모델 재학습 입력이 된다.
+ * 태그가 지워져도 이력은 남아야 하므로 FeedTag 가 아니라 petId 를 직접 들고 있다.
+ */
+model FeedTagCorrection {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  postId String   @map("post_id")
+  post   FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  petId String @map("pet_id")
+
+  // ADDED(AI 가 놓친 아이를 사람이 추가) | REMOVED(AI 오인식을 사람이 제거) | CONFIRMED(AI 제안을 그대로 인정)
+  action String
+
+  // 수정 대상이던 AI 제안의 확신도 (사람이 직접 추가한 경우 null)
+  confidence Float?
+
+  correctedBy String? @map("corrected_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt])
+  @@index([petId])
+  @@map("feed_tag_corrections")
+}

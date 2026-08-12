@@ -4,6 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./shared/modules/app.module";
 import { setupApplication } from "./shared/configs/app.setup"; // 👈 불러오기
+import { seatConfig } from "./shared/configs/seat.config";
 import { prismaConnect } from "@pawlog/database";
 
 import { WinstonLogger } from "./shared/logger/logger.service";
@@ -30,5 +31,12 @@ async function bootstrap() {
   // 3. 포트 리스닝 시작
   await app.listen(PORT);
   bootstrapLogger.log(`🚀 Server is running on port ${PORT}`);
+
+  // job-056: 임시 토글이라 켜져 있다는 사실이 잊히면 안 된다. 매 부팅마다 눈에 띄게 남긴다.
+  if (seatConfig.allowUnpaid) {
+    bootstrapLogger.warn(
+      "⚠️  ALLOW_UNPAID_TENANT_SEAT=true — 매장 개설권이 결제 없이 발급됩니다. 운영 배포 전 반드시 끄세요.",
+    );
+  }
 }
-bootstrap();
+void bootstrap();

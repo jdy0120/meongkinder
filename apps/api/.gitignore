@@ -56,3 +56,6 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /resources/**
+
+# migration script run artifacts (contain point-in-time file paths, not source)
+/scripts/.migration-manifests/

@@ -19,10 +19,10 @@ import { CreateReportContentDto, UpdateReportContentDto } from "../dtos";
 import { REPORT_CONTENT_ROUTES } from "../routes";
 import { ReportContentService } from "../services/report-content.service";
 
-// 리포트 항목 작성/관리는 돌봄 스태프/관리자 전용 업무이므로 ADMIN 만 접근 가능.
+// 리포트 항목 작성/관리는 돌봄 스태프/관리자 전용 업무이므로 STAFF/TENANT_ADMIN/SUPER_ADMIN 만 접근 가능.
 @ApiTags("ReportContent")
 @ApiBearerAuth()
-@Roles(ROLES.ADMIN)
+@Roles(ROLES.STAFF, ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN)
 @Controller(REPORT_CONTENT_ROUTES.v1.BASE)
 export class ReportContentController {
   constructor(private readonly reportContentService: ReportContentService) {}

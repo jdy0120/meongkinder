@@ -6,7 +6,12 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { prisma } from "@pawlog/database";
+import {
+  prisma,
+  requireTenantId,
+  tenantTransaction,
+  type Prisma,
+} from "@pawlog/database";
 import * as crypto from "crypto";
 import {
   buildPaginatedData,
@@ -21,12 +26,40 @@ import { CancelPaymentDto, ConfirmPaymentDto, CreateOrderDto } from "../dtos";
 // 정렬 허용 필드 (임의 필드 주입 방지)
 const ORDER_SORTABLE_FIELDS = ["createdAt", "amount", "status"] as const;
 
+/** 토스페이먼츠 결제 승인/취소/조회 응답 (실제 사용하는 필드만 선언, 나머지는 rawData 저장을 위해 통과) */
+interface TossPaymentResponse {
+  paymentKey: string;
+  orderId: string;
+  method?: string | null;
+  totalAmount?: number;
+  status: string;
+  approvedAt?: string | null;
+  [key: string]: unknown;
+}
+
+/** 토스페이먼츠 웹훅 본문 (버전에 따라 최상위 또는 data 하위에 실려 온다) */
+interface TossWebhookPayload {
+  data?: { paymentKey?: string; orderId?: string };
+  paymentKey?: string;
+  orderId?: string;
+}
+
+/** 토스 API 에러 응답 */
+interface TossErrorResponse {
+  code?: string;
+  message?: string;
+}
+
+/** 토스 응답 원본을 Payment.rawData(Prisma Json 컬럼)에 저장 가능한 형태로 변환 */
+const toRawData = (value: TossPaymentResponse): Prisma.InputJsonValue =>
+  value as unknown as Prisma.InputJsonValue;
+
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
 
   /** 토스 API 공통 호출 헬퍼 (Basic 인증 + JSON) */
-  private async tossRequest<T = any>(
+  private async tossRequest<T>(
     path: string,
     body?: Record<string, unknown>,
   ): Promise<T> {
@@ -53,14 +86,15 @@ export class PaymentService {
       );
     }
 
-    const data = await res.json().catch(() => ({}));
+    const data = (await res.json().catch(() => ({}))) as T | TossErrorResponse;
     if (!res.ok) {
       // 토스 에러 응답: { code, message }
+      const error = data as TossErrorResponse;
       this.logger.warn(
-        `토스 API 오류 ${res.status}: ${data?.code} ${data?.message}`,
+        `토스 API 오류 ${res.status}: ${error.code} ${error.message}`,
       );
       throw new BadRequestException(
-        data?.message || "결제 처리 중 오류가 발생했습니다.",
+        error.message || "결제 처리 중 오류가 발생했습니다.",
       );
     }
     return data as T;
@@ -72,6 +106,7 @@ export class PaymentService {
 
     const order = await prisma.order.create({
       data: {
+        tenantId: requireTenantId(),
         orderId,
         userId,
         orderName: dto.orderName,
@@ -106,16 +141,17 @@ export class PaymentService {
       ? (sort as string)
       : "createdAt";
 
-    const [items, total] = await prisma.$transaction([
-      prisma.order.findMany({
+    const [items, total] = await tenantTransaction(prisma, async (tx) => {
+      const items = await tx.order.findMany({
         where,
         skip,
         take,
         orderBy: { [sortField]: order },
         include: { payment: true },
-      }),
-      prisma.order.count({ where }),
-    ]);
+      });
+      const total = await tx.order.count({ where });
+      return [items, total] as const;
+    });
 
     return buildPaginatedData(items, { page, pageSize, total });
   }
@@ -150,17 +186,21 @@ export class PaymentService {
     }
 
     // 토스 결제 승인
-    const tossPayment = await this.tossRequest("/payments/confirm", {
-      paymentKey: dto.paymentKey,
-      orderId: dto.orderId,
-      amount: dto.amount,
-    });
+    const tossPayment = await this.tossRequest<TossPaymentResponse>(
+      "/payments/confirm",
+      {
+        paymentKey: dto.paymentKey,
+        orderId: dto.orderId,
+        amount: dto.amount,
+      },
+    );
 
     // 결제 저장 + 주문 상태 갱신 (트랜잭션)
-    const [payment] = await prisma.$transaction([
-      prisma.payment.upsert({
+    const [payment] = await tenantTransaction(prisma, async (tx) => {
+      const payment = await tx.payment.upsert({
         where: { orderId: order.orderId },
         create: {
+          tenantId: requireTenantId(),
           paymentKey: tossPayment.paymentKey,
           orderId: order.orderId,
           method: tossPayment.method ?? null,
@@ -169,7 +209,7 @@ export class PaymentService {
           approvedAt: tossPayment.approvedAt
             ? new Date(tossPayment.approvedAt)
             : null,
-          rawData: tossPayment,
+          rawData: toRawData(tossPayment),
         },
         update: {
           paymentKey: tossPayment.paymentKey,
@@ -179,14 +219,15 @@ export class PaymentService {
           approvedAt: tossPayment.approvedAt
             ? new Date(tossPayment.approvedAt)
             : null,
-          rawData: tossPayment,
+          rawData: toRawData(tossPayment),
         },
-      }),
-      prisma.order.update({
+      });
+      const updatedOrder = await tx.order.update({
         where: { orderId: order.orderId },
         data: { status: ORDER_STATUS.PAID },
-      }),
-    ]);
+      });
+      return [payment, updatedOrder] as const;
+    });
 
     return this.toPaymentSummary(payment, "결제가 완료되었습니다.");
   }
@@ -209,7 +250,7 @@ export class PaymentService {
       throw new ForbiddenException("본인의 결제가 아닙니다.");
     }
 
-    const tossPayment = await this.tossRequest(
+    const tossPayment = await this.tossRequest<TossPaymentResponse>(
       `/payments/${paymentKey}/cancel`,
       {
         cancelReason: dto.cancelReason,
@@ -219,18 +260,18 @@ export class PaymentService {
 
     const isFullCancel = tossPayment.status === PAYMENT_STATUS.CANCELED;
 
-    await prisma.$transaction([
-      prisma.payment.update({
+    await tenantTransaction(prisma, async (tx) => {
+      await tx.payment.update({
         where: { paymentKey },
-        data: { status: tossPayment.status, rawData: tossPayment },
-      }),
-      prisma.order.update({
+        data: { status: tossPayment.status, rawData: toRawData(tossPayment) },
+      });
+      await tx.order.update({
         where: { orderId: payment.orderId },
         data: {
           status: isFullCancel ? ORDER_STATUS.CANCELED : ORDER_STATUS.PAID,
         },
-      }),
-    ]);
+      });
+    });
 
     return new ResponseEnvelope(
       { paymentKey, status: tossPayment.status },
@@ -242,10 +283,10 @@ export class PaymentService {
    * 4) 웹훅 — 토스가 결제 상태 변화를 통지 (가상계좌 입금 등).
    * 웹훅 본문을 신뢰하지 않고, paymentKey 로 토스에 재조회해 상태를 동기화한다.
    */
-  async handleWebhook(body: any) {
-    const paymentKey: string | undefined =
-      body?.data?.paymentKey ?? body?.paymentKey;
-    const orderId: string | undefined = body?.data?.orderId ?? body?.orderId;
+  async handleWebhook(body: unknown) {
+    const payload = (body ?? {}) as TossWebhookPayload;
+    const paymentKey = payload.data?.paymentKey ?? payload.paymentKey;
+    const orderId = payload.data?.orderId ?? payload.orderId;
 
     if (!paymentKey && !orderId) {
       // 알 수 없는 이벤트는 200 으로 흘려보냄 (토스 재시도 방지)
@@ -261,15 +302,17 @@ export class PaymentService {
 
     // 토스에 재조회해 진짜 상태를 반영
     const key = paymentKey ?? existing.paymentKey;
-    const verified = await this.tossRequest(`/payments/${key}`);
+    const verified = await this.tossRequest<TossPaymentResponse>(
+      `/payments/${key}`,
+    );
 
     const isCanceled =
       verified.status === PAYMENT_STATUS.CANCELED ||
       verified.status === PAYMENT_STATUS.PARTIAL_CANCELED;
     const isDone = verified.status === PAYMENT_STATUS.DONE;
 
-    await prisma.$transaction([
-      prisma.payment.update({
+    await tenantTransaction(prisma, async (tx) => {
+      await tx.payment.update({
         where: { paymentKey: verified.paymentKey },
         data: {
           status: verified.status,
@@ -277,10 +320,10 @@ export class PaymentService {
           approvedAt: verified.approvedAt
             ? new Date(verified.approvedAt)
             : existing.approvedAt,
-          rawData: verified,
+          rawData: toRawData(verified),
         },
-      }),
-      prisma.order.update({
+      });
+      await tx.order.update({
         where: { orderId: verified.orderId },
         data: {
           status: isCanceled
@@ -291,8 +334,8 @@ export class PaymentService {
               ? ORDER_STATUS.PAID
               : undefined,
         },
-      }),
-    ]);
+      });
+    });
 
     return { received: true };
   }

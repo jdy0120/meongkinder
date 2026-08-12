@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { prisma } from "@pawlog/database";
+import { prisma, runWithoutTenant } from "@pawlog/database";
 import * as fs from "fs";
 import * as path from "path";
 import { FileService } from "../../shared/file/services/file.service";
@@ -64,20 +64,23 @@ export class TermsService {
       );
     }
 
-    const agreements = await prisma.$transaction(async (tx) => {
-      const createdAgreements = [];
-      for (const ag of dto.agreements) {
-        const created = await tx.userTermsAgreement.create({
-          data: {
-            userId,
-            termsId: ag.termsId,
-            isAgreed: ag.isAgreed,
-          },
-        });
-        createdAgreements.push(created);
-      }
-      return createdAgreements;
-    });
+    // job-033: 약관은 플랫폼 공용이고 동의는 회원 본인의 행위라 테넌트 스코프 밖이다.
+    const agreements = await runWithoutTenant(() =>
+      prisma.$transaction(async (tx) => {
+        const createdAgreements = [];
+        for (const ag of dto.agreements) {
+          const created = await tx.userTermsAgreement.create({
+            data: {
+              userId,
+              termsId: ag.termsId,
+              isAgreed: ag.isAgreed,
+            },
+          });
+          createdAgreements.push(created);
+        }
+        return createdAgreements;
+      }),
+    );
 
     return { agreements };
   }

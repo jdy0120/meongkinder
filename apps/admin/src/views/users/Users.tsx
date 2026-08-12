@@ -1,22 +1,24 @@
-import { UsersTable } from "@/widgets/users-table";
+import { PlatformUsersTable } from "@/widgets/platform-users-table";
 
 /**
- * 사용자 관리 페이지 (view). 헤더 + 목록 위젯 조합만 담당한다.
+ * 전 플랫폼 회원 관리 페이지 (view).
+ * 매장 단위 구성원 관리와 다르다 — 여기는 테넌트를 가로지르는 계정 자체의 관리다.
  */
 export const UsersPage = () => {
   return (
     <div className='space-y-6'>
       <div className='flex flex-col gap-1'>
         <h1 className='text-2xl font-bold tracking-tight text-white'>
-          사용자 관리
+          회원 관리
         </h1>
-        <p className='text-slate-400 text-sm'>
-          서비스 가입 사용자들의 역할 변경 및 전체 사용자 현황을 조회할 수
-          있습니다.
+        <p className='text-sm text-slate-400'>
+          플랫폼 전체 회원을 조회하고 계정 정지·삭제, 플랫폼 관리자 승격을
+          처리합니다. 매장 안에서의 자격(보호자·스태프·관리자)은 각 매장의 구성원
+          관리에서 다룹니다.
         </p>
       </div>
 
-      <UsersTable />
+      <PlatformUsersTable />
     </div>
   );
 };

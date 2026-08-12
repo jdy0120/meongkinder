@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { PaginationQuery } from "@pawlog/shared";
 
 import { GetList } from "@/shared/libs/axios/request";
+import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
 
 import { emptyPage } from "./emptyPage";
 
@@ -23,11 +24,14 @@ import { emptyPage } from "./emptyPage";
 export function usePaginatedList<T>(
   key: string,
   url: string,
-  query: PaginationQuery = {},
+  query: PaginationQuery & Record<string, unknown> = {},
 ) {
+  const tenantId = useTenantStore((state) => state.tenantId);
+
   return useQuery({
     // query 가 바뀌면 자동으로 재요청 + 별도 캐시
-    queryKey: [key, "list", query],
+    // tenantId를 키에 포함해 테넌트 전환/SUPER_ADMIN 뷰 전환 시 캐시가 섞이지 않도록 한다.
+    queryKey: [key, "list", tenantId, query],
     queryFn: async () => {
       const res = await GetList<T>(url, query);
       return res.data.data ?? emptyPage<T>();

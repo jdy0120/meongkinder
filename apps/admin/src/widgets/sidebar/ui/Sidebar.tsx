@@ -10,61 +10,55 @@ import {
   LogOut,
   ShieldCheck,
   Settings,
+  Building2,
 } from "lucide-react";
+import { type Role } from "@pawlog/shared";
+import { RoleBadge } from "@/entities/user";
 
 interface SidebarProps {
   user: {
     nickname: string;
     email: string;
+    role: Role;
   };
   onLogout: () => void;
 }
 
+/**
+ * 플랫폼 관리 콘솔 사이드바 (job-038).
+ *
+ * apps/admin 은 **pawlog 운영사(SUPER_ADMIN) 전용** 콘솔이다. 매장 운영(출석부·리포트·
+ * 구성원·원생)은 전부 apps/web 의 `/[tenant]/…` 로 이관됐다. 여기 메뉴는 전 플랫폼을
+ * 대상으로 하는 것만 남는다 — 그래서 역할별 분기가 필요 없다(진입 자체가 SUPER_ADMIN 전용).
+ */
+const menuItems: {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+}[] = [
+  { name: "대시보드", href: "/", icon: LayoutDashboard },
+  { name: "테넌트 관리", href: "/tenants", icon: Building2 },
+  { name: "회원 관리", href: "/users", icon: Users },
+  { name: "구독 현황", href: "/subscriptions", icon: CreditCard },
+  { name: "약관 관리", href: "/terms", icon: ShieldCheck },
+  { name: "시스템 설정", href: "/system", icon: Settings },
+];
+
 export function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname();
-
-  const menuItems = [
-    {
-      name: "대시보드",
-      href: "/",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "사용자 관리",
-      href: "/users",
-      icon: Users,
-    },
-    {
-      name: "구독 관리",
-      href: "/subscriptions",
-      icon: CreditCard,
-    },
-    {
-      name: "약관 관리",
-      href: "/terms",
-      icon: ShieldCheck,
-    },
-    {
-      name: "시스템 설정",
-      href: "/system",
-      icon: Settings,
-    },
-  ];
 
   return (
     <aside className='w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-screen text-slate-200'>
       <div className='flex flex-col'>
-        {/* Logo/Header */}
         <div className='p-6 border-b border-slate-800 flex items-center gap-3'>
           <div className='w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/30'>
-            A
+            P
           </div>
           <span className='font-semibold text-lg tracking-wide text-white'>
-            Template Admin
+            Pawlog Platform
           </span>
         </div>
 
-        {/* Navigation Menus */}
         <nav className='p-4 space-y-1'>
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -89,7 +83,6 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
         </nav>
       </div>
 
-      {/* User profile & Logout */}
       <div className='p-4 border-t border-slate-800 bg-slate-950/40'>
         <div className='flex items-center gap-3 px-2 py-3'>
           <div className='w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center font-bold text-slate-100'>
@@ -101,6 +94,10 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
             </p>
             <p className='text-xs text-slate-500 truncate'>{user.email}</p>
           </div>
+        </div>
+
+        <div className='px-2 pb-1'>
+          <RoleBadge role={user.role} />
         </div>
 
         <button

@@ -11,6 +11,7 @@ import { isSocialProviderSlug } from "@pawlog/shared";
 import { Public } from "../../shared/decorators/public.decorator";
 import { AUTH_ROUTES } from "../routes";
 import { SocialAuthService } from "../services";
+import type { SocialLoginOrigin } from "../services/social-auth.service";
 import * as CONST from "../../shared/constants";
 import { getCookieName, getCookieOptions } from "../../shared/utils";
 
@@ -22,14 +23,23 @@ import { getCookieName, getCookieOptions } from "../../shared/utils";
 export class SocialAuthController {
   constructor(private readonly socialAuth: SocialAuthService) {}
 
-  /** 1단계 — provider 인증 페이지로 302 redirect */
+  /**
+   * 1단계 — provider 인증 페이지로 302 redirect.
+   * `?app=admin` 으로 시작하면 콜백 후에도 admin 으로 돌아온다(기본값 web).
+   * 임의 URL 을 받지 않고 정해진 두 앱 중 하나만 허용해 오픈 리다이렉트를 막는다.
+   */
   @Public()
   @Get(AUTH_ROUTES.v1.SOCIAL_AUTHORIZE)
-  async authorize(@Param("provider") provider: string, @Res() res: Response) {
+  async authorize(
+    @Param("provider") provider: string,
+    @Query("app") app: string | undefined,
+    @Res() res: Response,
+  ) {
     if (!isSocialProviderSlug(provider)) {
       throw new BadRequestException("지원하지 않는 소셜 로그인입니다.");
     }
-    const url = await this.socialAuth.buildAuthorizeUrl(provider);
+    const origin: SocialLoginOrigin = app === "admin" ? "admin" : "web";
+    const url = await this.socialAuth.buildAuthorizeUrl(provider, origin);
     return res.redirect(url);
   }
 
@@ -46,11 +56,11 @@ export class SocialAuthController {
       throw new BadRequestException("지원하지 않는 소셜 로그인입니다.");
     }
     if (!code) {
-      return res.redirect(this.socialAuth.failureRedirect);
+      return res.redirect(this.socialAuth.failureRedirect());
     }
 
     try {
-      const { accessToken, refreshToken } =
+      const { accessToken, refreshToken, origin } =
         await this.socialAuth.handleCallback(provider, code, state);
       const options = getCookieOptions();
 
@@ -63,10 +73,11 @@ export class SocialAuthController {
         maxAge: CONST.REFRESH_TOKEN_EXPIRED_IN_MILL_SEC,
       });
 
-      return res.redirect(this.socialAuth.successRedirect);
-    } catch {
-      // 실패 사유는 서비스에서 로깅됨. 사용자는 로그인 페이지로 되돌린다.
-      return res.redirect(this.socialAuth.failureRedirect);
+      return res.redirect(this.socialAuth.successRedirect(origin));
+    } catch (err) {
+      console.error("[SocialAuth] Callback error:", err);
+      // 실패 사유는 서비스에서 로깅됨. 사용자는 시작한 앱의 로그인 페이지로 되돌린다.
+      return res.redirect(this.socialAuth.failureRedirect());
     }
   }
 }

@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   // trailingSlash:false 와 반대 방향이라 basePath 사용 시 무한 리다이렉트 루프가
   // 생기므로, basePath가 있을 때는 trailingSlash도 true로 맞춘다.
   trailingSlash: Boolean(basePath),
+  // 테넌트 서브도메인 로컬 개발(lvh.me / *.localhost)에서 dev 서버로 접속할 때
+  // Next dev 서버의 cross-origin 요청 차단(HMR/RSC 등)을 피하기 위한 허용 목록.
+  // docs/local-tenant-dev.md 참고. 프로덕션(output: standalone)에는 영향 없음.
+  allowedDevOrigins: ["*.lvh.me", "*.localhost", "*.pawlog-dev.doyeonism.com"],
 };
 
 export default nextConfig;

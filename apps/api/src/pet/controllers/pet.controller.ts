@@ -15,7 +15,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { PaginationQueryDto } from "../../shared/dtos";
-import { CreatePetDto, UpdatePetDto } from "../dtos";
+import { CreatePetDto, EnrollPetDto, UpdatePetDto } from "../dtos";
 import { PET_ROUTES } from "../routes";
 import { PetService } from "../services/pet.service";
 
@@ -65,5 +65,26 @@ export class PetController {
   async remove(@Req() req: Request, @Param("id") id: string) {
     const userId = req.user?.userId || "";
     return this.petService.remove(userId, id);
+  }
+
+  // job-033: 펫 소유와 매장 소속은 별개다. 등원은 ACTIVE 구성원인 매장에만 가능하다.
+  @Post(PET_ROUTES.v1.ENROLL)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("아이가 매장에 등록되었습니다.")
+  async enroll(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() dto: EnrollPetDto,
+  ) {
+    const userId = req.user?.userId || "";
+    return this.petService.enroll(userId, id, dto.tenantId);
+  }
+
+  @Post(PET_ROUTES.v1.UNENROLL)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("등원이 해지되었습니다.")
+  async unenroll(@Req() req: Request, @Param("id") id: string) {
+    const userId = req.user?.userId || "";
+    return this.petService.unenroll(userId, id);
   }
 }

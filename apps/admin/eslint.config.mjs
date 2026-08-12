@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // tsconfig.json 의 outDir(./dist) — 소스가 아닌 빌드 산출물.
+    "dist/**",
   ]),
 ]);
 

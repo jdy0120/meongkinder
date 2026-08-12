@@ -1,10 +1,11 @@
 // 인증 도메인 API 계약 (request / response) — 이메일 + 비밀번호 기반
-import type { User } from "@pawlog/database";
 import type { TermsAgreementInput } from "./terms";
 import type { SocialProvider } from "../../src/social";
+import type { SafeUser } from "../models/auth/user";
 
 // ── 요청 ──────────────────────────────────────────────
 export interface SignupRequest {
+  phone?: string; // 휴대폰 번호 (선택). 대기 중인 테넌트 초대와 매칭하는 키로 쓰인다.
   email: string;
   password: string;
   nickname: string;
@@ -21,6 +22,26 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
+/**
+ * 최초 진입 완료 (job-041) — 필수 약관 동의 + (선택) 전화번호.
+ *
+ * 카카오 로그인은 약관 동의를 거치지 않아 `apps/web` 사용자는 전원 미동의 상태로
+ * 계정이 만들어진다. 이 요청이 그 구멍을 메우는 유일한 경로다.
+ */
+export interface CompleteProfileRequest {
+  agreements: TermsAgreementInput[];
+  /** 선택. 넣으면 비회원 시절 등록된 아이·매장이 연결된다(생략 시 연결 불가). */
+  phone?: string;
+}
+
+/** 아직 동의하지 않은 활성 필수 약관 — 게이트 화면이 이 목록을 그대로 렌더한다. */
+export interface PendingRequiredTerms {
+  id: string;
+  title: string;
+  type: string;
+  version: string;
+}
+
 // 비밀번호 찾기 — 재설정 링크(토큰)를 이메일로 발송
 export interface ForgotPasswordRequest {
   email: string;
@@ -35,12 +56,12 @@ export interface ResetPasswordRequest {
 // ── 응답 (data 페이로드) ──────────────────────────────
 // 성공 message 는 BaseResponse.message(봉투)에 담긴다. 아래 타입은 data 페이로드만 기술.
 export interface SignupResponse {
-  user: User;
+  user: SafeUser;
 }
 
 // 로그인 성공. access/refresh 토큰은 httpOnly 쿠키로만 내려간다(본문에 토큰 없음).
 export interface LoginResponse {
-  user: User;
+  user: SafeUser;
 }
 
 // 비밀번호 찾기/재설정 공통 — data 페이로드 없음(null). 안내 message 는 봉투(BaseResponse.message)에 담긴다.
@@ -60,6 +81,6 @@ export interface NormalizedSocialProfile {
 // 소셜 로그인 성공 — 이메일 로그인과 동일하게 access/refresh 토큰은 httpOnly 쿠키로만 내려간다.
 // 서버 리다이렉트 흐름이므로 실제 응답은 web 으로의 302 redirect 이며, 이 타입은 내부 처리 결과를 기술한다.
 export interface SocialLoginResult {
-  user: User;
+  user: SafeUser;
   isNewUser: boolean;
 }

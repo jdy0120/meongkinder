@@ -12,6 +12,7 @@ import { AuthModule } from "../../auth/auth.module";
 import { MailModule } from "./mail.module";
 import { prismaDisconnect } from "@pawlog/database";
 import { LoggerMiddleware } from "../middleware/logger.middleware";
+import { TenantMiddleware } from "../middleware/tenant.middleware";
 import { JwtAccessGuard } from "../guards/jwt-access.guard";
 import { RolesGuard } from "../guards/roles.guard";
 import { TransformInterceptor } from "../interceptors/transform.interceptor";
@@ -20,6 +21,8 @@ import { FileModule } from "../file/file.module";
 import { PaymentModule } from "../../payment/payment.module";
 import { AdminModule } from "../../admin/admin.module";
 import { RedisModule } from "../redis/redis.module";
+import { LlmModule } from "../llm/llm.module";
+import { GeoModule } from "../geo/geo.module";
 import { SubscriptionModule } from "../../subscription/subscription.module";
 import { TermsModule } from "../../terms/terms.module";
 import { HealthModule } from "../../health/health.module";
@@ -27,11 +30,18 @@ import { LoggerModule } from "../logger/logger.module";
 import { appLogger } from "../logger";
 import { PetModule } from "../../pet/pet.module";
 import { CareModule } from "../../care/care.module";
+import { FeedModule } from "../../feed/feed.module";
+import { NotificationModule } from "../../notification/notification.module";
+import { TenantModule } from "../../tenant/tenant.module";
+import { MembershipModule } from "../../membership/membership.module";
+import { PlatformModule } from "../../platform/platform.module";
 
 @Module({
   imports: [
     PassportModule,
     RedisModule,
+    LlmModule,
+    GeoModule,
     LoggerModule,
     AuthModule,
     MailModule,
@@ -43,7 +53,12 @@ import { CareModule } from "../../care/care.module";
     TermsModule,
     HealthModule,
     PetModule,
+    NotificationModule,
     CareModule,
+    FeedModule,
+    TenantModule,
+    MembershipModule,
+    PlatformModule,
     // 전역 기본 rate limit: 1분당 100회 (일반 API 보호).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],
@@ -72,7 +87,9 @@ import { CareModule } from "../../care/care.module";
 })
 export class AppModule implements NestModule, OnApplicationShutdown {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes("*path");
+    // TenantMiddleware 가 ALS 테넌트 컨텍스트를 먼저 세팅해야 이후의 LoggerMiddleware/컨트롤러
+    // 인터셉터(예: multer FileInterceptor)가 올바른 tenantId 스코프 아래에서 동작한다.
+    consumer.apply(TenantMiddleware, LoggerMiddleware).forRoutes("*path");
   }
 
   async onApplicationShutdown(signal?: string) {

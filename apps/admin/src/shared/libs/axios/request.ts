@@ -24,7 +24,7 @@ const Get = async <T, D>(
 // 공통 목록 조회 — @pawlog/shared 유틸로 쿼리 생성 + 응답 타이핑
 const GetList = async <T>(
   url: string,
-  query: PaginationQuery = {},
+  query: PaginationQuery & Record<string, unknown> = {},
   config?: AxiosRequestConfig,
 ): Promise<AxiosResponse<BaseResponse<PaginatedData<T>>>> => {
   const response = await axiosInstance.get(url, {

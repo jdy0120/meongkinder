@@ -1,15 +1,16 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "./generated/prisma/client";
+import {
+  createExtendedClient,
+  type ExtendedPrismaClient,
+  type ExtendedTransactionClient,
+} from "./client";
 
-let prismaInstance: PrismaClient | null = null;
+let prismaInstance: ExtendedPrismaClient | null = null;
 
 const connect = async () => {
   if (prismaInstance) return prismaInstance; // 이미 연결되어 있으면 재사용
 
-  const connectionString = process.env.DATABASE_URL;
-  const adapter = new PrismaPg({ connectionString });
-  prismaInstance = new PrismaClient({ adapter });
+  prismaInstance = createExtendedClient(process.env.DATABASE_URL);
 
   await prismaInstance.$connect();
   return prismaInstance;
@@ -21,7 +22,7 @@ const disconnect = async () => {
   prismaInstance = null;
 };
 
-export const prismaGetter = new Proxy({} as PrismaClient, {
+export const prismaGetter = new Proxy({} as ExtendedPrismaClient, {
   get(target, prop, receiver) {
     if (!prismaInstance) {
       throw new Error(
@@ -37,5 +38,17 @@ export {
   disconnect as prismaDisconnect,
   prismaGetter as prisma,
 };
+
+export type { ExtendedPrismaClient, ExtendedTransactionClient };
+export { tenantTransaction } from "./tenant-transaction";
+export {
+  runWithTenant,
+  runWithoutTenant,
+  getTenantContext,
+  getTenantId,
+  requireTenantId,
+  isBypass,
+  type TenantContext,
+} from "./tenant-context";
 
 export * from "./generated/prisma/client";

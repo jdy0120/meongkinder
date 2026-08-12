@@ -44,6 +44,53 @@ footer {
   position: relative;
 }
 
+/*
+ * 스크롤바 (job-050).
+ *
+ * 기본 스크롤바는 트랙(배경)이 회색 띠로 남아 카드·시트 위에 겹치면 화면이 지저분해진다.
+ * 이 앱은 body 스크롤을 막고 내부 컨테이너만 스크롤하므로(위 `overflow: hidden`) 스크롤바가
+ * 콘텐츠 영역 안에 그려지는데, 그때 트랙 배경이 특히 눈에 띈다.
+ *
+ * 트랙은 투명하게 두고 **손잡이(thumb)만** 남긴다. 손잡이도 테마 토큰을 써서 라이트/다크
+ * 양쪽에서 자연스럽게 묻히게 한다.
+ */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent)
+    transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent; /* 회색 띠 제거 */
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 30%,
+    transparent
+  );
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 50%,
+    transparent
+  );
+}
+
+/* 모서리(가로·세로 스크롤바가 만나는 지점)에도 배경이 남는다 */
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .unselectable {
   /* 1. 텍스트 드래그 선택 방지 (PC/모바일 공통) */
   user-select: none;
@@ -56,13 +103,14 @@ footer {
 /* Select Scroll Buttons Visibility Fix */
 [data-slot="select-scroll-up-button"],
 [data-slot="select-scroll-down-button"] {
-  background-color: #18181b !important; /* zinc-900 */
-  color: white !important;
+  /* 라이트 테마 팝오버 안에 검은 막대가 생기던 하드코딩을 테마 토큰으로 교체 */
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
   opacity: 1 !important;
 }
 
 [data-slot="select-scroll-up-button"] svg,
 [data-slot="select-scroll-down-button"] svg {
-  color: white !important;
-  stroke: white !important;
+  color: var(--popover-foreground) !important;
+  stroke: currentColor !important;
 }

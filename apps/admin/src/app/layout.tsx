@@ -13,6 +13,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='ko' suppressHydrationWarning>
+      <head>
+        {/* apps/web 과 같은 폰트를 쓴다 — 토큰을 공유하는데 폰트만 다르면 갈라진다. */}
+        <link rel='preconnect' href='https://cdn.jsdelivr.net' crossOrigin='' />
+        <link
+          rel='stylesheet'
+          href='https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css'
+        />
+      </head>
       <body suppressHydrationWarning>{children}</body>
     </html>
   );

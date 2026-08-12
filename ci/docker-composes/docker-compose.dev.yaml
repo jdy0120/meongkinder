@@ -25,7 +25,7 @@ services:
     working_dir: /app/apps/api
     volumes:
       - ../../apps/api:/app/apps/api
-      - ../../packages/database:/app/packages/database
+      - ../../packages:/app/packages
       - /app/apps/api/node_modules
     env_file:
       - ../../envs/.env.dev
@@ -66,6 +66,7 @@ services:
       - ../../envs/.env.dev
     environment:
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+      - NEXT_PUBLIC_KAKAO_JS_KEY=${NEXT_PUBLIC_KAKAO_JS_KEY}
       - API_BASE_URL=${API_BASE_URL}
       - WEB_PORT=${WEB_PORT}
     ports:
@@ -139,7 +140,10 @@ services:
       - SERVER_PORT=${SERVER_PORT:-3000}
       - WEB_PORT=${WEB_PORT:-3001}
       - ADMIN_PORT=${ADMIN_PORT:-3002}
-      - SERVER_NAME=${PROJECT_NAME}.doyeonism.com
+      # 테넌트 서브도메인(acme.pawlog-dev.doyeonism.com 등) 요청도 받도록 와일드카드 병기.
+      # 실제 서브도메인 트래픽이 여기 도달하려면 edge Caddy(ci/edge/)에도 와일드카드 항목 +
+      # 와일드카드 DNS/인증서가 필요하다(별도 서버 설정, 이 저장소 범위 밖).
+      - SERVER_NAME=${PROJECT_NAME}.doyeonism.com *.${PROJECT_NAME}.doyeonism.com
       - NGINX_ENVSUBST_FILTER=PROJECT_NAME|SERVER_PORT|WEB_PORT|ADMIN_PORT|SERVER_NAME
     volumes:
       - ../nginx/devtemplates:/etc/nginx/templates:ro
