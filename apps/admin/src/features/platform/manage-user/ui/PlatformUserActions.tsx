@@ -54,7 +54,7 @@ export const PlatformUserActions = ({ user }: PlatformUserActionsProps) => {
             status: isSuspended ? "ACTIVE" : "SUSPENDED",
           })
         }
-        className='h-8 rounded-lg border-slate-800 bg-transparent px-3 text-xs text-slate-300 hover:bg-slate-800 hover:text-white'
+        className='cursor-pointer border-transparent bg-transparent px-3 text-text-muted neu-press'
       >
         {isSuspended ? "정지 해제" : "정지"}
       </Button>
@@ -69,16 +69,16 @@ export const PlatformUserActions = ({ user }: PlatformUserActionsProps) => {
             role: isSuperAdmin ? ROLES.USER : ROLES.SUPER_ADMIN,
           })
         }
-        className='h-8 gap-1 rounded-lg border-slate-800 bg-transparent px-3 text-xs text-slate-300 hover:bg-slate-800 hover:text-white'
+        className='cursor-pointer gap-1.5 border-transparent bg-transparent px-3 text-text-muted neu-press'
       >
         {isSuperAdmin ? (
           <>
-            <ShieldOff className='h-3.5 w-3.5' />
+            <ShieldOff className='size-4' />
             강등
           </>
         ) : (
           <>
-            <ShieldCheck className='h-3.5 w-3.5' />
+            <ShieldCheck className='size-4' />
             승격
           </>
         )}
@@ -90,31 +90,42 @@ export const PlatformUserActions = ({ user }: PlatformUserActionsProps) => {
           variant='outline'
           disabled={busy}
           onClick={() => setConfirmDelete(true)}
-          className='h-8 gap-1 rounded-lg border-rose-500/30 bg-transparent px-3 text-xs text-rose-300 hover:bg-rose-500/10'
+          className='cursor-pointer gap-1.5 border-transparent bg-transparent px-3 text-danger-strong neu-press hover:bg-danger-tint'
         >
-          <Trash2 className='h-3.5 w-3.5' />
+          <Trash2 className='size-4' />
           삭제
         </Button>
-        <AlertDialogContent className='rounded-2xl border-slate-800 bg-slate-900 text-slate-100'>
+        <AlertDialogContent className='gap-4 p-6'>
           <AlertDialogHeader>
-            <AlertDialogTitle className='text-white'>
+            <AlertDialogTitle className='text-card text-foreground'>
               {user.nickname} 님의 계정을 삭제할까요?
             </AlertDialogTitle>
-            <AlertDialogDescription className='text-slate-400'>
+            <AlertDialogDescription className='text-text-muted'>
               등록된 아이와 매장 소속이 함께 삭제되며 되돌릴 수 없습니다. 접근만
-              막으려면 삭제 대신 <strong>정지</strong>를 사용하세요.
+              막으려면 삭제 대신{" "}
+              <strong className='font-semibold text-foreground'>정지</strong>를
+              사용하세요.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className='rounded-xl border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white'>
+            <AlertDialogCancel
+              size='sm'
+              className='cursor-pointer border-transparent bg-transparent px-5 text-text-muted neu-press'
+            >
               취소
             </AlertDialogCancel>
+            {/* ⚠️ `!` 가 반드시 필요하다. `AlertDialogAction` 은 내부에서 `<Button
+                variant="default">` 를 쓰고, 그 `bg-primary` 는 `bg-danger` 와 **특이도가
+                같다** — 그러면 CSS 파일에서 나중에 선언된 쪽이 이기는데 Tailwind 출력에서는
+                `bg-primary` 가 뒤에 온다. 그래서 `!` 없이는 **삭제 버튼이 파란색으로 나오고**,
+                파괴적 동작이 일반 확인과 똑같아 보인다. */}
             <AlertDialogAction
+              size='sm'
               onClick={() => {
                 deleteUser.mutate(user.id);
                 setConfirmDelete(false);
               }}
-              className='rounded-xl bg-rose-600 font-semibold text-white hover:bg-rose-500'
+              className='cursor-pointer bg-danger! px-5 text-white! hover:bg-danger/85!'
             >
               삭제
             </AlertDialogAction>

@@ -11,15 +11,19 @@ export const ROLE_LABELS: Record<Role, string> = {
 
 export const roleLabel = (role: string): string => ROLE_LABELS[role as Role] || role;
 
+/**
+ * 역할 뱃지 스타일.
+ *
+ * `SUPER_ADMIN` 만 강조색을 받는다 — 이 목록에서 색으로 구분할 가치가 있는 것은
+ * "플랫폼 전체 권한을 가진 계정인가" 하나뿐이고, 나머지 역할은 테넌트 안에서만
+ * 의미가 있어 이 콘솔에서는 라벨로 충분하다. 역할마다 색을 배정하면 색이 분류를
+ * 뜻하게 되어 정작 위험한 계정이 눈에 띄지 않는다.
+ */
 export const roleBadgeStyle = (role: string): string => {
   switch (role) {
     case ROLES.SUPER_ADMIN:
-      return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    case ROLES.TENANT_ADMIN:
-      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    case ROLES.STAFF:
-      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      return "bg-primary-tint text-primary-on-tint";
     default:
-      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+      return "bg-secondary text-text-muted";
   }
 };

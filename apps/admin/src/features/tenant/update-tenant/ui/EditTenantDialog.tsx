@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { Pencil } from "lucide-react";
+import { Pencil, AlertTriangle } from "lucide-react";
 import {
   Button,
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -55,63 +56,65 @@ export const EditTenantDialog = ({ tenant }: EditTenantDialogProps) => {
         <Button
           size='sm'
           variant='outline'
-          className='border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg h-8 px-3 text-xs gap-1'
+          className='cursor-pointer gap-1.5 border-transparent bg-transparent px-3 text-text-muted neu-press'
         >
-          <Pencil className='w-3.5 h-3.5' />
+          <Pencil className='size-4' />
           수정
         </Button>
       </DialogTrigger>
-      <DialogContent className='border-slate-800 bg-slate-900 text-slate-100 backdrop-blur-md sm:max-w-lg rounded-2xl'>
+
+      <DialogContent className='gap-5 p-6 sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle className='text-lg font-bold text-white'>
+          <DialogTitle className='text-card text-foreground'>
             테넌트 정보 수정
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4 pt-2'>
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              매장 이름
-            </Label>
+        {/* 행 간격은 admin 테마(globals.css)가 `> form > * + *` 로 보장한다 —
+            화면마다 space-y 를 다시 적는 대신 한 곳에서 정한다. */}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>매장 이름</Label>
             <Input
               {...register("name", { required: true })}
-              className='border-slate-800 bg-slate-950 text-slate-200 rounded-xl focus:ring-blue-500'
+              className='border-transparent neu-inset'
             />
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              서브도메인
-            </Label>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>서브도메인</Label>
             <Input
               {...register("subdomain", { required: true })}
-              className='border-slate-800 bg-slate-950 text-slate-200 rounded-xl focus:ring-blue-500'
+              className='border-transparent font-mono neu-inset'
             />
             {subdomainChanged && (
-              <p className='text-xs text-amber-400'>
+              <p className='flex items-start gap-1.5 rounded-xl bg-caution-tint px-3 py-2 text-meta text-caution-text'>
+                <AlertTriangle className='mt-px size-3.5 shrink-0' />
                 서브도메인을 변경하면 기존 접속 주소로는 더 이상 접근할 수
                 없습니다.
               </p>
             )}
           </div>
 
-          <div className='flex justify-end gap-2 pt-2'>
+          <DialogFooter>
             <Button
               type='button'
+              size='sm'
               variant='outline'
               onClick={() => handleOpenChange(false)}
-              className='border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl'
+              className='cursor-pointer border-transparent bg-transparent px-5 text-text-muted neu-press'
             >
               취소
             </Button>
             <Button
               type='submit'
+              size='sm'
               disabled={updateTenant.isPending}
-              className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold'
+              className='cursor-pointer px-5'
             >
               {updateTenant.isPending ? "저장 중…" : "저장"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

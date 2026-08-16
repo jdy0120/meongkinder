@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@pawlog/ui";
+import { AlertTriangle } from "lucide-react";
 
 import { LoginForm } from "@/features/auth/login";
 
@@ -27,28 +21,38 @@ const REDIRECT_NOTICE: Record<string, string> = {
  * 로그인을 유지한다.
  *
  * job-038: 매장 개설·운영 화면은 apps/web 으로 옮겨졌다. 이 콘솔은 플랫폼 운영자 전용이다.
+ *
+ * ⚠️ 예전에는 `bg-muted` + 기본 `Card` 였다. admin 은 라이트 토큰 위에 화면마다 어두운
+ * 색을 덧칠하는 구조였고 이 화면만 덧칠이 없어서, **콘솔 전체에서 여기만 밝게** 나왔다.
+ * 이제 테마가 기본값을 정하므로 토큰 이름만 쓴다.
  */
 export const LoginPage = ({ error }: LoginPageProps) => {
   const notice = error ? REDIRECT_NOTICE[error] : undefined;
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-muted p-4'>
-      <Card className='w-full max-w-sm'>
-        <CardHeader>
-          <CardTitle>플랫폼 운영자 로그인</CardTitle>
-          <CardDescription>
-            pawlog 플랫폼 관리 콘솔입니다. 운영자 계정으로 로그인하세요.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='flex flex-col gap-4'>
-          {notice && (
-            <p className='rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive'>
-              {notice}
+    <div className='flex min-h-screen items-center justify-center bg-background p-4'>
+      <div className='flex w-full max-w-sm flex-col gap-6 rounded-3xl p-8 neu-raised'>
+        <div className='flex flex-col items-center gap-3 text-center'>
+          <div className='flex size-12 items-center justify-center rounded-2xl bg-primary text-title font-extrabold text-primary-foreground shadow-[var(--neu-sm)]'>
+            P
+          </div>
+          <div className='flex flex-col gap-1'>
+            <h1 className='text-card text-foreground'>플랫폼 운영자 로그인</h1>
+            <p className='text-body-sm text-text-muted'>
+              pawlog 플랫폼 관리 콘솔입니다.
             </p>
-          )}
-          <LoginForm />
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+
+        {notice && (
+          <p className='flex items-start gap-2 rounded-xl bg-danger-tint px-4 py-3 text-body-sm text-danger-strong'>
+            <AlertTriangle className='mt-0.5 size-4 shrink-0' />
+            {notice}
+          </p>
+        )}
+
+        <LoginForm />
+      </div>
     </div>
   );
 };

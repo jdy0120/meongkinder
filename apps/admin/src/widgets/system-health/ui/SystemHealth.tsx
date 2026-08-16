@@ -1,13 +1,7 @@
 "use client";
 
 import { Database, Server, Activity, RefreshCw } from "lucide-react";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@pawlog/ui";
+import { Button } from "@pawlog/ui";
 
 import { useHealthCheck } from "@/features/system/check-health";
 import { ServiceStatusBadge } from "@/entities/system";
@@ -41,21 +35,19 @@ export const SystemHealth = () => {
   const overallOk = data?.status === "ok";
 
   return (
-    <Card className='border-slate-800 bg-slate-900/50 text-slate-100 backdrop-blur-sm'>
-      <CardHeader className='flex flex-row items-center justify-between space-y-0'>
+    <section className='flex flex-col gap-5 rounded-2xl p-5 neu-raised'>
+      <div className='flex items-center justify-between gap-4'>
         <div className='flex items-center gap-3'>
-          <CardTitle className='text-base font-semibold text-white'>
-            서비스 상태
-          </CardTitle>
+          <h2 className='text-card text-foreground'>서비스 상태</h2>
           {!isLoading && (
             <span
-              className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                overallOk ? "text-emerald-400" : "text-amber-400"
+              className={`inline-flex items-center gap-1.5 text-body-sm font-semibold ${
+                overallOk ? "text-success-text" : "text-caution-text"
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${
-                  overallOk ? "bg-emerald-400" : "bg-amber-400"
+                className={`size-2 rounded-full ${
+                  overallOk ? "bg-success-text" : "bg-caution-text"
                 } ${isFetching ? "animate-pulse" : ""}`}
               />
               {overallOk ? "정상 운영중" : "점검 필요"}
@@ -63,51 +55,51 @@ export const SystemHealth = () => {
           )}
         </div>
         <Button
-          variant='ghost'
+          variant='outline'
           size='sm'
           onClick={() => refetch()}
           disabled={isFetching}
-          className='text-slate-400 hover:text-white'
+          className='cursor-pointer gap-1.5 border-transparent bg-transparent px-4 text-text-muted neu-press'
         >
-          <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
           새로고침
         </Button>
-      </CardHeader>
+      </div>
 
-      <CardContent className='space-y-3'>
+      <div className='flex flex-col gap-3'>
         {services.map((service) => {
           const Icon = service.icon;
           return (
             <div
               key={service.name}
-              className='flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3'
+              className='flex items-center justify-between rounded-xl px-4 py-3.5 neu-inset'
             >
               <div className='flex items-center gap-3'>
-                <div className='p-2 rounded-lg bg-slate-800/60 text-slate-300'>
-                  <Icon className='w-4 h-4' />
+                <div className='flex size-9 items-center justify-center rounded-xl bg-muted text-text-muted'>
+                  <Icon className='size-4' />
                 </div>
-                <span className='text-sm font-medium text-slate-200'>
+                <span className='text-body-sm font-semibold text-foreground'>
                   {service.name}
                 </span>
               </div>
               {isLoading ? (
-                <span className='text-xs text-slate-500'>확인 중…</span>
+                <span className='text-meta text-text-meta'>확인 중…</span>
               ) : (
                 <ServiceStatusBadge state={service.state} />
               )}
             </div>
           );
         })}
+      </div>
 
-        <div className='flex items-center justify-between pt-2 text-xs text-slate-500'>
-          <span>업타임: {formatUptime(data?.uptime ?? null)}</span>
-          {dataUpdatedAt > 0 && (
-            <span>
-              마지막 확인: {new Date(dataUpdatedAt).toLocaleTimeString("ko-KR")}
-            </span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      <div className='flex items-center justify-between text-meta text-text-meta'>
+        <span>업타임: {formatUptime(data?.uptime ?? null)}</span>
+        {dataUpdatedAt > 0 && (
+          <span>
+            마지막 확인: {new Date(dataUpdatedAt).toLocaleTimeString("ko-KR")}
+          </span>
+        )}
+      </div>
+    </section>
   );
 };

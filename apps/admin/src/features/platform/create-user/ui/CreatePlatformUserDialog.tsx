@@ -7,6 +7,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -86,33 +87,29 @@ export const CreatePlatformUserDialog = () => {
       onOpenChange={(open: boolean) => (open ? setIsOpen(true) : close())}
     >
       <DialogTrigger asChild>
-        <Button
-          size='sm'
-          className='flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500'
-        >
-          <Plus className='h-4 w-4' />
+        <Button size='sm' className='cursor-pointer gap-1.5 px-5'>
+          <Plus className='size-4' />
           회원 등록
         </Button>
       </DialogTrigger>
 
-      <DialogContent className='rounded-2xl border-slate-800 bg-slate-900 text-slate-100 backdrop-blur-md sm:max-w-lg'>
+      <DialogContent className='gap-5 p-6 sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle className='flex items-center gap-2 text-xl font-bold text-white'>
-            <UserPlus className='h-5 w-5 text-blue-500' />
+          <DialogTitle className='flex items-center gap-2 text-card text-foreground'>
+            <UserPlus className='size-5 text-brand' />
             회원 등록
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className='space-y-5 pt-3'>
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              이메일
-            </Label>
+        {/* 행 간격은 admin 테마(globals.css)의 `> form > * + *` 가 보장한다. */}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>이메일</Label>
             <Input
               type='email'
               autoComplete='off'
               placeholder='user@example.com'
-              className='rounded-xl border-slate-800 bg-slate-950 text-slate-200 focus:ring-blue-500'
+              className='border-transparent neu-inset'
               {...register("email", {
                 required: "이메일을 입력하세요.",
                 pattern: {
@@ -121,38 +118,38 @@ export const CreatePlatformUserDialog = () => {
                 },
               })}
             />
-            <p className='text-xs text-slate-500'>
+            <p className='text-meta text-text-meta'>
               같은 이메일로 카카오 로그인을 하면 이 계정에 자동으로 연결됩니다.
             </p>
             {errors.email && (
-              <p className='text-xs text-rose-400'>{errors.email.message}</p>
+              <p className='text-meta text-danger-strong'>
+                {errors.email.message}
+              </p>
             )}
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              닉네임
-            </Label>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>닉네임</Label>
             <Input
               placeholder='예: 홍길동'
-              className='rounded-xl border-slate-800 bg-slate-950 text-slate-200 focus:ring-blue-500'
+              className='border-transparent neu-inset'
               {...register("nickname", { required: "닉네임을 입력하세요." })}
             />
             {errors.nickname && (
-              <p className='text-xs text-rose-400'>{errors.nickname.message}</p>
+              <p className='text-meta text-danger-strong'>
+                {errors.nickname.message}
+              </p>
             )}
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              초기 비밀번호
-            </Label>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>초기 비밀번호</Label>
             <div className='flex gap-2'>
               <Input
                 type='text'
                 autoComplete='off'
                 placeholder='8자 이상'
-                className='rounded-xl border-slate-800 bg-slate-950 font-mono text-slate-200 focus:ring-blue-500'
+                className='border-transparent font-mono neu-inset'
                 {...register("password", {
                   required: "비밀번호를 입력하세요.",
                   minLength: { value: 8, message: "8자 이상 입력하세요." },
@@ -166,24 +163,26 @@ export const CreatePlatformUserDialog = () => {
                     shouldValidate: true,
                   })
                 }
-                className='flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white'
+                className='shrink-0 cursor-pointer gap-1.5 border-transparent bg-transparent px-4 text-text-muted neu-press'
               >
-                <RefreshCw className='h-4 w-4' />
+                <RefreshCw className='size-4' />
                 생성
               </Button>
             </div>
-            <p className='text-xs text-slate-500'>
+            <p className='text-meta text-text-meta'>
               본인에게 전달한 뒤 변경하도록 안내하세요. 화면을 닫으면 다시 볼 수
               없습니다.
             </p>
             {errors.password && (
-              <p className='text-xs text-rose-400'>{errors.password.message}</p>
+              <p className='text-meta text-danger-strong'>
+                {errors.password.message}
+              </p>
             )}
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              휴대폰 번호 <span className='text-slate-500'>(선택)</span>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>
+              휴대폰 번호 <span className='text-text-meta'>(선택)</span>
             </Label>
             <Input
               type='tel'
@@ -192,67 +191,61 @@ export const CreatePlatformUserDialog = () => {
               // 저장은 숫자만, 화면은 하이픈 (job-043). 붙여넣기도 여기서 걸러진다.
               value={formatPhone(phone)}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPhone(
-                  normalizePhone(e.target.value).slice(0, PHONE_MAX_DIGITS),
-                )
+                setPhone(normalizePhone(e.target.value).slice(0, PHONE_MAX_DIGITS))
               }
-              className='rounded-xl border-slate-800 bg-slate-950 text-slate-200 focus:ring-blue-500'
+              className='border-transparent neu-inset'
             />
-            <p className='text-xs text-slate-500'>
+            <p className='text-meta text-text-meta'>
               매장이 이 번호로 미리 등록해 둔 아이·초대가 있으면 등록 즉시
               연결됩니다.
             </p>
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              플랫폼 역할
-            </Label>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>플랫폼 역할</Label>
             <Select
               value={role}
               onValueChange={(value: string) => setRole(value as PlatformRole)}
             >
-              <SelectTrigger className='w-full rounded-xl border-slate-800 bg-slate-950 text-slate-200'>
+              <SelectTrigger className='w-full border-transparent neu-inset'>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className='rounded-xl border-slate-800 bg-slate-950 text-slate-200'>
+              <SelectContent>
                 <SelectItem value={ROLES.USER}>일반 회원</SelectItem>
-                <SelectItem value={ROLES.SUPER_ADMIN}>
-                  플랫폼 관리자
-                </SelectItem>
+                <SelectItem value={ROLES.SUPER_ADMIN}>플랫폼 관리자</SelectItem>
               </SelectContent>
             </Select>
-            <p className='text-xs text-slate-500'>
+            <p className='text-meta text-text-meta'>
               매장 안에서의 자격(보호자·스태프·관리자)은 각 매장의 구성원
               관리에서 부여합니다.
             </p>
           </div>
 
-          <p className='rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400'>
+          <p className='rounded-xl px-4 py-3 text-meta leading-relaxed text-text-muted neu-inset'>
             약관 동의는 대신 처리하지 않습니다. 본인이 처음 서비스에 들어올 때
             동의 화면을 거칩니다.
           </p>
 
-          <div className='flex justify-end gap-2 pt-2'>
+          <DialogFooter>
             <Button
               type='button'
+              size='sm'
               variant='outline'
               onClick={close}
-              className='cursor-pointer rounded-xl border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white'
+              className='cursor-pointer border-transparent bg-transparent px-5 text-text-muted neu-press'
             >
               취소
             </Button>
             <Button
               type='submit'
+              size='sm'
               disabled={createUser.isPending}
-              className='flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500'
+              className='cursor-pointer gap-1.5 px-5'
             >
-              {createUser.isPending && (
-                <Spinner className='h-4 w-4 text-white' />
-              )}
+              {createUser.isPending && <Spinner className='size-4' />}
               등록
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

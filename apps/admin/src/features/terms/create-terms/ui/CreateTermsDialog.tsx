@@ -9,6 +9,7 @@ import {
   Switch,
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -69,29 +70,29 @@ export const CreateTermsDialog = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className='bg-blue-600 hover:bg-blue-500 text-white gap-2 rounded-xl px-4 py-2.5 font-semibold transition-all shadow-lg shadow-blue-500/20'>
-          <Plus className='w-4 h-4' />
+        <Button className='cursor-pointer gap-2'>
+          <Plus className='size-4' />
           신규 약관 등록
         </Button>
       </DialogTrigger>
-      <DialogContent className='border-slate-800 bg-slate-900 text-slate-100 backdrop-blur-md sm:max-w-lg rounded-2xl'>
+
+      {/* 필드가 6개라 낮은 화면에서 잘린다 — 내용이 넘치면 모달 안에서 스크롤한다. */}
+      <DialogContent className='max-h-[85vh] gap-5 overflow-y-auto p-6 sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle className='text-xl font-bold text-white flex items-center gap-2'>
-            <ScrollText className='w-5 h-5 text-blue-500' />
+          <DialogTitle className='flex items-center gap-2 text-card text-foreground'>
+            <ScrollText className='size-5 text-brand' />
             신규 약관 등록
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-5 pt-3'>
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              구분 (카테고리)
-            </Label>
+        <form onSubmit={handleSubmit}>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>구분 (카테고리)</Label>
             <Select value={type} onValueChange={setType}>
-              <SelectTrigger className='w-full border-slate-800 bg-slate-950 text-slate-200 rounded-xl'>
+              <SelectTrigger className='w-full border-transparent neu-inset'>
                 <SelectValue placeholder='약관 구분 선택' />
               </SelectTrigger>
-              <SelectContent className='border-slate-800 bg-slate-950 text-slate-200 rounded-xl'>
+              <SelectContent>
                 {TERMS_TYPE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -101,78 +102,82 @@ export const CreateTermsDialog = () => {
             </Select>
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              약관명
-            </Label>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>약관명</Label>
             <Input
               placeholder='예: 서비스 이용약관'
               value={title}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setTitle(e.target.value)
               }
-              className='border-slate-800 bg-slate-950 text-slate-200 rounded-xl focus:ring-blue-500'
+              className='border-transparent neu-inset'
             />
           </div>
 
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>버전</Label>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>버전</Label>
             <Input
               placeholder='예: 1.0.0'
               value={version}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setVersion(e.target.value)
               }
-              className='border-slate-800 bg-slate-950 text-slate-200 rounded-xl focus:ring-blue-500'
+              className='border-transparent font-mono neu-inset'
             />
           </div>
 
-          <div className='flex items-center justify-between py-2 border-y border-slate-800'>
-            <div className='flex flex-col gap-0.5'>
-              <span className='text-sm font-semibold text-slate-300'>
-                필수 동의 여부
-              </span>
-              <span className='text-xs text-slate-500'>
-                비동의 시 가입을 차단합니다.
-              </span>
+          {/* ⚠️ 이 두 줄이 겹쳐 보이던 자리다.
+              예전에는 각각 `border-y` / `border-b` 를 달고 붙어 있어서, 위 행의 아래 선과
+              아래 행의 위 선이 맞닿아 **한 덩어리처럼 읽혔다.** 선으로 나누는 대신
+              `.modal-row`(눌린 면)로 각자 독립된 면을 주고 사이를 띄운다 —
+              뉴모피즘에서는 면이 곧 경계라 선을 겹칠 일이 없다. */}
+          <div className='flex flex-col gap-3'>
+            <div className='modal-row'>
+              <div className='flex flex-col gap-0.5'>
+                <span className='text-body-sm font-semibold text-foreground'>
+                  필수 동의 여부
+                </span>
+                <span className='text-meta text-text-meta'>
+                  비동의 시 가입을 차단합니다.
+                </span>
+              </div>
+              <Switch checked={isRequired} onCheckedChange={setIsRequired} />
             </div>
-            <Switch checked={isRequired} onCheckedChange={setIsRequired} />
+
+            <div className='modal-row'>
+              <div className='flex flex-col gap-0.5'>
+                <span className='text-body-sm font-semibold text-foreground'>
+                  현재 버전 즉시 활성화
+                </span>
+                <span className='text-meta text-text-meta'>
+                  기존 버전은 자동으로 비활성화됩니다.
+                </span>
+              </div>
+              <Switch checked={isActive} onCheckedChange={setIsActive} />
+            </div>
           </div>
 
-          <div className='flex items-center justify-between py-2 border-b border-slate-800'>
-            <div className='flex flex-col gap-0.5'>
-              <span className='text-sm font-semibold text-slate-300'>
-                현재 버전 즉시 활성화
-              </span>
-              <span className='text-xs text-slate-500'>
-                기존 버전은 자동으로 비활성화됩니다.
-              </span>
-            </div>
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
-          </div>
-
-          <div className='space-y-2'>
-            <Label className='text-sm font-semibold text-slate-300'>
-              약관 파일 업로드
-            </Label>
-            <div className='border-2 border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/50 rounded-xl p-6 transition-all relative flex flex-col items-center justify-center gap-2 text-center'>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-label text-text-muted'>약관 파일 업로드</Label>
+            <div className='relative flex flex-col items-center justify-center gap-2 rounded-xl px-4 py-7 text-center transition-colors neu-inset hover:border-input'>
               <input
                 type='file'
                 accept='.html,.txt'
                 onChange={handleFileChange}
-                className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+                aria-label='약관 파일 선택'
+                className='absolute inset-0 size-full cursor-pointer opacity-0'
               />
-              <UploadCloud className='w-8 h-8 text-slate-500' />
+              <UploadCloud className='size-8 text-text-meta' />
               {file ? (
-                <div className='text-sm text-blue-400 font-medium truncate max-w-[280px]'>
+                <div className='max-w-[280px] truncate text-body-sm font-semibold text-brand'>
                   {file.name} ({(file.size / 1024).toFixed(1)} KB)
                 </div>
               ) : (
                 <>
-                  <div className='text-sm text-slate-400 font-medium'>
+                  <div className='text-body-sm font-semibold text-text-muted'>
                     HTML 또는 TXT 파일 선택
                   </div>
-                  <div className='text-xs text-slate-500'>
+                  <div className='text-meta text-text-meta'>
                     최대 10MB 크기 제한
                   </div>
                 </>
@@ -180,24 +185,26 @@ export const CreateTermsDialog = () => {
             </div>
           </div>
 
-          <div className='flex gap-2 justify-end pt-2'>
+          <DialogFooter>
             <Button
               type='button'
+              size='sm'
               variant='outline'
               onClick={() => setIsOpen(false)}
-              className='border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl'
+              className='cursor-pointer border-transparent bg-transparent px-5 text-text-muted neu-press'
             >
               취소
             </Button>
             <Button
               type='submit'
+              size='sm'
               disabled={createTerms.isPending}
-              className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/20 flex items-center gap-1.5'
+              className='cursor-pointer gap-1.5 px-5'
             >
-              {createTerms.isPending && <Spinner className='w-4 h-4 text-white' />}
+              {createTerms.isPending && <Spinner className='size-4' />}
               등록
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

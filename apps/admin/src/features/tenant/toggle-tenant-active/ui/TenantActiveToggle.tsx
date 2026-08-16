@@ -49,28 +49,35 @@ export const TenantActiveToggle = ({ tenant }: TenantActiveToggleProps) => {
         onCheckedChange={handleChange}
         disabled={toggleActive.isPending}
         aria-label={`${tenant.name} 활성 상태`}
-        className='data-checked:bg-emerald-600'
+        className='data-checked:bg-success-fill'
       />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className='border-slate-800 bg-slate-900 text-slate-100 rounded-2xl'>
+        <AlertDialogContent className='gap-4 p-6'>
           <AlertDialogHeader>
-            <AlertDialogTitle className='text-white'>
+            <AlertDialogTitle className='text-card text-foreground'>
               {tenant.name} 테넌트를 정지할까요?
             </AlertDialogTitle>
-            <AlertDialogDescription className='text-slate-400'>
+            <AlertDialogDescription className='text-text-muted'>
               정지하면 해당 매장의 관리자·스태프·보호자가 보내는 모든 요청이
               차단됩니다. 데이터는 삭제되지 않으며, 언제든 다시 활성화할 수
               있습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className='border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl'>
+            <AlertDialogCancel
+              size='sm'
+              className='cursor-pointer border-transparent bg-transparent px-5 text-text-muted neu-press'
+            >
               취소
             </AlertDialogCancel>
+            {/* ⚠️ `!` 필수 — `AlertDialogAction` 내부 `<Button variant="default">` 의
+                `bg-primary` 와 특이도가 같고 Tailwind 출력에서 그쪽이 뒤에 와서 이긴다.
+                없으면 정지(파괴적) 버튼이 파란색으로 나온다. */}
             <AlertDialogAction
+              size='sm'
               onClick={confirmSuspend}
-              className='bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-semibold'
+              className='cursor-pointer bg-danger! px-5 text-white! hover:bg-danger/85!'
             >
               정지
             </AlertDialogAction>

@@ -1,7 +1,6 @@
 import React from "react";
 import { cookies } from "next/headers";
 import { Users, CreditCard, Calendar, ShieldCheck, Store } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@pawlog/ui";
 
 interface SeatSubscription {
   plan: { price: number } | null;
@@ -90,6 +89,20 @@ const getStats = async () => {
   }
 };
 
+/**
+ * 지표 타일 색 — **3단계만.** 예전에는 카드마다 blue/sky/emerald/amber/purple 이 하나씩
+ * 배정돼 있었는데, 그러면 색이 "종류"를 뜻하게 되어 **긴급도를 말할 수 없다.**
+ * 아이콘 색은 전부 중립으로 두고, 값이 나쁠 때만 색이 나타나게 한다.
+ * (배지 3단계 규칙과 같은 판단 — design-system.md §3.1)
+ */
+type Tone = "neutral" | "good" | "bad";
+
+const TONE_CLASS: Record<Tone, string> = {
+  neutral: "bg-muted text-text-muted",
+  good: "bg-success-tint text-success-text",
+  bad: "bg-danger-tint text-danger-strong",
+};
+
 /** 대시보드 지표 카드 그리드 (widget). 통계는 서버에서 조회한다. */
 export const DashboardStats = async () => {
   const stats = await getStats();
@@ -97,34 +110,40 @@ export const DashboardStats = async () => {
   const health = stats.health;
   const isHealthy = health?.status === "ok";
 
-  const cardData = [
+  const cardData: {
+    title: string;
+    value: string;
+    icon: typeof Users;
+    desc: string;
+    tone: Tone;
+  }[] = [
     {
       title: "전체 가입자",
       value: `${stats.totalUsers.toLocaleString()}명`,
       icon: Users,
       desc: "플랫폼에 등록된 총 계정 수",
-      color: "text-blue-500 bg-blue-500/10",
+      tone: "neutral",
     },
     {
       title: "운영 중인 매장",
       value: `${stats.totalTenants.toLocaleString()}곳`,
       icon: Store,
       desc: "개설된 테넌트(매장) 수",
-      color: "text-sky-500 bg-sky-500/10",
+      tone: "neutral",
     },
     {
       title: "활성 매장 개설권",
       value: `${stats.activeSeats.toLocaleString()}건`,
       icon: CreditCard,
       desc: "결제 중인 매장 개설권(SaaS 좌석) 수",
-      color: "text-emerald-500 bg-emerald-500/10",
+      tone: "neutral",
     },
     {
       title: "월 예상 매출",
       value: `${stats.monthlyRevenue.toLocaleString()}원`,
       icon: Calendar,
       desc: "활성 개설권 요금 합계 기준",
-      color: "text-amber-500 bg-amber-500/10",
+      tone: "neutral",
     },
     {
       title: "시스템 상태",
@@ -133,11 +152,8 @@ export const DashboardStats = async () => {
       desc: !health
         ? "헬스체크 응답 없음"
         : `DB ${health.db} · Redis ${health.redis}`,
-      color: !health
-        ? "text-slate-500 bg-slate-500/10"
-        : isHealthy
-          ? "text-purple-500 bg-purple-500/10"
-          : "text-red-500 bg-red-500/10",
+      // 여기만 색이 붙는다 — 이 화면에서 유일하게 "지금 조치"가 필요할 수 있는 값이다.
+      tone: !health ? "bad" : isHealthy ? "good" : "bad",
     },
   ];
 
@@ -146,23 +162,23 @@ export const DashboardStats = async () => {
       {cardData.map((card) => {
         const Icon = card.icon;
         return (
-          <Card
+          <div
             key={card.title}
-            className='border-slate-800 bg-slate-900/50 text-slate-100 backdrop-blur-sm'
+            className='flex flex-col gap-3 rounded-2xl p-5 neu-raised'
           >
-            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium text-slate-400'>
-                {card.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${card.color}`}>
-                <Icon className='w-4 h-4' />
+            <div className='flex items-start justify-between gap-3'>
+              <span className='text-label text-text-muted'>{card.title}</span>
+              <div
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${TONE_CLASS[card.tone]}`}
+              >
+                <Icon className='size-4' />
               </div>
-            </CardHeader>
-            <CardContent className='pt-2'>
-              <div className='text-2xl font-bold text-white'>{card.value}</div>
-              <p className='text-xs text-slate-500 mt-1'>{card.desc}</p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className='text-title font-extrabold tracking-tight text-foreground'>
+              {card.value}
+            </div>
+            <p className='text-meta text-text-meta'>{card.desc}</p>
+          </div>
         );
       })}
     </div>

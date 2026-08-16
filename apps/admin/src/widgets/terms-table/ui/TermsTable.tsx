@@ -2,12 +2,7 @@
 
 import React, { useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  FileText,
-  CheckCircle,
-  XCircle,
-  Eye,
-} from "lucide-react";
+import { FileText, CheckCircle, XCircle, Eye, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,9 +13,6 @@ import {
   Input,
   Button,
   Badge,
-  Card,
-  CardContent,
-  CardHeader,
   Spinner,
   Switch,
 } from "@pawlog/ui";
@@ -104,176 +96,170 @@ export const TermsTable = () => {
 
   return (
     <>
-      <Card className='border-slate-800 bg-slate-900/50 text-slate-100 backdrop-blur-sm rounded-2xl'>
-        <CardHeader className='pb-3 flex flex-row items-center justify-between gap-4'>
-          <div className='flex gap-2 max-w-sm w-full'>
-            <Input
-              type='text'
-              inputSize='sm'
-              placeholder='약관명, 구분 또는 버전 검색'
-              value={searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(e.target.value)
-              }
-              className='border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:ring-blue-500 rounded-xl'
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className='flex justify-center items-center py-20'>
-              <Spinner className='w-8 h-8 text-blue-500' />
-            </div>
-          ) : (
-            <div
-              ref={scrollRef}
-              className='relative max-h-[60vh] overflow-auto rounded-xl border border-slate-800 bg-slate-950/20 [&_[data-slot=table-container]]:overflow-visible'
-            >
-              <Table>
-                <TableHeader className='border-b border-slate-800'>
-                  <TableRow className='[&>th]:sticky [&>th]:top-0 [&>th]:z-20 [&>th]:bg-slate-950'>
-                    <TableHead className='text-slate-400 font-semibold py-4'>
-                      구분
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold'>
-                      약관명
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold'>
-                      버전
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold'>
-                      필수 동의
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold'>
-                      활성 상태
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold'>
-                      첨부 파일
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold'>
-                      등록일
-                    </TableHead>
-                    <TableHead className='text-slate-400 font-semibold text-right pr-6'>
-                      작업
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedTerms.length > 0 ? (
-                    sortedTerms.map((t, idx) => (
-                      <TableRow
-                        key={t.id}
-                        data-active={t.isActive ? "true" : undefined}
-                        style={
-                          t.isActive ? { top: stickyTops[idx] ?? 0 } : undefined
-                        }
-                        className={`border-b transition-colors ${
-                          t.isActive
-                            ? "sticky z-10 border-emerald-500/20 bg-slate-900 hover:bg-slate-900"
-                            : "border-slate-800/60 hover:bg-slate-800/10"
-                        }`}
-                      >
-                        <TableCell className='py-4'>
-                          <TermsCategoryBadge type={t.type} />
-                        </TableCell>
-                        <TableCell className='font-semibold text-slate-200'>
-                          {t.title}
-                        </TableCell>
-                        <TableCell className='text-slate-300 font-mono'>
-                          v{t.version}
-                        </TableCell>
-                        <TableCell>
-                          {t.isRequired ? (
-                            <Badge className='bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/20 rounded-lg'>
-                              필수
-                            </Badge>
-                          ) : (
-                            <Badge className='bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 border-slate-500/20 rounded-lg'>
-                              선택
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {t.isActive ? (
-                            <div className='flex items-center gap-1.5 text-emerald-400 text-sm font-medium'>
-                              <CheckCircle className='w-4 h-4' />
-                              사용 중
-                            </div>
-                          ) : (
-                            <div className='flex items-center gap-1.5 text-slate-500 text-sm font-medium'>
-                              <XCircle className='w-4 h-4' />
-                              대기
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {t.file ? (
-                            <div
-                              className='flex items-center gap-1.5 text-slate-300 text-sm max-w-[180px] truncate'
-                              title={t.file.originalName}
-                            >
-                              <FileText className='w-4 h-4 text-slate-500 shrink-0' />
-                              <span className='truncate'>
-                                {t.file.originalName}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className='text-slate-600 text-sm'>
-                              파일 없음
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className='text-slate-400 text-sm'>
-                          {new Date(t.createdAt).toLocaleDateString("ko-KR", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                          })}
-                        </TableCell>
-                        <TableCell className='text-right pr-6 py-4'>
-                          <div className='flex items-center justify-end gap-3'>
-                            <Button
-                              size='sm'
-                              variant='outline'
-                              onClick={() => setPreviewId(t.id)}
-                              className='border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl h-8 px-3 text-xs gap-1'
-                            >
-                              <Eye className='w-3.5 h-3.5' />
-                              본문 보기
-                            </Button>
+      <section className='flex flex-col gap-5 rounded-2xl p-5 neu-raised'>
+        <div className='relative w-full max-w-sm'>
+          <Search className='pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-meta' />
+          <Input
+            type='text'
+            inputSize='sm'
+            placeholder='약관명, 구분 또는 버전 검색'
+            value={searchQuery}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchQuery(e.target.value)
+            }
+            className='rounded-xl border-transparent pl-9 neu-inset placeholder:text-text-meta'
+          />
+        </div>
 
-                            <div className='flex items-center gap-2'>
-                              <Switch
-                                checked={t.isActive}
-                                onCheckedChange={() =>
-                                  toggleActive.mutate({
-                                    id: t.id,
-                                    active: !t.isActive,
-                                  })
-                                }
-                                disabled={toggleActive.isPending}
-                              />
-                            </div>
+        {isLoading ? (
+          <div className='flex items-center justify-center py-20'>
+            <Spinner className='size-8 text-brand' />
+          </div>
+        ) : (
+          <div
+            ref={scrollRef}
+            className='relative max-h-[60vh] overflow-auto rounded-2xl neu-inset [&_[data-slot=table-container]]:overflow-visible'
+          >
+            <Table>
+              <TableHeader>
+                {/* ⚠️ sticky 헤더는 아래 행이 그 밑을 지나가므로 **반드시 불투명**해야 한다.
+                    투명하거나 반투명이면 스크롤할 때 행이 헤더 글자를 뚫고 올라와 겹쳐 보인다.
+                    면 사다리: 표 안쪽(가장 어두움) < 헤더 < 활성 행(가장 밝음). */}
+                <TableRow className='border-border hover:bg-transparent [&>th]:sticky [&>th]:top-0 [&>th]:z-20 [&>th]:bg-secondary'>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    구분
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    약관명
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    버전
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    필수 동의
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    활성 상태
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    첨부 파일
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 text-label text-text-muted'>
+                    등록일
+                  </TableHead>
+                  <TableHead className='px-4 py-3.5 pr-5 text-right text-label text-text-muted'>
+                    작업
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedTerms.length > 0 ? (
+                  sortedTerms.map((t, idx) => (
+                    <TableRow
+                      key={t.id}
+                      data-active={t.isActive ? "true" : undefined}
+                      style={
+                        t.isActive ? { top: stickyTops[idx] ?? 0 } : undefined
+                      }
+                      className={`border-b transition-colors ${
+                        t.isActive
+                          ? "sticky z-10 border-border bg-background hover:bg-background"
+                          : "border-border/60 hover:bg-muted/60"
+                      }`}
+                    >
+                      <TableCell className='px-4 py-3.5'>
+                        <TermsCategoryBadge type={t.type} />
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5 font-semibold text-foreground'>
+                        {t.title}
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5 font-mono text-text-muted tabular-nums'>
+                        v{t.version}
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5'>
+                        <Badge variant={t.isRequired ? "caution" : "secondary"}>
+                          {t.isRequired ? "필수" : "선택"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5'>
+                        {t.isActive ? (
+                          <div className='flex items-center gap-1.5 text-body-sm font-semibold text-success-text'>
+                            <CheckCircle className='size-4' />
+                            사용 중
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className='text-center text-slate-500 py-16'
-                      >
-                        검색 조건에 맞는 약관 버전이 없습니다.
+                        ) : (
+                          <div className='flex items-center gap-1.5 text-body-sm text-text-meta'>
+                            <XCircle className='size-4' />
+                            대기
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5'>
+                        {t.file ? (
+                          <div
+                            className='flex max-w-[180px] items-center gap-1.5 truncate text-body-sm text-text-muted'
+                            title={t.file.originalName}
+                          >
+                            <FileText className='size-4 shrink-0 text-text-meta' />
+                            <span className='truncate'>
+                              {t.file.originalName}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className='text-body-sm text-text-meta'>
+                            파일 없음
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5 text-body-sm text-text-meta'>
+                        {new Date(t.createdAt).toLocaleDateString("ko-KR", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell className='px-4 py-3.5 pr-5 text-right'>
+                        <div className='flex items-center justify-end gap-3'>
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            onClick={() => setPreviewId(t.id)}
+                            className='cursor-pointer gap-1.5 border-transparent bg-transparent px-3 text-text-muted neu-press'
+                          >
+                            <Eye className='size-4' />
+                            본문 보기
+                          </Button>
+
+                          <Switch
+                            checked={t.isActive}
+                            onCheckedChange={() =>
+                              toggleActive.mutate({
+                                id: t.id,
+                                active: !t.isActive,
+                              })
+                            }
+                            disabled={toggleActive.isPending}
+                            aria-label={`${t.title} 활성 상태`}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  ))
+                ) : (
+                  <TableRow className='hover:bg-transparent'>
+                    <TableCell
+                      colSpan={8}
+                      className='py-20 text-center text-text-meta'
+                    >
+                      검색 조건에 맞는 약관 버전이 없습니다.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
 
       <TermsPreviewDialog
         previewId={previewId}

@@ -1,11 +1,12 @@
 "use client";
 
-import { FileText, Calendar } from "lucide-react";
+import { FileText } from "lucide-react";
 import {
   Button,
   Spinner,
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@pawlog/ui";
@@ -32,47 +33,52 @@ export const TermsPreviewDialog = ({
       open={!!previewId}
       onOpenChange={(open: boolean) => !open && onClose()}
     >
-      <DialogContent className='border-slate-800 bg-slate-900 text-slate-100 sm:max-w-2xl max-w-2xl max-h-[80vh] flex flex-col overflow-hidden backdrop-blur-md rounded-2xl'>
-        <DialogHeader className='shrink-0 border-b border-slate-800 pb-4'>
-          <DialogTitle className='text-xl font-bold text-white flex items-center gap-2 justify-between w-full pr-6'>
-            <span className='flex items-center gap-2'>
-              <FileText className='w-5 h-5 text-blue-500' />
-              {previewTerms?.title} (v{previewTerms?.version})
-            </span>
-            <span className='text-xs font-mono text-slate-400 font-normal flex items-center gap-1'>
-              <Calendar className='w-3 h-3' />
-              본문 미리보기
+      <DialogContent className='flex max-h-[85vh] flex-col gap-4 overflow-hidden p-6 sm:max-w-2xl'>
+        {/* 제목이 닫기 버튼에 깔리던 자리 — 이제 admin 테마가 헤더에 56px 를 비워 둔다
+            (globals.css ②). 예전의 `pr-6` 임시 처치는 24px 라 여전히 모자랐다. */}
+        <DialogHeader className='shrink-0'>
+          <DialogTitle className='flex items-center gap-2 text-card text-foreground'>
+            <FileText className='size-5 shrink-0 text-brand' />
+            <span className='truncate'>
+              {previewTerms?.title}
+              {previewTerms?.version && (
+                <span className='ml-1.5 font-mono text-body-sm font-normal text-text-meta'>
+                  v{previewTerms.version}
+                </span>
+              )}
             </span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className='flex-1 overflow-hidden p-2 bg-slate-950 rounded-xl mt-3'>
+        <div className='flex-1 overflow-hidden rounded-2xl p-2 neu-inset'>
           {isLoading ? (
-            <div className='flex justify-center items-center py-20'>
-              <Spinner className='w-6 h-6 text-blue-500' />
+            <div className='flex items-center justify-center py-20'>
+              <Spinner className='size-6 text-brand' />
             </div>
           ) : previewTerms?.content ? (
             <iframe
               title={`${previewTerms.title ?? "약관"} 본문 미리보기`}
               srcDoc={previewTerms.content}
               sandbox=''
-              className='w-full h-full min-h-[50vh] rounded-lg border-0 bg-white'
+              className='h-full min-h-[50vh] w-full rounded-xl border-0 bg-white'
             />
           ) : (
-            <div className='text-center py-20 text-slate-500'>
+            <div className='py-20 text-center text-text-meta'>
               본문 내용을 불러올 수 없거나 파일 내용이 비어있습니다.
             </div>
           )}
         </div>
 
-        <div className='shrink-0 flex justify-end pt-4 border-t border-slate-800 mt-3'>
+        <DialogFooter className='shrink-0'>
           <Button
+            size='sm'
+            variant='outline'
             onClick={onClose}
-            className='bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl'
+            className='cursor-pointer border-transparent bg-transparent px-6 text-text-muted neu-press'
           >
             닫기
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -4,10 +4,6 @@ import React, { useState } from "react";
 import {
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Input,
   Spinner,
   Table,
   TableBody,
@@ -22,6 +18,7 @@ import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { RoleBadge } from "@/entities/user";
 import { PlatformUserActions } from "@/features/platform/manage-user";
 import { CreatePlatformUserDialog } from "@/features/platform/create-user";
+import { SearchField, TablePagination, TableToolbar } from "@/shared/ui";
 
 /** v1/platform/users 가 내려주는 항목 — 소속 요약이 함께 온다. */
 interface PlatformUser {
@@ -77,196 +74,158 @@ export const PlatformUsersTable = () => {
     },
   );
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     setSearch(searchInput);
     setPage(1);
   };
 
   return (
-    <Card className='border-slate-800 bg-slate-900/50 text-slate-100 backdrop-blur-sm'>
-      <CardHeader className='flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='flex gap-1.5'>
-          {STATUS_TABS.map((tab) => (
-            <Button
-              key={tab.value}
-              size='sm'
-              variant={status === tab.value ? "default" : "outline"}
-              onClick={() => {
-                setStatus(tab.value);
-                setPage(1);
-              }}
-              className={
-                status === tab.value
-                  ? "cursor-pointer rounded-lg bg-blue-600 text-white hover:bg-blue-500"
-                  : "cursor-pointer rounded-lg border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
-              }
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </div>
-
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-          <form onSubmit={handleSearch} className='flex max-w-sm gap-2'>
-            <Input
-              type='text'
-              inputSize='sm'
-              placeholder='이메일·닉네임·전화번호 검색'
+    <section className='flex flex-col gap-5 rounded-2xl p-5 neu-raised'>
+      <TableToolbar
+        actions={
+          <>
+            <SearchField
               value={searchInput}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchInput(e.target.value)
-              }
-              className='border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:ring-blue-500'
+              onChange={setSearchInput}
+              onSubmit={handleSearch}
+              placeholder='이메일·닉네임·전화번호 검색'
             />
-            <Button
-              type='submit'
-              size='sm'
-              className='cursor-pointer bg-blue-600 text-white hover:bg-blue-700'
-            >
-              검색
-            </Button>
-          </form>
+            <CreatePlatformUserDialog />
+          </>
+        }
+      >
+        {/* 상태 탭 — 선택된 것은 채우지 않고 **눌린 면**으로 표시한다.
+            채우면 오른쪽 "회원 등록"(주 행동)과 같은 무게가 되어 둘이 경쟁한다. */}
+        {STATUS_TABS.map((tab) => (
+          <Button
+            key={tab.value}
+            size='sm'
+            variant='outline'
+            onClick={() => {
+              setStatus(tab.value);
+              setPage(1);
+            }}
+            className={`cursor-pointer border-transparent bg-transparent px-4 ${
+              status === tab.value ? "neu-press-on" : "text-text-muted neu-press"
+            }`}
+          >
+            {tab.label}
+          </Button>
+        ))}
+      </TableToolbar>
 
-          <CreatePlatformUserDialog />
+      {isLoading ? (
+        <div className='flex items-center justify-center py-16'>
+          <Spinner className='size-8 text-brand' />
         </div>
-      </CardHeader>
-
-      <CardContent>
-        {isLoading ? (
-          <div className='flex items-center justify-center py-12'>
-            <Spinner className='h-8 w-8 text-blue-500' />
-          </div>
-        ) : (
-          <div className='overflow-x-auto'>
-            <Table>
-              <TableHeader className='border-slate-800'>
-                <TableRow className='border-slate-800 hover:bg-transparent'>
-                  <TableHead className='font-semibold text-slate-400'>
-                    닉네임
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    이메일
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    연락처
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    소속 매장
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    가입일
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    상태
-                  </TableHead>
-                  <TableHead className='text-right font-semibold text-slate-400'>
-                    작업
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.items && data.items.length > 0 ? (
-                  data.items.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      className='border-slate-800/60 hover:bg-slate-800/30'
-                    >
-                      <TableCell className='font-medium text-white'>
-                        <div className='flex items-center gap-2'>
-                          {user.nickname}
-                          {user.role === ROLES.SUPER_ADMIN && (
-                            <RoleBadge role={user.role} />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className='text-slate-300'>
-                        {user.email}
-                      </TableCell>
-                      <TableCell className='text-slate-400'>
-                        {/* 저장은 숫자만, 화면은 하이픈 (job-043). */}
-                        {user.phone ? formatPhone(user.phone) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {user.memberships.length === 0 ? (
-                          <span className='text-xs text-slate-500'>없음</span>
-                        ) : (
-                          <div className='flex flex-wrap gap-1'>
-                            {user.memberships.map((m) => (
-                              <Badge
-                                key={m.tenant.id}
-                                variant='outline'
-                                className='rounded-lg border-slate-700 bg-slate-800/60 text-xs text-slate-300'
-                              >
-                                {m.tenant.name} · {m.role}
-                              </Badge>
-                            ))}
-                          </div>
+      ) : (
+        <div className='overflow-hidden rounded-2xl neu-inset'>
+          <Table>
+            <TableHeader>
+              <TableRow className='border-border hover:bg-transparent'>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  닉네임
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  이메일
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  연락처
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  소속 매장
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  가입일
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  상태
+                </TableHead>
+                <TableHead className='px-4 py-3 text-right text-label text-text-muted'>
+                  작업
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.items && data.items.length > 0 ? (
+                data.items.map((user) => (
+                  <TableRow
+                    key={user.id}
+                    className='border-border/60 hover:bg-muted/60'
+                  >
+                    <TableCell className='px-4 py-3 font-semibold text-foreground'>
+                      <div className='flex items-center gap-2'>
+                        {user.nickname}
+                        {user.role === ROLES.SUPER_ADMIN && (
+                          <RoleBadge role={user.role} />
                         )}
-                      </TableCell>
-                      <TableCell className='text-slate-400'>
-                        {formatDate(user.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant='outline'
-                          className={`rounded-lg border text-xs ${
-                            user.status === "SUSPENDED"
-                              ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
-                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                          }`}
-                        >
-                          {user.status === "SUSPENDED" ? "정지" : "정상"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className='text-right'>
-                        <PlatformUserActions user={user} />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className='py-12 text-center text-slate-500'
-                    >
-                      검색된 회원이 없습니다.
+                      </div>
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-text-muted'>
+                      {user.email}
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-text-muted tabular-nums'>
+                      {/* 저장은 숫자만, 화면은 하이픈 (job-043). */}
+                      {user.phone ? formatPhone(user.phone) : "—"}
+                    </TableCell>
+                    <TableCell className='px-4 py-3'>
+                      {user.memberships.length === 0 ? (
+                        <span className='text-meta text-text-meta'>없음</span>
+                      ) : (
+                        <div className='flex flex-wrap gap-1.5'>
+                          {user.memberships.map((m) => (
+                            <Badge
+                              key={m.tenant.id}
+                              variant='secondary'
+                              className='text-text-muted'
+                            >
+                              {m.tenant.name} · {m.role}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-text-meta'>
+                      {formatDate(user.createdAt)}
+                    </TableCell>
+                    <TableCell className='px-4 py-3'>
+                      <Badge
+                        variant={
+                          user.status === "SUSPENDED" ? "critical" : "normal"
+                        }
+                      >
+                        {user.status === "SUSPENDED" ? "정지" : "정상"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-right'>
+                      <PlatformUserActions user={user} />
                     </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                ))
+              ) : (
+                <TableRow className='hover:bg-transparent'>
+                  <TableCell
+                    colSpan={7}
+                    className='py-16 text-center text-text-meta'
+                  >
+                    검색된 회원이 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-        {data?.meta && data.meta.totalPages > 1 && (
-          <div className='mt-6 flex items-center justify-between border-t border-slate-800/60 pt-4'>
-            <span className='text-sm text-slate-400'>
-              총 {data.meta.total}명 중 {page} / {data.meta.totalPages} 페이지
-            </span>
-            <div className='flex gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className='cursor-pointer border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white'
-              >
-                이전
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={page >= data.meta.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className='cursor-pointer border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white'
-              >
-                다음
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {data?.meta && (
+        <TablePagination
+          page={page}
+          totalPages={data.meta.totalPages}
+          total={data.meta.total}
+          unit='명'
+          onChange={setPage}
+        />
+      )}
+    </section>
   );
 };

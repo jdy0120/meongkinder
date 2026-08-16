@@ -8,11 +8,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Input,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
   Spinner,
 } from "@pawlog/ui";
 import type { TenantSummary } from "@pawlog/shared";
@@ -21,6 +16,7 @@ import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { TenantStatusBadge } from "@/entities/tenant";
 import { EditTenantDialog } from "@/features/tenant/update-tenant";
 import { TenantActiveToggle } from "@/features/tenant/toggle-tenant-active";
+import { SearchField, TablePagination, TableToolbar } from "@/shared/ui";
 
 const formatDate = (value: string | Date) =>
   new Date(value).toLocaleDateString("ko-KR", {
@@ -45,157 +41,125 @@ export const TenantsTable = () => {
     { page, pageSize: 10, search, sort: "createdAt", order: "desc" },
   );
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     setSearch(searchInput);
     setPage(1);
   };
 
   return (
-    <Card className='border-slate-800 bg-slate-900/50 text-slate-100 backdrop-blur-sm'>
-      <CardHeader className='pb-3'>
-        <form onSubmit={handleSearch} className='flex gap-2 max-w-sm'>
-          <Input
-            type='text'
-            inputSize='sm'
-            placeholder='매장 이름 또는 서브도메인 검색'
+    <section className='flex flex-col gap-5 rounded-2xl p-5 neu-raised'>
+      <TableToolbar
+        actions={
+          <SearchField
             value={searchInput}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSearchInput(e.target.value)
-            }
-            className='border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:ring-blue-500'
+            onChange={setSearchInput}
+            onSubmit={handleSearch}
+            placeholder='매장 이름 또는 서브도메인 검색'
           />
-          <Button
-            type='submit'
-            variant='default'
-            size='sm'
-            className='bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
-          >
-            검색
-          </Button>
-        </form>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className='flex justify-center items-center py-12'>
-            <Spinner className='w-8 h-8 text-blue-500' />
-          </div>
-        ) : (
-          <div className='overflow-x-auto'>
-            <Table>
-              <TableHeader className='border-slate-800'>
-                <TableRow className='border-slate-800 hover:bg-transparent'>
-                  <TableHead className='text-slate-400 font-semibold'>
-                    매장 이름
-                  </TableHead>
-                  <TableHead className='text-slate-400 font-semibold'>
-                    서브도메인
-                  </TableHead>
-                  <TableHead className='text-slate-400 font-semibold text-right'>
-                    사용자
-                  </TableHead>
-                  <TableHead className='text-slate-400 font-semibold text-right'>
-                    원생
-                  </TableHead>
-                  <TableHead className='text-slate-400 font-semibold'>
-                    생성일
-                  </TableHead>
-                  <TableHead className='text-slate-400 font-semibold'>
-                    상태
-                  </TableHead>
-                  <TableHead className='text-slate-400 font-semibold text-right'>
-                    작업
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.items && data.items.length > 0 ? (
-                  data.items.map((tenant) => (
-                    <TableRow
-                      key={tenant.id}
-                      className='border-slate-800/60 hover:bg-slate-800/30'
-                    >
-                      <TableCell className='font-medium text-white'>
-                        {tenant.name}
-                      </TableCell>
-                      <TableCell className='text-slate-300 font-mono text-xs'>
-                        {tenant.subdomain}
-                      </TableCell>
-                      <TableCell className='text-slate-300 text-right tabular-nums'>
-                        {tenant._count.memberships}
-                      </TableCell>
-                      <TableCell className='text-slate-300 text-right tabular-nums'>
-                        {tenant._count.pets}
-                      </TableCell>
-                      <TableCell className='text-slate-400'>
-                        {formatDate(tenant.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <div className='flex items-center gap-2'>
-                          <TenantActiveToggle
-                            tenant={{
-                              id: tenant.id,
-                              name: tenant.name,
-                              isActive: tenant.isActive,
-                            }}
-                          />
-                          <TenantStatusBadge isActive={tenant.isActive} />
-                        </div>
-                      </TableCell>
-                      <TableCell className='text-right'>
-                        <EditTenantDialog
+        }
+      />
+
+      {isLoading ? (
+        <div className='flex items-center justify-center py-16'>
+          <Spinner className='size-8 text-brand' />
+        </div>
+      ) : (
+        <div className='overflow-hidden rounded-2xl neu-inset'>
+          <Table>
+            <TableHeader>
+              <TableRow className='border-border hover:bg-transparent'>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  매장 이름
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  서브도메인
+                </TableHead>
+                <TableHead className='px-4 py-3 text-right text-label text-text-muted'>
+                  사용자
+                </TableHead>
+                <TableHead className='px-4 py-3 text-right text-label text-text-muted'>
+                  원생
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  생성일
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  상태
+                </TableHead>
+                <TableHead className='px-4 py-3 text-right text-label text-text-muted'>
+                  작업
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.items && data.items.length > 0 ? (
+                data.items.map((tenant) => (
+                  <TableRow
+                    key={tenant.id}
+                    className='border-border/60 hover:bg-muted/60'
+                  >
+                    <TableCell className='px-4 py-3 font-semibold text-foreground'>
+                      {tenant.name}
+                    </TableCell>
+                    <TableCell className='px-4 py-3 font-mono text-meta text-text-muted'>
+                      {tenant.subdomain}
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-right text-text-muted tabular-nums'>
+                      {tenant._count.memberships}
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-right text-text-muted tabular-nums'>
+                      {tenant._count.pets}
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-text-meta'>
+                      {formatDate(tenant.createdAt)}
+                    </TableCell>
+                    <TableCell className='px-4 py-3'>
+                      <div className='flex items-center gap-2.5'>
+                        <TenantActiveToggle
                           tenant={{
                             id: tenant.id,
                             name: tenant.name,
-                            subdomain: tenant.subdomain,
+                            isActive: tenant.isActive,
                           }}
                         />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className='text-center text-slate-500 py-12'
-                    >
-                      검색된 테넌트가 없습니다.
+                        <TenantStatusBadge isActive={tenant.isActive} />
+                      </div>
+                    </TableCell>
+                    <TableCell className='px-4 py-3 text-right'>
+                      <EditTenantDialog
+                        tenant={{
+                          id: tenant.id,
+                          name: tenant.name,
+                          subdomain: tenant.subdomain,
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                ))
+              ) : (
+                <TableRow className='hover:bg-transparent'>
+                  <TableCell
+                    colSpan={7}
+                    className='py-16 text-center text-text-meta'
+                  >
+                    검색된 테넌트가 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-        {data?.meta && data.meta.totalPages > 1 && (
-          <div className='flex items-center justify-between mt-6 pt-4 border-t border-slate-800/60'>
-            <span className='text-sm text-slate-400'>
-              총 {data.meta.total}개 중 {page} / {data.meta.totalPages} 페이지
-            </span>
-            <div className='flex gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className='border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer'
-              >
-                이전
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={page >= data.meta.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className='border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer'
-              >
-                다음
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {data?.meta && (
+        <TablePagination
+          page={page}
+          totalPages={data.meta.totalPages}
+          total={data.meta.total}
+          unit='개'
+          onChange={setPage}
+        />
+      )}
+    </section>
   );
 };

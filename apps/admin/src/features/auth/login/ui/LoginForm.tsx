@@ -41,6 +41,7 @@ export const LoginForm = () => {
           type='email'
           autoComplete='email'
           placeholder='admin@example.com'
+          className='border-transparent neu-inset'
           {...register("email", { required: "이메일을 입력하세요." })}
         />
         {errors.email && <FieldError>{errors.email.message}</FieldError>}
@@ -53,6 +54,7 @@ export const LoginForm = () => {
           type='password'
           autoComplete='current-password'
           placeholder='••••••••'
+          className='border-transparent neu-inset'
           {...register("password", {
             required: "비밀번호를 입력하세요.",
             minLength: { value: 8, message: "8자 이상 입력하세요." },

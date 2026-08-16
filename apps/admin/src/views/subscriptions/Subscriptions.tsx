@@ -1,4 +1,5 @@
 import { PlatformSubscriptionsTable } from "@/widgets/platform-subscriptions-table";
+import { PageHeader } from "@/shared/ui";
 
 /**
  * 전 플랫폼 구독 현황 페이지 (view).
@@ -6,17 +7,11 @@ import { PlatformSubscriptionsTable } from "@/widgets/platform-subscriptions-tab
  */
 export const SubscriptionsPage = () => {
   return (
-    <div className='space-y-6'>
-      <div className='flex flex-col gap-1'>
-        <h1 className='text-2xl font-bold tracking-tight text-white'>
-          구독 현황
-        </h1>
-        <p className='text-sm text-slate-400'>
-          매장 개설권 구독 전체를 조회합니다. 매장이 연결되지 않은 건은 아직
-          사용하지 않은 개설권입니다.
-        </p>
-      </div>
-
+    <div className='flex flex-col gap-6'>
+      <PageHeader
+        title='구독 현황'
+        description='매장 개설권 구독 전체를 조회합니다. 매장이 연결되지 않은 건은 아직 사용하지 않은 개설권입니다.'
+      />
       <PlatformSubscriptionsTable />
     </div>
   );

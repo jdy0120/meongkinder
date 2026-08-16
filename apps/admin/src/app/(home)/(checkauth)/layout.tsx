@@ -77,11 +77,11 @@ const layout = async ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className='flex h-screen w-screen overflow-hidden bg-slate-950'>
+    <div className='flex h-screen w-screen overflow-hidden bg-background'>
       <TenantSync memberships={memberships} />
       <Sidebar user={user} onLogout={handleLogout} />
-      <main className='flex-1 overflow-y-auto bg-slate-950 p-8 text-slate-100'>
-        {children}
+      <main className='flex-1 overflow-y-auto bg-background p-8 text-foreground'>
+        <div className='mx-auto w-full max-w-[1600px]'>{children}</div>
       </main>
     </div>
   );

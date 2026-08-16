@@ -3,11 +3,6 @@
 import React, { useState } from "react";
 import {
   Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Input,
   Spinner,
   Table,
   TableBody,
@@ -18,6 +13,7 @@ import {
 } from "@pawlog/ui";
 
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
+import { SearchField, TablePagination, TableToolbar } from "@/shared/ui";
 
 /** v1/platform/subscriptions 가 내려주는 항목 (매장 개설권 = SaaS 요금). */
 interface SeatSubscription {
@@ -39,18 +35,21 @@ const formatDate = (value: string | Date) =>
     day: "numeric",
   });
 
-const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-  CANCELED: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  EXPIRED: "border-slate-500/30 bg-slate-500/10 text-slate-400",
-  FAIL_PAUSED: "border-rose-500/30 bg-rose-500/10 text-rose-300",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "이용중",
-  CANCELED: "해지예정",
-  EXPIRED: "만료",
-  FAIL_PAUSED: "결제실패",
+/**
+ * 구독 상태 → 배지 긴급도.
+ *
+ * 예전에는 상태 4종에 각각 다른 색(emerald/amber/slate/rose)을 배정했는데, 그러면 색이
+ * **분류**를 뜻하게 되어 "지금 봐야 하는 건"이 드러나지 않는다. 3단계로 접는다 —
+ * 결제 실패만 critical 이고, 해지예정은 caution, 나머지는 색이 없다.
+ */
+const STATUS_META: Record<
+  string,
+  { label: string; variant: "normal" | "caution" | "critical" | "secondary" }
+> = {
+  ACTIVE: { label: "이용중", variant: "normal" },
+  CANCELED: { label: "해지예정", variant: "caution" },
+  EXPIRED: { label: "만료", variant: "secondary" },
+  FAIL_PAUSED: { label: "결제실패", variant: "critical" },
 };
 
 /**
@@ -68,157 +67,119 @@ export const PlatformSubscriptionsTable = () => {
     { page, pageSize: 10, search, sort: "createdAt", order: "desc" },
   );
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     setSearch(searchInput);
     setPage(1);
   };
 
   return (
-    <Card className='border-slate-800 bg-slate-900/50 text-slate-100 backdrop-blur-sm'>
-      <CardHeader className='pb-3'>
-        <form onSubmit={handleSearch} className='flex max-w-sm gap-2'>
-          <Input
-            type='text'
-            inputSize='sm'
-            placeholder='구매자 이메일 또는 매장 이름 검색'
+    <section className='flex flex-col gap-5 rounded-2xl p-5 neu-raised'>
+      <TableToolbar
+        actions={
+          <SearchField
             value={searchInput}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSearchInput(e.target.value)
-            }
-            className='border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:ring-blue-500'
+            onChange={setSearchInput}
+            onSubmit={handleSearch}
+            placeholder='구매자 이메일 또는 매장 이름 검색'
           />
-          <Button
-            type='submit'
-            size='sm'
-            className='cursor-pointer bg-blue-600 text-white hover:bg-blue-700'
-          >
-            검색
-          </Button>
-        </form>
-      </CardHeader>
+        }
+      />
 
-      <CardContent>
-        {isLoading ? (
-          <div className='flex items-center justify-center py-12'>
-            <Spinner className='h-8 w-8 text-blue-500' />
-          </div>
-        ) : (
-          <div className='overflow-x-auto'>
-            <Table>
-              <TableHeader className='border-slate-800'>
-                <TableRow className='border-slate-800 hover:bg-transparent'>
-                  <TableHead className='font-semibold text-slate-400'>
-                    구매자
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    요금제
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    개설한 매장
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    다음 결제일
-                  </TableHead>
-                  <TableHead className='font-semibold text-slate-400'>
-                    상태
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.items && data.items.length > 0 ? (
-                  data.items.map((seat) => (
+      {isLoading ? (
+        <div className='flex items-center justify-center py-16'>
+          <Spinner className='size-8 text-brand' />
+        </div>
+      ) : (
+        <div className='overflow-hidden rounded-2xl neu-inset'>
+          <Table>
+            <TableHeader>
+              <TableRow className='border-border hover:bg-transparent'>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  구매자
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  요금제
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  개설한 매장
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  다음 결제일
+                </TableHead>
+                <TableHead className='px-4 py-3 text-label text-text-muted'>
+                  상태
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.items && data.items.length > 0 ? (
+                data.items.map((seat) => {
+                  const meta = STATUS_META[seat.status];
+                  return (
                     <TableRow
                       key={seat.id}
-                      className='border-slate-800/60 hover:bg-slate-800/30'
+                      className='border-border/60 hover:bg-muted/60'
                     >
-                      <TableCell>
-                        <p className='font-medium text-white'>
+                      <TableCell className='px-4 py-3'>
+                        <p className='font-semibold text-foreground'>
                           {seat.user.nickname}
                         </p>
-                        <p className='text-xs text-slate-500'>
+                        <p className='text-meta text-text-meta'>
                           {seat.user.email}
                         </p>
                       </TableCell>
-                      <TableCell className='text-slate-300'>
+                      <TableCell className='px-4 py-3 text-text-muted'>
                         {seat.plan.name}
-                        <span className='ml-1 text-xs text-slate-500'>
+                        <span className='ml-1 text-meta text-text-meta tabular-nums'>
                           ({seat.plan.price.toLocaleString("ko-KR")}원)
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className='px-4 py-3'>
                         {seat.tenant ? (
-                          <span className='text-slate-300'>
+                          <span className='text-text-muted'>
                             {seat.tenant.name}
                           </span>
                         ) : (
-                          <Badge
-                            variant='outline'
-                            className='rounded-lg border-slate-700 bg-slate-800/60 text-xs text-slate-400'
-                          >
+                          <Badge variant='secondary' className='text-text-meta'>
                             미사용
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className='text-slate-400'>
+                      <TableCell className='px-4 py-3 text-text-meta'>
                         {formatDate(seat.nextPaymentDate)}
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant='outline'
-                          className={`rounded-lg border text-xs ${
-                            STATUS_STYLES[seat.status] ??
-                            "border-slate-700 bg-slate-800/60 text-slate-400"
-                          }`}
-                        >
-                          {STATUS_LABELS[seat.status] ?? seat.status}
+                      <TableCell className='px-4 py-3'>
+                        <Badge variant={meta?.variant ?? "secondary"}>
+                          {meta?.label ?? seat.status}
                         </Badge>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className='py-12 text-center text-slate-500'
-                    >
-                      구독 내역이 없습니다.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                  );
+                })
+              ) : (
+                <TableRow className='hover:bg-transparent'>
+                  <TableCell
+                    colSpan={5}
+                    className='py-16 text-center text-text-meta'
+                  >
+                    구독 내역이 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-        {data?.meta && data.meta.totalPages > 1 && (
-          <div className='mt-6 flex items-center justify-between border-t border-slate-800/60 pt-4'>
-            <span className='text-sm text-slate-400'>
-              총 {data.meta.total}건 중 {page} / {data.meta.totalPages} 페이지
-            </span>
-            <div className='flex gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className='cursor-pointer border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white'
-              >
-                이전
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={page >= data.meta.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className='cursor-pointer border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white'
-              >
-                다음
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {data?.meta && (
+        <TablePagination
+          page={page}
+          totalPages={data.meta.totalPages}
+          total={data.meta.total}
+          unit='건'
+          onChange={setPage}
+        />
+      )}
+    </section>
   );
 };
