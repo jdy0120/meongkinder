@@ -107,12 +107,7 @@ export const RevenueCalendarDialog = ({
             <Spinner className='size-8 text-primary' />
           </div>
         ) : (
-          /*
-            좁은 화면에서는 **가로로** 스크롤한다.
-            7열 달력을 폭에 맞춰 줄이면 칸이 40px 밑으로 내려가 세 줄이 아예 안 읽힌다.
-            읽히지 않는 표를 다 보여주는 것보다 밀어서 보는 편이 낫다.
-          */
-          <div className='overflow-x-auto'>
+          <div>
             <Calendar
               mode='single'
               month={cursor}
@@ -132,11 +127,20 @@ export const RevenueCalendarDialog = ({
                 큰 화면에서 칸만 커지면 숫자 사이 여백이 벌어져 오히려 훑기 어려워지기
                 때문이다.
               */
-              className='w-full min-w-[42rem] p-0 [--cell-size:clamp(2.75rem,8.5vh,5.5rem)]'
+              className='w-full p-0 [--cell-size:clamp(2.5rem,7.5vh,4.5rem)]'
               classNames={{
-                /* 기본값은 주마다 `mt-2`(8px) — 6주면 48px 이 세로로 쌓여 스크롤을
-                   만든다. 칸에 테두리가 있어 간격 없이도 줄이 구분된다. */
-                week: "mt-0.5 flex w-full",
+                /*
+                  ⚠️ **`aspect-square` 를 반드시 걷어내야 한다.**
+
+                  기본 `day` 클래스가 `aspect-square h-full` 이라 칸 높이가 **폭을 따라간다**.
+                  모달이 1400px 이면 한 열이 200px 이 되어 칸도 200px 높이가 되고, 그러면
+                  `--cell-size` 를 아무리 줄여도 세로 스크롤이 사라지지 않는다. 높이를
+                  `--cell-size` 로 직접 묶어야 폭과 무관해진다.
+                */
+                day: "group/day relative h-(--cell-size) w-full rounded-(--cell-radius) p-0 text-center select-none",
+                /* 기본값은 주마다 `mt-2`(8px) — 6주면 48px 이 그냥 쌓인다. 칸에 테두리가
+                   있어 간격 없이도 줄이 구분된다. */
+                week: "mt-px flex w-full",
                 month: "flex w-full flex-col gap-1",
                 months: "relative flex flex-col gap-1",
               }}
@@ -152,16 +156,16 @@ export const RevenueCalendarDialog = ({
                       /* 매출을 읽는 화면이지 고르는 화면이 아니다 — 누를 수 있는 것처럼
                        보이면 눌러 보고 아무 일도 없는 것을 확인하게 된다. */
                       disabled
-                      className='flex h-(--cell-size) w-full min-w-(--cell-size) flex-col items-stretch justify-start gap-0.5 rounded-btn border p-1.5 disabled:opacity-100'
+                      className='flex h-full w-full flex-col items-stretch justify-start gap-0 overflow-hidden rounded-btn border p-1 disabled:opacity-100'
                     >
-                      <span className='text-left text-label font-semibold'>
+                      <span className='text-left text-[0.625rem] font-semibold sm:text-label'>
                         {day.date.getDate()}
                       </span>
 
                       {row && (
                         <span className='flex w-full flex-col items-end gap-0 leading-tight'>
                           {/* 수익 — 초록 */}
-                          <span className='w-full truncate text-right text-label font-semibold text-success-text'>
+                          <span className='w-full truncate text-right text-[0.625rem] font-semibold text-success-text sm:text-label'>
                             {compact(row.gross)}
                           </span>
                           {/* 환불 — 빨강. 0원이어도 자리를 지운다(줄이 밀리면 세 줄의
@@ -178,7 +182,7 @@ export const RevenueCalendarDialog = ({
                               : "0"}
                           </span>
                           {/* 총 매출 — 검정 */}
-                          <span className='w-full truncate border-t pt-0.5 text-right text-label font-bold text-foreground'>
+                          <span className='w-full truncate border-t text-right text-[0.625rem] font-bold text-foreground sm:text-label'>
                             {compact(row.total)}
                           </span>
                         </span>
