@@ -33,6 +33,22 @@ model FeedPost {
   status      String    @default("DRAFT")
   publishedAt DateTime? @map("published_at")
 
+  /**
+   * 알림장에서 파생된 **미러 게시물** (job-062). null 이면 선생님이 피드에 직접 올린 것.
+   *
+   * 입력구를 피드와 알림장 두 곳으로 열어 두되(알림장에만 올린 아이가 "오늘 사진 0장"으로
+   * 잡히면 안 된다), 알림장 사진도 피드에 실제로 쌓이게 한다.
+   *
+   * ⚠️ **유니크가 이 컬럼의 핵심이다.** 알림장 수정은 `contents: { deleteMany: {} }` 로 항목을
+   * 통째로 갈아엎으므로, 연결 고리가 없으면 알림장을 세 번 고칠 때 미러 게시물이 세 개
+   * 쌓인다. 갱신 대상을 이 컬럼으로 찾고, 중복은 DB 가 막는다.
+   *
+   * CASCADE 인 이유: 알림장이 지워지면 그 사진이 피드에 남을 근거도 사라진다. 서비스가
+   * 지우는 코드를 따로 들고 있으면 삭제 경로가 늘 때마다 빠뜨린다.
+   */
+  sourceDailyReportId String?      @unique @map("source_daily_report_id")
+  sourceDailyReport   DailyReport? @relation("DailyReportMirror", fields: [sourceDailyReportId], references: [id], onDelete: Cascade)
+
   media       FeedMedia[]
   tags        FeedTag[]
   corrections FeedTagCorrection[]

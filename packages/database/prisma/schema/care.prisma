@@ -51,6 +51,9 @@ model DailyReport {
 
   contents ReportContent[]
 
+  /** 이 알림장의 사진을 피드에도 쌓아 두는 미러 게시물 (job-062). */
+  mirroredFeedPost FeedPost? @relation("DailyReportMirror")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

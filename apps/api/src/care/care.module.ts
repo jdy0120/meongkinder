@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { FeedModule } from "../feed/feed.module";
 import { FileModule } from "../shared/file/file.module";
 import { NotificationModule } from "../notification/notification.module";
 import { SubscriptionModule } from "../subscription/subscription.module";
@@ -13,7 +14,14 @@ import { ReportContentService } from "./services/report-content.service";
 import { ReportShareService } from "./services/report-share.service";
 
 @Module({
-  imports: [SubscriptionModule, FileModule, NotificationModule],
+  imports: [
+    SubscriptionModule,
+    FileModule,
+    NotificationModule,
+    // job-062: 알림장 사진을 피드 미러 게시물로 쌓는다(FeedMirrorService).
+    // FeedModule 은 Care 를 참조하지 않으므로 순환이 생기지 않는다.
+    FeedModule,
+  ],
   controllers: [
     AttendanceController,
     DailyReportController,

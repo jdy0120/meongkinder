@@ -77,6 +77,9 @@ describe("DailyReport (e2e) — 일일 리포트 생성 + 사진 첨부", () => 
       })
     ).id;
 
+    await prisma.feedTag.deleteMany();
+    await prisma.feedMedia.deleteMany();
+    await prisma.feedPost.deleteMany();
     await prisma.reportContent.deleteMany();
     await prisma.dailyReport.deleteMany();
     await prisma.pet.deleteMany();
@@ -86,6 +89,9 @@ describe("DailyReport (e2e) — 일일 리포트 생성 + 사진 첨부", () => 
   });
 
   afterAll(async () => {
+    await prisma.feedTag.deleteMany();
+    await prisma.feedMedia.deleteMany();
+    await prisma.feedPost.deleteMany();
     await prisma.reportContent.deleteMany();
     await prisma.dailyReport.deleteMany();
     await prisma.pet.deleteMany();
@@ -262,6 +268,294 @@ describe("DailyReport (e2e) — 일일 리포트 생성 + 사진 첨부", () => 
       await ownerBSession
         .get(`${V1_DAILY_REPORTS}/mine/${reportId}`)
         .expect(404);
+    });
+  });
+
+  /**
+   * `DailyReport.authorId` 는 표기용이 아니라 **하루 마감이 사진을 덮어쓸지 가르는 근거**다
+   * (`FeedDigestService.upsertReport` 의 `writtenByPerson`). 한동안 이 컬럼을 아무도 쓰지
+   * 않아서 그 분기가 항상 거짓이었고, 재마감할 때마다 선생님이 직접 올린 사진이 피드 사진으로
+   * 교체됐다 — 글 항목은 남고 사진만 바뀌므로 화면만 봐서는 알아채기 어렵다. 그래서 값이
+   * 실제로 채워지는지를 테스트로 고정한다.
+   */
+  describe("작성자(authorId) — 하루 마감의 사진 덮어쓰기 판단 근거", () => {
+    const feedGeneratedReport = async (petId: string, date: string) =>
+      // 하루 마감이 만든 리포트를 흉내 낸다 — 작성자가 없는 것이 그 표식이다.
+      prisma.dailyReport.create({
+        data: {
+          tenantId,
+          petId,
+          date: new Date(date),
+          status: "DRAFT",
+          aiCommentDraft: "오늘 친구들과 잘 지냈어요.",
+        },
+        select: { id: true },
+      });
+
+    it("사람이 작성한 리포트에는 작성자가 남는다", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-author-owner@example.com",
+        nickname: "dr-author-owner",
+        petName: "작성자펫",
+      });
+      const admin = await newSignupAndLogin(server(), {
+        email: "dr-author-admin@example.com",
+        nickname: "dr-author-admin",
+      });
+      await grantMembership(admin.userId, tenantId, ROLES.TENANT_ADMIN);
+      const adminSession = asTenant(admin.session, tenantId);
+
+      const res = await adminSession
+        .post(V1_DAILY_REPORTS)
+        .send({ petId, date: "2026-07-31", status: "DRAFT" })
+        .expect(201);
+
+      const reportId = (res.body as DailyReportBody).data.dailyReport.id;
+      const row = await prisma.dailyReport.findUnique({
+        where: { id: reportId },
+        select: { authorId: true },
+      });
+      expect(row?.authorId).toBe(admin.userId);
+    });
+
+    it("상태만 바꾸는 수정은 작성자를 남기지 않는다 (마감이 사진을 계속 갱신할 수 있어야 한다)", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-publish-owner@example.com",
+        nickname: "dr-publish-owner",
+        petName: "발행펫",
+      });
+      const adminSession = await signupAndLoginAsAdmin(
+        "dr-publish-admin@example.com",
+        "dr-publish-admin",
+      );
+      const report = await feedGeneratedReport(petId, "2026-08-01");
+
+      await adminSession
+        .patch(`${V1_DAILY_REPORTS}/${report.id}`)
+        .send({ status: "PUBLISHED" })
+        .expect(200);
+
+      const row = await prisma.dailyReport.findUnique({
+        where: { id: report.id },
+        select: { authorId: true, status: true },
+      });
+      expect(row?.status).toBe("PUBLISHED");
+      expect(row?.authorId).toBeNull();
+    });
+
+    it("항목(contents)을 손댄 수정에는 작성자가 남는다", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-edit-owner@example.com",
+        nickname: "dr-edit-owner",
+        petName: "수정펫",
+      });
+      const admin = await newSignupAndLogin(server(), {
+        email: "dr-edit-admin@example.com",
+        nickname: "dr-edit-admin",
+      });
+      await grantMembership(admin.userId, tenantId, ROLES.TENANT_ADMIN);
+      const adminSession = asTenant(admin.session, tenantId);
+      const report = await feedGeneratedReport(petId, "2026-08-02");
+
+      await adminSession
+        .patch(`${V1_DAILY_REPORTS}/${report.id}`)
+        .send({
+          contents: [{ type: "NOTE", content: "선생님이 직접 적은 특이사항" }],
+        })
+        .expect(200);
+
+      const row = await prisma.dailyReport.findUnique({
+        where: { id: report.id },
+        select: { authorId: true },
+      });
+      expect(row?.authorId).toBe(admin.userId);
+    });
+  });
+
+  /**
+   * job-062: 알림장에 올린 사진은 피드에도 쌓인다.
+   *
+   * 입력구는 피드와 알림장 둘 다 남긴다 — 알림장은 "오늘 사진 안 올린 아이가 누구인지"를
+   * 아이 단위로 보여주는 유일한 축이다. 없애는 것은 입력구가 아니라 **비대칭**이다:
+   * 알림장에 올린 사진이 피드에 없어서 보호자 피드에도 안 뜨고 커버리지에도 안 잡히던 것.
+   */
+  describe("피드 미러 — 알림장 사진이 피드에도 쌓인다", () => {
+    const uploadPhoto = async (
+      session: ReturnType<typeof asTenant>,
+      name: string,
+    ) => {
+      const res = await session
+        .post(`${V1_FILE}/upload`)
+        .attach("files", Buffer.from("fake-image-bytes"), name)
+        .expect(201);
+      return (res.body as UploadBody).data[0].id;
+    };
+
+    const mirrorOf = async (dailyReportId: string) =>
+      prisma.feedPost.findFirst({
+        where: { sourceDailyReportId: dailyReportId },
+        select: {
+          id: true,
+          status: true,
+          caption: true,
+          media: { select: { fileId: true } },
+          tags: { select: { petId: true, confirmed: true } },
+        },
+      });
+
+    it("발행된 알림장의 사진이 그 아이로 태그된 피드 게시물이 된다", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-mirror-owner@example.com",
+        nickname: "dr-mirror-owner",
+        petName: "미러펫",
+      });
+      const adminSession = await signupAndLoginAsAdmin(
+        "dr-mirror-admin@example.com",
+        "dr-mirror-admin",
+      );
+      const fileId = await uploadPhoto(adminSession, "mirror.png");
+
+      const res = await adminSession
+        .post(V1_DAILY_REPORTS)
+        .send({
+          petId,
+          date: "2026-08-10",
+          summary: "오늘 잘 놀았어요",
+          status: "PUBLISHED",
+          contents: [
+            { type: "PHOTO", fileId, order: 0 },
+            { type: "MEAL", content: "완식", order: 1 },
+          ],
+        })
+        .expect(201);
+      const reportId = (res.body as DailyReportBody).data.dailyReport.id;
+
+      const mirror = await mirrorOf(reportId);
+      expect(mirror).not.toBeNull();
+      expect(mirror!.status).toBe("PUBLISHED");
+      expect(mirror!.caption).toBe("오늘 잘 놀았어요");
+      // 사진 항목만 올라간다 — MEAL 같은 글 항목은 피드에 올릴 것이 없다.
+      expect(mirror!.media.map((m) => m.fileId)).toEqual([fileId]);
+      expect(mirror!.tags).toEqual([{ petId, confirmed: true }]);
+    });
+
+    it("초안 알림장의 미러는 초안이라 보호자에게 새어 나가지 않는다", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-mirror-draft-owner@example.com",
+        nickname: "dr-mirror-draft-owner",
+        petName: "초안미러펫",
+      });
+      const adminSession = await signupAndLoginAsAdmin(
+        "dr-mirror-draft-admin@example.com",
+        "dr-mirror-draft-admin",
+      );
+      const fileId = await uploadPhoto(adminSession, "draft.png");
+
+      const res = await adminSession
+        .post(V1_DAILY_REPORTS)
+        .send({
+          petId,
+          date: "2026-08-11",
+          status: "DRAFT",
+          contents: [{ type: "PHOTO", fileId, order: 0 }],
+        })
+        .expect(201);
+      const reportId = (res.body as DailyReportBody).data.dailyReport.id;
+
+      expect((await mirrorOf(reportId))!.status).toBe("DRAFT");
+
+      // 알림장을 발행하면 미러도 함께 발행된다.
+      await adminSession
+        .patch(`${V1_DAILY_REPORTS}/${reportId}`)
+        .send({ status: "PUBLISHED" })
+        .expect(200);
+      expect((await mirrorOf(reportId))!.status).toBe("PUBLISHED");
+    });
+
+    it("알림장을 여러 번 고쳐도 미러 게시물은 하나다", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-mirror-once-owner@example.com",
+        nickname: "dr-mirror-once-owner",
+        petName: "중복확인펫",
+      });
+      const adminSession = await signupAndLoginAsAdmin(
+        "dr-mirror-once-admin@example.com",
+        "dr-mirror-once-admin",
+      );
+      const first = await uploadPhoto(adminSession, "one.png");
+      const second = await uploadPhoto(adminSession, "two.png");
+
+      const res = await adminSession
+        .post(V1_DAILY_REPORTS)
+        .send({
+          petId,
+          date: "2026-08-12",
+          status: "PUBLISHED",
+          contents: [{ type: "PHOTO", fileId: first, order: 0 }],
+        })
+        .expect(201);
+      const reportId = (res.body as DailyReportBody).data.dailyReport.id;
+
+      // 알림장 수정은 항목을 통째로 갈아엎는다(`contents: { deleteMany: {} }`).
+      // 연결 고리가 없으면 여기서 게시물이 하나씩 쌓인다.
+      for (const fileId of [second, first]) {
+        await adminSession
+          .patch(`${V1_DAILY_REPORTS}/${reportId}`)
+          .send({ contents: [{ type: "PHOTO", fileId, order: 0 }] })
+          .expect(200);
+      }
+
+      const posts = await prisma.feedPost.findMany({
+        where: { sourceDailyReportId: reportId },
+        select: { id: true, media: { select: { fileId: true } } },
+      });
+      expect(posts).toHaveLength(1);
+      // 마지막 저장 상태만 남는다.
+      expect(posts[0].media.map((m) => m.fileId)).toEqual([first]);
+    });
+
+    it("사진을 모두 지우면 미러도 사라지고, 알림장을 지우면 함께 지워진다", async () => {
+      const { petId } = await createGuardianWithPet(server(), tenantId, {
+        email: "dr-mirror-gone-owner@example.com",
+        nickname: "dr-mirror-gone-owner",
+        petName: "삭제확인펫",
+      });
+      const adminSession = await signupAndLoginAsAdmin(
+        "dr-mirror-gone-admin@example.com",
+        "dr-mirror-gone-admin",
+      );
+      const fileId = await uploadPhoto(adminSession, "gone.png");
+
+      const res = await adminSession
+        .post(V1_DAILY_REPORTS)
+        .send({
+          petId,
+          date: "2026-08-13",
+          status: "PUBLISHED",
+          contents: [{ type: "PHOTO", fileId, order: 0 }],
+        })
+        .expect(201);
+      const reportId = (res.body as DailyReportBody).data.dailyReport.id;
+      expect(await mirrorOf(reportId)).not.toBeNull();
+
+      // 사진을 빼고 글만 남기면 피드에 올릴 것이 없다.
+      await adminSession
+        .patch(`${V1_DAILY_REPORTS}/${reportId}`)
+        .send({ contents: [{ type: "NOTE", content: "사진 없이 기록만" }] })
+        .expect(200);
+      expect(await mirrorOf(reportId)).toBeNull();
+
+      // 다시 넣었다가 알림장 자체를 지우면 FK CASCADE 로 미러도 함께 지워진다.
+      await adminSession
+        .patch(`${V1_DAILY_REPORTS}/${reportId}`)
+        .send({ contents: [{ type: "PHOTO", fileId, order: 0 }] })
+        .expect(200);
+      expect(await mirrorOf(reportId)).not.toBeNull();
+
+      await adminSession
+        .delete(`${V1_DAILY_REPORTS}/${reportId}`)
+        .expect(200);
+      expect(await mirrorOf(reportId)).toBeNull();
     });
   });
 

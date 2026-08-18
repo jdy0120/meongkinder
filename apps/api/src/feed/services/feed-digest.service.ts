@@ -3,10 +3,12 @@ import { prisma, requireTenantId, tenantTransaction } from "@pawlog/database";
 import {
   FEED_POST_STATUS,
   type FeedDigestAction,
+  type FeedDigestEmptyReason,
   type FeedDigestResult,
   type RunFeedDigestResponse,
 } from "@pawlog/shared";
 import { ClaudeClientService } from "../../shared/llm/services/claude-client.service";
+import { ResponseEnvelope } from "../../shared/dtos";
 import { RunFeedDigestDto } from "../dtos";
 import { startOfDay, toDateString } from "../utils/date";
 import { FeedCaptionDraftService } from "./feed-caption-draft.service";
@@ -33,13 +35,21 @@ export class FeedDigestService {
     private readonly claude: ClaudeClientService,
   ) {}
 
-  async run(dto: RunFeedDigestDto): Promise<RunFeedDigestResponse> {
+  async run(dto: RunFeedDigestDto) {
     const date = startOfDay(dto.date);
     const tenantId = requireTenantId();
 
     // 발행된 게시물만 모은다 — 초안은 아직 보호자에게 보여줄 상태가 아니다.
+    //
+    // job-062: 알림장에서 파생된 미러 게시물은 제외한다. 마감의 입력으로 되먹이면 그 사진이
+    // 다시 알림장으로 들어가 장수·`publishedPostCount` 가 부풀고, 마감 결과가 실제로 찍은
+    // 사진 수보다 큰 숫자를 말하게 된다.
     const posts = await prisma.feedPost.findMany({
-      where: { date, status: FEED_POST_STATUS.PUBLISHED },
+      where: {
+        date,
+        status: FEED_POST_STATUS.PUBLISHED,
+        sourceDailyReportId: null,
+      },
       include: {
         media: {
           orderBy: { order: "asc" },
@@ -136,7 +146,68 @@ export class FeedDigestService {
       `하루 마감: ${toDateString(date)} — 게시물 ${posts.length}건에서 리포트 ${created}건 생성, ${results.length - created}건 갱신했습니다.`,
     );
 
-    return { date: toDateString(date), results };
+    const { emptyReason, draftPostCount } = await this.explainEmptyResult(
+      date,
+      posts.length,
+      results.length,
+    );
+
+    if (emptyReason) {
+      this.logger.warn(
+        `하루 마감: ${toDateString(date)} — 만들어진 리포트가 없습니다 (사유 ${emptyReason}, 발행 ${posts.length}건 / 초안 ${draftPostCount}건).`,
+      );
+    }
+
+    const payload: RunFeedDigestResponse = {
+      date: toDateString(date),
+      results,
+      emptyReason,
+      publishedPostCount: posts.length,
+      draftPostCount,
+    };
+
+    // ⚠️ 성공 메시지를 라우트의 `@ResponseMessage` 고정값으로 두면 **0건일 때도
+    // "알림장이 만들어졌습니다" 라고 말한다.** 화면이 토스트를 따로 그려도 응답 자체가
+    // 거짓이면 로그·연동·다른 클라이언트가 전부 속는다. 실행 결과에 따라 달라지는
+    // 문구이므로 CLAUDE.md §6 대로 서비스가 envelope 으로 직접 정한다.
+    return new ResponseEnvelope(
+      payload,
+      emptyReason
+        ? "만들어진 알림장이 없습니다."
+        : `알림장 ${results.length}건을 처리했습니다.`,
+    );
+  }
+
+  /**
+   * 결과가 비었을 때 **왜** 비었는지 가른다.
+   *
+   * 마감은 "발행된 사진에 태그된 아이"만 대상으로 하므로, 태그가 하나도 없으면 예외 없이
+   * 조용히 0건으로 끝난다. 그 침묵을 그대로 두면 화면은 "사진을 올려주세요" 같은 한 마디로
+   * 뭉갤 수밖에 없고, 이미 사진을 올린 사람은 엉뚱한 곳을 다시 확인하게 된다.
+   * (job-060 의 `blockedBy` 와 같은 판단 — 막힌 이유를 합치면 "이용권을 방금 산 사람에게
+   * 이용권이 없다고 말하는" 상황이 된다.)
+   *
+   * 초안 수는 **결과가 비었을 때만** 센다 — 정상 경로에 쿼리를 하나 더 얹지 않는다.
+   */
+  private async explainEmptyResult(
+    date: Date,
+    publishedPostCount: number,
+    resultCount: number,
+  ): Promise<{
+    emptyReason?: FeedDigestEmptyReason;
+    draftPostCount: number;
+  }> {
+    if (resultCount > 0) return { draftPostCount: 0 };
+
+    const draftPostCount = await prisma.feedPost.count({
+      where: { date, status: FEED_POST_STATUS.DRAFT },
+    });
+
+    // 발행된 게시물이 있는데 결과가 0 이면 원인은 태그뿐이다 — 사진은 있고 아이만 없다.
+    if (publishedPostCount > 0)
+      return { emptyReason: "NO_TAGS", draftPostCount };
+    if (draftPostCount > 0) return { emptyReason: "ALL_DRAFT", draftPostCount };
+    return { emptyReason: "NO_POSTS", draftPostCount };
   }
 
   /**

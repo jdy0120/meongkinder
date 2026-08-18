@@ -43,8 +43,8 @@ export class DailyReportController {
   @Post(DAILY_REPORT_ROUTES.v1.CREATE)
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage("일일 리포트가 작성되었습니다.")
-  async create(@Body() dto: CreateDailyReportDto) {
-    return this.dailyReportService.create(dto);
+  async create(@Req() req: Request, @Body() dto: CreateDailyReportDto) {
+    return this.dailyReportService.create(dto, req.user?.userId);
   }
 
   /**
@@ -105,8 +105,12 @@ export class DailyReportController {
   @Patch(DAILY_REPORT_ROUTES.v1.UPDATE)
   @HttpCode(HttpStatus.OK)
   @ResponseMessage("일일 리포트가 수정되었습니다.")
-  async update(@Param("id") id: string, @Body() dto: UpdateDailyReportDto) {
-    return this.dailyReportService.update(id, dto);
+  async update(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() dto: UpdateDailyReportDto,
+  ) {
+    return this.dailyReportService.update(id, dto, req.user?.userId);
   }
 
   @Delete(DAILY_REPORT_ROUTES.v1.DELETE)
