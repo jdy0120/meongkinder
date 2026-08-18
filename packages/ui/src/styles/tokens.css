@@ -1,100 +1,249 @@
 /* ==========================================================================
- * 디자인 토큰 — 단일 출처 (design-system.md §2)
+ * 디자인 토큰 — 단일 출처 · Pawlog Kids 테마 v2 (sky + slate)
  *
  * ⚠️ **HEX 리터럴이 허용되는 유일한 파일이다.** 컴포넌트 코드에서는 토큰 이름만 쓴다.
+ *    스펙에 없는 색이 필요하면 임의로 만들지 말고 먼저 스펙 문서를 고친다.
  *
- * 왜 `tailwind.config.ts` / `tokens.ts` 가 아니라 CSS 인가:
- *   이 저장소는 **Tailwind v4** 라 설정이 CSS 안에 있다(`@theme`). v3 시절의
- *   `tailwind.config.ts` 는 존재하지 않고, 별도 `tokens.ts` 를 두면 CSS 와 TS 두 곳이
- *   같은 값을 들고 있다가 반드시 갈라진다. 값이 필요한 TS 코드는 `var(--color-*)` 를
- *   읽는다.
+ * 네이밍은 **Material 3**(`surface-container-*`, `on-*`), 값은 **Tailwind sky/slate**.
+ * 시스템 색(크롬)은 차갑게 두고, 따뜻함은 **아이 태그 색과 사진에서만** 나온다 —
+ * 콘텐츠가 온도를 담당하는 구조다. sky+slate 위에 따뜻한 강조색을 얹으면 두 방향이 싸운다.
  *
- * 대비값은 전부 배경 `--bg`(#FAF8F4) 기준 WCAG 2.1 상대휘도 실측이다.
+ * 왜 `tailwind.config.ts` 가 아니라 CSS 인가:
+ *   이 저장소는 **Tailwind v4** 라 설정이 CSS 안에 있다(`@theme`). 스펙 §5 의
+ *   `colors:{}` 블록은 v3 표기이므로 같은 값을 v4 의 `@theme` 으로 옮겨 적었다.
+ *   별도 `tokens.ts` 를 두면 CSS 와 TS 두 곳이 같은 값을 들고 있다가 반드시 갈라진다.
+ *   값이 필요한 TS 코드는 `var(--color-*)` 를 런타임에 읽는다
+ *   (`apps/web/src/shared/libs/theme/tokens.ts`).
+ *
+ * 구조는 3층이다:
+ *   1. 원시 팔레트  `@theme`       — 스펙 §5 의 값. 값이 여기에만 있다.
+ *   2. 역할 별칭    `:root`/`.dark` — "이 색을 어디에 쓰는가". 테마에 따라 가리키는 곳이 바뀐다.
+ *   3. shadcn 매핑  `@theme inline` — 기존 화면·@pawlog/ui 가 쓰는 이름에 2층을 연결.
+ *
+ * 컴포넌트는 되도록 2·3층 이름을 쓴다. 1층을 직접 쓰면 다크에서 따라오지 않는다.
  * ========================================================================== */
 
+/* ==========================================================================
+ * 1층 — 원시 팔레트 (스펙 §5)
+ *
+ * `@theme`(non-inline)은 값을 `:root` 에 그대로 내보내면서 유틸리티도 만든다.
+ * 그래서 `bg-surface-container` 같은 클래스와 `var(--color-surface-container)` 참조가
+ * 동시에 산다.
+ * ========================================================================== */
+@theme {
+  /* --------------------------------------------------------------- 표면 사다리
+     ⚠️ **페이지와 카드가 같은 흰색이면 카드가 카드로 보이지 않는다.** 페이지를 한 칸
+     내리는 것(`lowest` → `low`)만으로 평평함이 사라진다.
+     원본 스펙의 `surface-container-low` 는 `#f3f4f6`(gray-100)이었는데, 나머지 선 계열이
+     전부 slate 라 hue 가 미세하게 어긋났다(gray 220 / slate 210~215). 눈에 딱 짚이진
+     않지만 면과 선이 안 맞아 "뭔가 지저분한" 느낌의 원인이 된다 → slate-50 으로 통일. */
+  --color-surface-container-lowest: #ffffff; /* 카드·시트 */
+  --color-surface-container-low: #f8fafc; /* 페이지 배경 (slate-50) */
+  --color-surface-container: #f1f5f9; /* 앱 바깥 여백·비활성 면 */
+  --color-surface-container-high: #e2e8f0; /* 토글 트랙·눌린 상태 */
+
+  /* ------------------------------------------------------------------ 브랜드
+     ⚠️ **`primary`(#0ea5e9) 위에 글자를 올리지 말 것** — 흰 글자 대비 2.77:1 로
+     AA(4.5) 미달이다. M3 에서 `primary` 는 아이덴티티 색이고, 흰 글자를 올리려면
+     `on-primary` 와의 대비가 확보돼야 하는데 sky-500 은 그게 안 된다. 그래서 역할을 쪼갠다:
+       primary        → 로고·아이콘·완료 링·포커스 링·차트  (글자 금지)
+       primary-action → 버튼 배경·링크                      (흰 글자 4.74 ✅)
+     `#0479b8` 은 sky-600(#0284c7, 4.10 미달)과 sky-700(#0369a1, 5.93 안전하지만 무겁다)
+     사이에서 4.5 를 막 넘기는 지점이다 — 원본의 밝기를 최대한 지키면서 기준을 통과한다.
+     브랜드 색은 로고와 완료 링에 그대로 살아 있으므로 인상은 바뀌지 않는다. */
+  --color-primary-identity: #0ea5e9; /* 아이덴티티 전용. 2.77 ❌ 글자 금지 */
+  --color-primary-action: #0479b8; /* 버튼·링크. 흰 글자 4.74 ✅ */
+  --color-primary-action-hover: #0369a1;
+  --color-primary-action-active: #075985;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #e0f2fe;
+  --color-on-primary-container: #0369a1;
+
+  /* ------------------------------------------------------------------- 텍스트
+     이 계층이 없으면 화면마다 다른 회색을 고르게 된다. 네 단계로 고정한다.
+     `#64748b`(slate-500)를 `secondary` 가 아니라 `on-surface-muted` 로 둔 이유:
+     M3 의 `secondary` 는 "보조 **브랜드** 색"이라 텍스트 회색과 역할이 다르다. */
+  --color-on-surface: #0f172a; /* 본문·제목. 17.9 */
+  --color-on-surface-variant: #475569; /* 보조 설명·라벨. 7.58 */
+  --color-on-surface-muted: #64748b; /* 시각·작성자 등 메타. 4.76 */
+  --color-on-surface-disabled: #94a3b8; /* 비활성. 2.56 — 본문 금지 */
+
+  /* ---------------------------------------------------------------------- 선
+     ⚠️ WCAG 1.4.11 은 **조작 가능한 요소의 경계**에 3:1 을 요구한다. `outline`(1.23)로
+     인풋 테두리를 그리면 어디가 입력창인지 보이지 않는다 → `outline-strong` 을 쓴다.
+     `outline-strong`(2.56)도 3:1 에는 살짝 못 미친다. 엄격히 맞추려면 `#64748b`(4.76)
+     지만 화면이 답답해지므로, **강한 포커스 링과 조합**하는 쪽을 택했다. */
+  --color-outline: #e2e8f0; /* 카드 테두리. 1.23 */
+  --color-outline-variant: #f1f5f9; /* 구분선. 1.10 */
+  --color-outline-strong: #94a3b8; /* 입력창·셀렉트·아웃라인 버튼 경계. 2.56 */
+
+  /* ------------------------------------------------------------------- 상태색 */
+  --color-success-container: #ecfdf5;
+  --color-on-success-container: #047857; /* 5.21 */
+  --color-warning-container: #fffbeb;
+  --color-on-warning-container: #b45309; /* 4.84 */
+  --color-error: #dc2626; /* 채우기. 흰 글자 4.83 ✅ */
+  --color-error-container: #fef2f2;
+  --color-on-error-container: #b91c1c; /* 5.91 */
+
+  /* -------------------------------------------------- Tailwind neutral 재정의
+     Tailwind 기본 `neutral` 은 순회색(hue 0)이라, 이 팔레트(slate)와 섞이면 스펙 §1①
+     이 지적한 바로 그 어긋남이 재발한다. 기존 코드가 `neutral-*` 를 34곳에서 쓰고 있어
+     통째로 지우면 그 자리가 무색이 되므로, **slate 값으로 갈아끼워** 자동으로 계열을
+     맞춘다. 새로 쓰는 코드는 아래 역할 이름(`on-surface-*`, `outline-*`)을 쓸 것. */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+}
+
+/* ==========================================================================
+ * 아이 식별색 8종 (스펙 §4)
+ *
+ * 아이마다 색을 고정 배정한다. 선생님이 사진 목록을 훑을 때 **이름을 읽지 않고 색으로**
+ * 찾는다 — 강아지를 한 손으로 붙잡은 채 쓰는 화면에서 읽기는 비싸고 색은 싸다.
+ * 등록 시 순번대로 배정하고, 8을 넘으면 순환시키되 같은 반에 같은 색이 겹치지 않게만 한다.
+ *
+ * Tailwind 100/700 쌍이라 나머지 팔레트와 같은 어휘를 쓴다. 전부 AA 통과.
+ * 배경(`-bg`)과 글자(`-fg`)를 **반드시 짝지어** 쓴다 — 배경만 가져다 쓰면 그 위 글자가
+ * 기본 텍스트색이 되어 대비가 무너진다.
+ *
+ * ⚠️ **`static` 이어야 한다.** 배정이 런타임(아이 순번 → 색)이라 소스에 `bg-pup-lime-bg`
+ * 같은 리터럴이 없을 수 있는데, 기본 `@theme` 은 소스에서 쓰이지 않은 변수를 통째로
+ * 지운다. 그러면 `var(--color-pup-lime-bg)` 이 빈 값이 되어 칩이 투명해지고, 빌드는
+ * 성공하므로 화면을 열어보기 전에는 드러나지 않는다.
+ * ========================================================================== */
+@theme static {
+  --color-pup-lime-bg: #ecfccb;
+  --color-pup-lime-fg: #4d7c0f; /* 4.60 */
+  --color-pup-amber-bg: #fef3c7;
+  --color-pup-amber-fg: #b45309; /* 4.51 */
+  --color-pup-orange-bg: #ffedd5;
+  --color-pup-orange-fg: #c2410c; /* 4.52 */
+  --color-pup-rose-bg: #ffe4e6;
+  --color-pup-rose-fg: #be123c; /* 5.24 */
+  --color-pup-violet-bg: #ede9fe;
+  --color-pup-violet-fg: #6d28d9; /* 5.98 */
+  --color-pup-indigo-bg: #e0e7ff;
+  --color-pup-indigo-fg: #4338ca; /* 6.41 */
+  --color-pup-teal-bg: #ccfbf1;
+  --color-pup-teal-fg: #0f766e; /* 4.86 */
+  --color-pup-fuchsia-bg: #fae8ff;
+  --color-pup-fuchsia-fg: #a21caf; /* 5.43 */
+}
+
+/* ==========================================================================
+ * 2층 — 역할 별칭 (스펙 §6 조합 규칙)
+ *
+ * "어떤 색인가"가 아니라 "어디에 쓰는가"로 이름을 붙인다. 다크 테마는 이 층만 바꾼다.
+ * ========================================================================== */
 :root {
-  /* ---------------------------------------------------------------- 컬러 */
+  --bg-page: var(--color-surface-container-low);
+  --bg-surface: var(--color-surface-container-lowest);
+  --border-base: var(--color-outline);
+  --text-primary: var(--color-on-surface);
+  --text-muted: var(--color-on-surface-variant);
+  --action: var(--color-primary-action);
+  --action-hover: var(--color-primary-action-hover);
 
-  /* Primary — 딥 그린틸.
-     예방접종·건강 데이터를 다루므로 의료/안전 신호로 읽히는 초록이 도메인에 맞고,
-     채도를 낮춰 원색 특유의 유치함 없이 SaaS 톤을 낸다.
-     '따뜻함'은 Primary 가 아니라 아래 Caution(애프리콧) + 웜 오프화이트 배경이 담당한다. */
-  --primary: #1e5f55; /* 배경 7.01:1 / 흰 글씨 7.44:1 (AAA) */
-  --primary-hover: #2a7a6b; /* 4.84:1 (AA) */
-  --primary-tint: #e9f2ee; /* 선택 상태, "정상" 배지 배경 */
-  --primary-on-tint: #134a42; /* primary-tint 위 텍스트 */
+  /* 포커스 링 — 스펙 §6. 여기서는 **원본 `primary`(sky-500)** 를 쓴다.
+     링은 글자가 아니라 색만 인지하면 되므로 밝은 쪽이 오히려 잘 보인다. */
+  --focus-ring: 0 0 0 3px rgb(14 165 233 / 0.35);
 
-  /* Caution — 애프리콧.
-     ⚠️ 스펙에서는 `secondary` 로 불리지만 이 저장소에서 `--secondary` 는 이미
-     shadcn 의 "차분한 표면"(버튼 variant='secondary' 등 다수)을 가리킨다.
-     같은 이름을 애프리콧으로 돌려버리면 `bg-secondary text-secondary-foreground`
-     조합이 전부 2.54:1 이 되어 **스펙 자신의 MUST NOT 을 어긴다**. 그래서 역할
-     이름(caution)으로 분리해 둔다 — §3.1 배지 레벨 이름과도 그대로 맞는다. */
-  --caution-fill: #e8843c; /* 2.54:1 — 채움 전용. 텍스트 금지 */
-  --caution-text: #9c4e12; /* 5.64:1 (AA) */
-  --caution-tint: #fcf0e4; /* "주의" 배지 배경 */
+  /* ------------------------------------------------ 기존 화면이 쓰는 짧은 별칭
+     29개 화면과 @pawlog/ui 가 이 이름들을 쓰고 있다. 새 팔레트를 여기에 연결해 두면
+     화면을 한 줄도 고치지 않고 색이 바뀐다.
 
-  /* 표면 / 텍스트.
-     순백 배경을 쓰지 않는 이유: 반사 휘도가 높아 장시간 사용 시 눈부심이 크다.
-     카드만 순백으로 띄워 위계를 만든다.
-     순검정 텍스트를 쓰지 않는 이유: 흰 배경 위 순검정은 할레이션(글자 번짐)을
-     유발한다. 웜 다크로 배경과 색온도를 통일한다. */
-  --bg: #faf8f4;
-  --surface: #ffffff;
-  --text: #24211e; /* 15.10:1 (AAA) */
-  --text-muted: #6e6660; /* 5.30:1 (AA) */
-  --line: #e6e1d8; /* 1.23:1 — 구분선 전용. 텍스트/아이콘 금지 */
+     ⚠️ **`--primary` 는 아이덴티티 색이 아니라 액션 색(#0479b8)에 연결한다.**
+     스펙 §5 의 Tailwind 표기대로 `primary: #0ea5e9` 로 두면, 이 저장소의 shadcn Button
+     이 `bg-primary` 를 쓰기 때문에 **모든 버튼이 2.77:1 이 되어 스펙 §1② 가 고치려던
+     문제를 그대로 재현한다.** 아이덴티티 색은 `--brand` 라는 별도 이름으로 노출한다
+     (로고·아이콘·완료 링). 같은 이유로 job-052 에서 `secondary` → `caution` 을 개명한 적 있다. */
+  --brand: var(--color-primary-identity); /* 로고·아이콘·완료 링. 글자 금지 */
+  --primary: var(--action); /* = primary-action */
+  --primary-hover: var(--action-hover);
+  --primary-active: var(--color-primary-action-active);
+  --primary-tint: var(--color-primary-container);
+  --primary-on-tint: var(--color-on-primary-container);
 
-  /* 상태 */
-  --danger: #c0453b; /* 4.76:1 (AA) */
-  --warning-fill: #e8a33b; /* 2.03:1 — 채움 전용 */
-  --warning-text: #96590a; /* 5.31:1 (AA) */
+  --bg: var(--bg-page);
+  --surface: var(--bg-surface);
+  --text: var(--text-primary);
+  --text-meta: var(--color-on-surface-muted);
+  --line: var(--border-base);
+  --line-input: var(--color-outline-strong); /* 조작 가능한 요소의 경계 */
 
-  /* 중립 표면 (shadcn `secondary`/`muted` 역할). 위 팔레트에서 파생한 웜 그레이. */
-  --neutral-surface: #f1ece3;
-  --neutral-surface-strong: #e9e3d8;
+  /* 상태. 채움/글자를 나누지 않는 이유: 스펙의 상태색은 container(배경)와
+     on-container(글자·아이콘) 두 단계뿐이고, on-container 는 흰 글자·연배경 양쪽에서
+     모두 안전하다. Error 만 채우기용 `--color-error` 가 따로 있다. */
+  --danger: var(--color-error);
+  --danger-strong: var(--color-on-error-container);
+  --danger-tint: var(--color-error-container);
+  --warning-fill: var(--color-on-warning-container);
+  --warning-text: var(--color-on-warning-container);
+  --warning-tint: var(--color-warning-container);
+  --success-fill: var(--color-on-success-container);
+  --success-text: var(--color-on-success-container);
+  --success-tint: var(--color-success-container);
 
-  /* --------------------------------------------------- shadcn 시맨틱 매핑
-     기존 29개 화면과 @pawlog/ui 컴포넌트가 이 이름들을 쓴다. 위 팔레트를 여기에
-     연결해 두면 화면을 한 줄도 고치지 않고 새 팔레트를 입는다. */
+  /* Caution — 이 저장소의 "주의" 레벨(배지 3단계 중 가운데, 49곳) = Warning. */
+  --caution-fill: var(--warning-fill);
+  --caution-text: var(--warning-text);
+  --caution-tint: var(--warning-tint);
+
+  /* 중립 표면 (shadcn `secondary`/`muted` 역할). */
+  --neutral-surface: var(--color-surface-container);
+  --neutral-surface-strong: var(--color-surface-container-high);
+  --disabled-surface: var(--color-surface-container);
+  --disabled-text: var(--color-on-surface-disabled);
+
+  /* --------------------------------------------------- shadcn 시맨틱 매핑 */
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--color-on-primary);
   --secondary: var(--neutral-surface);
   --secondary-foreground: var(--text);
   --muted: var(--neutral-surface);
   --muted-foreground: var(--text-muted);
-  /* accent = 선택/호버. primary-tint 를 쓰면 "선택됨"이 색으로 읽힌다. */
+  /* accent = 선택/호버. primary-container 를 쓰면 "선택됨"이 색으로 읽힌다. */
   --accent: var(--primary-tint);
   --accent-foreground: var(--primary-on-tint);
   --destructive: var(--danger);
-  --destructive-foreground: #ffffff;
+  --destructive-foreground: var(--color-on-primary);
   --border: var(--line);
-  --input: var(--line);
-  --ring: var(--primary);
+  --input: var(--line-input);
+  /* 포커스 링 색 — 스펙 §6 대로 원본 primary. Button 의 `ring-ring/50` 이 이걸 깐다. */
+  --ring: var(--brand);
 
-  /* 차트 — secondary(채움 전용)를 주축으로. 텍스트로 쓰지 않으므로 대비 제약이 없다. */
-  --chart-1: var(--primary);
-  --chart-2: var(--caution-fill);
-  --chart-3: var(--primary-hover);
-  --chart-4: var(--warning-fill);
-  --chart-5: var(--text-muted);
+  /* 차트 — 아이덴티티 색을 주축으로. 텍스트가 올라가지 않으므로 대비 제약이 없다.
+     시안 일색이 되지 않도록 아이 식별색 계열을 섞는다. */
+  --chart-1: var(--brand);
+  --chart-2: var(--color-pup-violet-fg);
+  --chart-3: var(--color-primary-action-active);
+  --chart-4: var(--color-pup-teal-fg);
+  --chart-5: var(--color-on-surface-muted);
 
   --sidebar: var(--bg);
   --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: var(--action);
+  --sidebar-primary-foreground: var(--color-on-primary);
   --sidebar-accent: var(--primary-tint);
   --sidebar-accent-foreground: var(--primary-on-tint);
   --sidebar-border: var(--line);
-  --sidebar-ring: var(--primary);
+  --sidebar-ring: var(--brand);
 
   /* ------------------------------------------------------------ 타이포그래피
-     Pretendard Variable. 굵기는 400/600 두 단계만 쓴다(아래 --font-weight-* 참고). */
+     Pretendard 한 벌. 서체를 늘리는 대신 **굵기와 자간**으로 위계를 만든다. */
   --font-sans:
     "Pretendard Variable", Pretendard, ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo",
@@ -105,59 +254,72 @@
     "Courier New", monospace;
 
   /* ------------------------------------------------------------------ 그림자
-     웜 그림자. 회색/파란 그림자는 배경(웜 오프화이트)과 색온도가 어긋나 뜬다. */
-  --shadow-color: 36 33 30; /* --text 의 RGB */
-  --shadow-2xs: 0 1px 2px rgb(var(--shadow-color) / 0.04);
-  --shadow-xs: 0 1px 3px rgb(var(--shadow-color) / 0.06);
-  --shadow-sm: 0 1px 3px rgb(var(--shadow-color) / 0.06);
-  --shadow: 0 1px 3px rgb(var(--shadow-color) / 0.06);
-  --shadow-md: 0 4px 12px -2px rgb(var(--shadow-color) / 0.08);
-  --shadow-lg: 0 8px 24px -6px rgb(var(--shadow-color) / 0.1);
-  --shadow-xl: 0 16px 36px -12px rgb(var(--shadow-color) / 0.12);
-  --shadow-2xl: 0 24px 48px -16px rgb(var(--shadow-color) / 0.14);
+     스펙 §5 — **두 단계만.** 그림자 색은 on-surface 의 RGB(15,23,42)라 slate 면과
+     색온도가 맞는다. 회색·검정 그림자는 이 팔레트 위에서 뜬다.
 
-  --tracking-normal: 0em;
+     ⚠️ 원시값 이름이 `--elevation-*` 인 이유: `@theme inline { --shadow-sm: var(--shadow-sm) }`
+     처럼 **자기 자신을 참조하면 CSS 명세상 그 커스텀 속성은 무효**가 된다(guaranteed-invalid).
+     이름을 갈라 두면 Tailwind 의 출력 순서와 무관하게 항상 맞는다. */
+  --shadow-color: 15 23 42;
+  --elevation-sm: 0 1px 2px rgb(var(--shadow-color) / 0.05); /* 카드 */
+  --elevation-md: 0 8px 24px rgb(var(--shadow-color) / 0.08); /* 드롭다운·모달·액션바 */
+  /* `var(--shadow-sm)` 을 직접 읽는 코드를 위한 별칭. */
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+
   --spacing: 0.25rem; /* 기본 단위 4px */
 }
 
 /* 다크 테마.
    현재 `.dark` 를 붙이는 코드는 없지만(theme.store 는 미사용), @pawlog/ui 컴포넌트들이
-   `dark:` variant 를 들고 있어 값이 비면 팔레트가 갈라진다. 같은 팔레트에서 파생해 둔다. */
+   `dark:` variant 를 들고 있어 값이 비면 팔레트가 갈라진다.
+   ⚠️ 스펙에 다크 램프가 없으므로 **새 HEX 를 만들지 않는다** — 같은 팔레트의 다른 단계를
+   고르거나 `color-mix` 로 배경과 섞어 파생시킨다.
+   표면 사다리는 밝기 방향만 뒤집는다: 페이지가 가장 어둡고 카드가 한 칸 밝다. */
 .dark {
-  --bg: #1b1917;
-  --surface: #24211e;
-  --text: #f5f1ea;
-  --text-muted: #a8a09a;
-  --line: #3a3531;
-  --primary: #4e9c8c;
-  --primary-hover: #62b3a2;
-  --primary-tint: #1f3b36;
-  --primary-on-tint: #a9d8cc;
-  --caution-fill: #e8843c;
-  --caution-text: #f0b183;
-  --caution-tint: #3a2a1c;
-  --danger: #e0685d;
-  --warning-fill: #e8a33b;
-  --warning-text: #e2b573;
-  --neutral-surface: #2e2a26;
-  --neutral-surface-strong: #3a3531;
+  --bg-page: var(--color-on-surface); /* slate-900 */
+  --bg-surface: var(--color-neutral-800); /* slate-800 — 카드가 한 칸 밝다 */
+  --border-base: var(--color-neutral-700);
+  --text-primary: var(--color-surface-container-low);
+  --text-muted: var(--color-on-surface-disabled);
+  /* 어두운 면에서는 action(#0479b8)이 가라앉는다. 아이덴티티 색이 여기서 제 역할을 한다. */
+  --action: var(--color-primary-identity);
+  --action-hover: #38bdf8; /* sky-400 — 어두운 면 전용 hover */
+  --focus-ring: 0 0 0 3px rgb(14 165 233 / 0.45);
 
-  --primary-foreground: #10221f;
-  --destructive-foreground: #1b1917;
+  --primary-active: var(--color-primary-action);
+  --primary-tint: color-mix(in srgb, var(--color-primary-identity) 22%, var(--color-on-surface));
+  --primary-on-tint: var(--color-primary-container);
+  --line-input: var(--color-neutral-600);
+  --text-meta: var(--color-on-surface-disabled);
+
+  --danger: var(--color-error);
+  --danger-strong: var(--color-error);
+  --danger-tint: color-mix(in srgb, var(--color-error) 20%, var(--color-on-surface));
+  --warning-fill: #fbbf24; /* amber-400 — 어두운 면에서 읽히는 단계 */
+  --warning-text: #fbbf24;
+  --warning-tint: color-mix(in srgb, var(--color-on-warning-container) 28%, var(--color-on-surface));
+  --success-fill: #34d399; /* emerald-400 */
+  --success-text: #34d399;
+  --success-tint: color-mix(in srgb, var(--color-on-success-container) 28%, var(--color-on-surface));
+
+  --neutral-surface: var(--color-neutral-800);
+  --neutral-surface-strong: var(--color-neutral-700);
+  --disabled-surface: var(--color-neutral-700);
+  --disabled-text: var(--color-on-surface-muted);
+
+  /* 밝은 sky 위에는 흰 글자가 아니라 어두운 글자가 올라간다. */
+  --primary-foreground: var(--color-on-surface);
+  --destructive-foreground: var(--color-surface-container-low);
 
   --shadow-color: 0 0 0;
-  --shadow-2xs: 0 1px 2px rgb(var(--shadow-color) / 0.2);
-  --shadow-xs: 0 1px 3px rgb(var(--shadow-color) / 0.28);
-  --shadow-sm: 0 1px 3px rgb(var(--shadow-color) / 0.28);
-  --shadow: 0 1px 3px rgb(var(--shadow-color) / 0.28);
-  --shadow-md: 0 4px 12px -2px rgb(var(--shadow-color) / 0.35);
-  --shadow-lg: 0 8px 24px -6px rgb(var(--shadow-color) / 0.4);
-  --shadow-xl: 0 16px 36px -12px rgb(var(--shadow-color) / 0.45);
-  --shadow-2xl: 0 24px 48px -16px rgb(var(--shadow-color) / 0.5);
+  --elevation-sm: 0 1px 2px rgb(var(--shadow-color) / 0.3);
+  --elevation-md: 0 8px 24px rgb(var(--shadow-color) / 0.45);
 }
 
 /* ==========================================================================
- * Tailwind 테마 — 값이 테마별로 바뀌는 것들.
+ * 3층 — Tailwind 테마 (테마별로 값이 바뀌는 것들)
+ *
  * `inline` 이라 유틸리티가 위 CSS 변수를 그대로 참조하고, 그래서 `.dark` 오버라이드가
  * 유틸리티까지 따라온다.
  * ========================================================================== */
@@ -195,113 +357,162 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* 스펙 이름 그대로 노출 — 배지/상태 표현이 이 이름을 쓴다 (§3.1). */
+  /* 역할 이름 그대로 노출 — 배지/상태 표현이 이 이름을 쓴다. */
+  --color-brand: var(--brand); /* 로고·아이콘·완료 링. 글자 금지 */
   --color-surface: var(--surface);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
   --color-primary-tint: var(--primary-tint);
   --color-primary-on-tint: var(--primary-on-tint);
   --color-caution: var(--caution-fill);
   --color-caution-text: var(--caution-text);
   --color-caution-tint: var(--caution-tint);
   --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-tint: var(--danger-tint);
   --color-warning-fill: var(--warning-fill);
   --color-warning-text: var(--warning-text);
+  --color-warning-tint: var(--warning-tint);
+  --color-success-fill: var(--success-fill);
+  --color-success-text: var(--success-text);
+  --color-success-tint: var(--success-tint);
   --color-text-muted: var(--text-muted);
+  --color-text-meta: var(--text-meta);
+  --color-disabled-surface: var(--disabled-surface);
+  --color-disabled-text: var(--disabled-text);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
 
-  --shadow-2xs: var(--shadow-2xs);
-  --shadow-xs: var(--shadow-xs);
-  --shadow-sm: var(--shadow-sm);
-  --shadow: var(--shadow);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-2xl: var(--shadow-2xl);
-  --shadow-card: var(--shadow-xs);
+  /* ------------------------------------------------------------------ 그림자
+     스펙은 두 단계만 허용한다(§5). 기존 화면이 8단계를 쓰고 있으므로 **정의를 접어**
+     손대지 않은 화면도 두 단계만 쓰게 만든다 — 클래스를 갈아끼우면 다시 갈라진다.
+     경계는 "면인가(sm) / 떠 있는가(md)". */
+  --shadow-2xs: var(--elevation-sm);
+  --shadow-xs: var(--elevation-sm);
+  --shadow-sm: var(--elevation-sm);
+  --shadow: var(--elevation-sm);
+  --shadow-card: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-md);
+  --shadow-xl: var(--elevation-md);
+  --shadow-2xl: var(--elevation-md);
+  --shadow-focus: var(--focus-ring);
 }
 
 /* ==========================================================================
  * Tailwind 테마 — 테마와 무관한 것들 (크기·굵기·모서리).
- *
- * `inline` 을 **쓰지 않는다**: 유틸리티가 `var(--text-body)` 를 참조하게 두어야
- * 아래 미디어 쿼리 한 블록으로 태블릿 타이포 스케일을 올릴 수 있다.
  * ========================================================================== */
 @theme {
   /* ----------------------------------------------------------- 타이포 스케일
-     스펙의 5단계. 한 줄 최대 길이는 한글 기준 40자(`max-w-prose-ko`). */
-  --text-label: 15px; /* 최소 크기 — 이보다 작은 글자는 없다 */
-  --text-label--line-height: 1.5;
-  --text-body: 17px;
-  --text-body--line-height: 1.65;
-  --text-name: 21px; /* 반려견/직원 이름 */
-  --text-name--line-height: 1.4;
-  --text-title: 24px; /* 섹션 제목 */
+     스펙 §7 — `12 / 12.5 / 14 / 15 / 17 / 20 / 38`, 본문 15~16 / 행간 1.6.
+     서체가 한 벌뿐이므로 **굵기와 자간이 위계를 만든다** — 크기만으로 나누면 38 과 20
+     사이가 비어 보이고, 작은 글자끼리는 구분이 안 된다. */
+  --text-meta: 12px; /* 메타·시각. 500 + tabular-nums */
+  --text-meta--line-height: 1.4;
+  --text-meta--font-weight: 500;
+  --text-label: 12.5px; /* 라벨·섹션. 700 */
+  --text-label--line-height: 1.4;
+  --text-label--font-weight: 700;
+  --text-caption: 14px; /* 캡션·조밀한 표 */
+  --text-caption--line-height: 1.5;
+  --text-body-sm: 15px; /* 본문 하한 */
+  --text-body-sm--line-height: 1.6;
+  --text-body: 16px; /* 본문. 400 / 행간 1.6 */
+  --text-body--line-height: 1.6;
+  --text-body--font-weight: 400;
+  --text-card: 17px; /* 카드 제목. 700 / -0.02em */
+  --text-card--line-height: 1.4;
+  --text-card--letter-spacing: -0.02em;
+  --text-card--font-weight: 700;
+  --text-title: 20px; /* 화면 제목. 700 / -0.02em */
   --text-title--line-height: 1.35;
-  --text-display: 32px; /* 대시보드 핵심 수치 */
-  --text-display--line-height: 1.25;
+  --text-title--letter-spacing: -0.02em;
+  --text-title--font-weight: 700;
+  --text-display: 38px; /* 날짜 숫자. 800 / -0.045em / tabular-nums */
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.045em;
+  --text-display--font-weight: 800;
 
-  /* 기본 스케일을 위 5단계로 **접는다**.
-     이유: 화면 194곳이 이미 `text-xs`(12px)·`text-sm`(14px)을 쓰고 있었고, 둘 다
-     스펙의 15px 하한을 어긴다. 화면마다 클래스를 갈아끼우면 다시 갈라지므로
-     (job-050 에서 같은 실수를 했다) **정의 자체를 고쳐** 손대지 않은 화면도
-     규격을 만족하게 한다. 결과적으로 고를 수 있는 크기가 5개뿐이다. */
-  --text-xs: var(--text-label);
-  --text-xs--line-height: 1.5;
-  --text-sm: var(--text-label);
-  --text-sm--line-height: 1.5;
+  /* 기본 스케일을 위 단계로 **접는다**.
+     이유: 화면 수백 곳이 이미 `text-xs`·`text-sm`·`text-lg` 를 쓰고 있고, 클래스를
+     하나씩 갈아끼우면 반드시 다시 갈라진다(job-050 에서 같은 실수를 했다).
+     정의 자체를 고쳐 손대지 않은 화면도 스펙의 값만 쓰게 만든다.
+     ⚠️ 여기서는 굵기·자간을 얹지 않는다 — `text-sm` 은 라벨에도 본문에도 쓰이고 있어서
+     굵기까지 강제하면 본문이 전부 700 이 된다. 굵기가 필요한 자리는 `text-label`
+     `text-card` `text-title` `text-display` 를 명시적으로 쓴다. */
+  --text-xs: var(--text-meta);
+  --text-xs--line-height: 1.4;
+  --text-sm: var(--text-body-sm);
+  --text-sm--line-height: 1.6;
   --text-base: var(--text-body);
-  --text-base--line-height: 1.65;
-  --text-lg: var(--text-name);
+  --text-base--line-height: 1.6;
+  --text-lg: var(--text-card);
   --text-lg--line-height: 1.4;
-  --text-xl: var(--text-name);
-  --text-xl--line-height: 1.4;
+  --text-xl: var(--text-title);
+  --text-xl--line-height: 1.35;
   --text-2xl: var(--text-title);
   --text-2xl--line-height: 1.35;
   --text-3xl: var(--text-display);
-  --text-3xl--line-height: 1.25;
-  /* 4xl 이상은 랜딩(마케팅) 히어로 전용이며 ERP 화면에서는 쓰지 않는다. */
-  --text-4xl: 36px;
-  --text-4xl--line-height: 1.2;
-  --text-5xl: 44px;
-  --text-5xl--line-height: 1.15;
+  --text-3xl--line-height: 1.05;
+  /* 4xl 이상은 랜딩(마케팅) 히어로 전용이며 알림장 화면에서는 쓰지 않는다. */
+  --text-4xl: 44px;
+  --text-4xl--line-height: 1.1;
+  --text-5xl: 56px;
+  --text-5xl--line-height: 1.05;
 
   /* --------------------------------------------------------------- 굵기
-     400(Regular)과 600(SemiBold) 두 단계만. 300 이하 금지, 700 이상도 쓰지 않는다.
-     기존 화면이 쓰던 font-medium(41곳)·font-bold(18곳)·font-extrabold(6곳)이
-     여기서 전부 600 으로 접힌다 — 타이포 스케일과 같은 이유로 정의를 고친다. */
+     400 / 500 / 700 / 800 네 단계.
+     ⚠️ job-052 는 이걸 400/600 두 단계로 접어놨었다. 그 상태로 두면 날짜 숫자의 800 과
+     카드 제목의 700 이 **같은 굵기로 납작해져** 위계가 사라진다 — 서체가 한 벌뿐인
+     설계에서 굵기는 유일한 위계 수단이라 접으면 안 된다.
+     300 이하만 400 으로 올려 얇은 글자를 막는다. */
   --font-weight-thin: 400;
   --font-weight-extralight: 400;
   --font-weight-light: 400;
   --font-weight-normal: 400;
-  --font-weight-medium: 600;
+  --font-weight-medium: 500;
   --font-weight-semibold: 600;
-  --font-weight-bold: 600;
-  --font-weight-extrabold: 600;
-  --font-weight-black: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 800;
+
+  /* --------------------------------------------------------------- 자간 */
+  --tracking-tighter: -0.045em; /* 날짜 숫자 */
+  --tracking-tight: -0.02em; /* 제목 */
+  --tracking-normal: 0em;
 
   /* ------------------------------------------------------------- 모서리
-     카드 16 / 버튼 14 / 알약 999. 기존 컨벤션(job-048)의 2xl=카드, xl=버튼·입력,
-     full=아바타·칩 이 그대로 이 세 값에 대응하도록 스케일을 다시 잡는다. */
-  --radius: 16px;
+     스펙 §7 — 버튼·칩 8 / 카드 14 / 컨테이너 20 / 원형 999. **네 가지뿐.**
+     기존 화면의 rounded-lg·xl(155곳) → 8, rounded-2xl(14곳) → 14,
+     rounded-3xl → 20, rounded-full(47곳) → 999 로 접히도록 스케일을 다시 잡는다. */
+  --radius: 14px; /* shadcn 기본 참조값 = 카드 */
   --radius-none: 0px;
   --radius-xs: 8px;
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 14px;
-  --radius-xl: 14px; /* 버튼·입력·목록 행 */
-  --radius-2xl: 16px; /* 카드·시트·다이얼로그 */
-  --radius-3xl: 16px;
+  --radius-sm: 8px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 8px; /* 버튼·칩·입력·목록 행 */
+  --radius-2xl: 14px; /* 카드·시트·다이얼로그 */
+  --radius-3xl: 20px; /* 컨테이너 */
   --radius-4xl: 999px; /* @pawlog/ui Badge 가 쓴다 → 자동으로 알약이 된다 */
-  --radius-card: 16px;
-  --radius-btn: 14px;
+  --radius-btn: 8px;
+  --radius-chip: 8px;
+  --radius-card: 14px;
+  --radius-container: 20px;
   --radius-pill: 999px;
 
-  /* ------------------------------------------------- 스페이싱 (4px 배수)
-     이름 있는 값만 추가한다. 숫자 스케일(0.5/1/2/3/4/5/6/8/10/14/16)은 기본 그대로. */
-  --spacing-touch: 64px; /* 터치 타겟 최소 — 젖은 손·장갑 보정 */
+  /* ------------------------------------------------- 스페이싱 (스펙 §7)
+     `4 / 8 / 12 / 14 / 20 / 24 / 40` — 위 `--spacing: 0.25rem` 이 전부 만들어낸다
+     (`p-1`=4 … `p-10`=40). 여기에는 이름 있는 레이아웃 치수만 둔다.
+
+     ⚠️ 터치 타깃 52px — 스펙은 최소 50px 을 요구하고(한 손 조작 도구), 4px 배수에 맞춰
+     52 로 잡았다. Button 이 `h-touch`/`size-touch` 로 쓰므로 이 한 줄이 모든 버튼 높이를
+     바꾼다. job-052 의 64px 에서 내려온 값이다. */
+  --spacing-touch: 52px;
   --spacing-row: 96px; /* 리스트 행 최소 높이 (아바타 56 + 배지 2줄) */
   --spacing-avatar: 56px;
   --spacing-avatar-lg: 60px;
@@ -311,21 +522,10 @@
      `w-sidebar`(폭)와 `bg-sidebar`(색)가 같은 단어로 다른 뜻이 된다. */
   --spacing-nav: 240px;
 
-  /* 한글 본문 한 줄 최대 40자 ≈ 40 × 17px */
+  /* 알림장 본문 최대 폭 (스펙 §7). 손에 든 폰·태블릿에서 쓰므로 넓히면 빈 여백만 늘어난다. */
+  --container-board: 680px;
+  /* 한글 본문 한 줄 최대 40자 ≈ 40 × 16px */
   --container-prose-ko: 40ch;
-}
-
-/* 태블릿 이상에서 한 단계 키운다.
-   위 `@theme` 이 non-inline 이라 유틸리티가 `var(--text-*)` 를 참조하고, 그래서
-   변수만 바꿔도 `text-body`·`text-sm` 등 **모든 사용처가 함께** 커진다. */
-@media (min-width: 768px) {
-  :root {
-    --text-label: 16px;
-    --text-body: 18px;
-    --text-name: 22px;
-    --text-title: 26px;
-    --text-display: 36px;
-  }
 }
 
 @layer base {
@@ -334,7 +534,8 @@
   }
 
   html {
-    /* 픽업 시각·잔여 회차가 세로로 나열되므로 자릿수 정렬이 필수다. */
+    /* 스펙 §7 — 숫자에는 전부 tabular-nums. 시각과 장수가 흔들리지 않는다.
+       픽업 시각·잔여 회차가 세로로 나열되므로 자릿수 정렬이 필수다. */
     font-variant-numeric: tabular-nums;
     -webkit-text-size-adjust: 100%;
   }

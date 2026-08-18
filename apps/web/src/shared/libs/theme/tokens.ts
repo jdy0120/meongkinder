@@ -21,16 +21,18 @@
 
 /** 캔버스에서 쓰는 토큰 이름 → tokens.css 의 CSS 변수 + 폴백 값. */
 const CANVAS_TOKENS = {
-  primary: ["--primary", "#1e5f55"],
-  primaryOnTint: ["--primary-on-tint", "#134a42"],
-  primaryTint: ["--primary-tint", "#e9f2ee"],
-  cautionFill: ["--caution-fill", "#e8843c"],
-  cautionText: ["--caution-text", "#9c4e12"],
-  cautionTint: ["--caution-tint", "#fcf0e4"],
-  bg: ["--bg", "#faf8f4"],
-  surface: ["--surface", "#ffffff"],
-  text: ["--text", "#24211e"],
-  textMuted: ["--text-muted", "#6e6660"],
+  brand: ["--brand", "#0ea5e9"], // primary — 로고·완료 링. 글자 금지 (2.77)
+  primary: ["--primary", "#0479b8"], // primary-action — 글자가 올라가는 면
+  primaryOnTint: ["--primary-on-tint", "#0369a1"], // on-primary-container
+  primaryTint: ["--primary-tint", "#e0f2fe"], // primary-container
+  cautionFill: ["--caution-fill", "#b45309"], // on-warning-container
+  cautionText: ["--caution-text", "#b45309"],
+  cautionTint: ["--caution-tint", "#fffbeb"], // warning-container
+  bg: ["--bg", "#f8fafc"], // surface-container-low — 순백이 아니다
+  surface: ["--surface", "#ffffff"], // surface-container-lowest
+  text: ["--text", "#0f172a"], // on-surface
+  textMuted: ["--text-muted", "#475569"], // on-surface-variant
+  textMeta: ["--text-meta", "#64748b"], // on-surface-muted
 } as const satisfies Record<string, readonly [string, string]>;
 
 export type CanvasToken = keyof typeof CANVAS_TOKENS;
