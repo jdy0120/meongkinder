@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsArray, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 /**
  * 내 정보 수정 (job-039).
@@ -22,4 +22,34 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  /**
+   * 알림 수신 번호를 함께 바꿀 아이들 (job-060).
+   *
+   * ## 왜 자동으로 하지 않는가
+   *
+   * 알림톡은 `resolveGuardianPhone` 이 정하는데 그 우선순위가
+   * **`Pet.guardianPhone` → `User.phone`** 이다. 즉 매장이 현장에서 받아 적은 번호가
+   * 계정 번호를 이긴다. 그래서 회원 정보에서 번호만 바꾸면 **알림톡은 계속 옛 번호로
+   * 나간다** — 보호자는 알림이 안 와서 앱을 열어보고, 매장은 발송 성공 로그를 본다.
+   *
+   * 그렇다고 내 아이 전부를 조용히 덮으면 안 된다. 둘이 다른 것이 **정상인 경우**가
+   * 있기 때문이다 — 부모 계정으로 가입했지만 실제 등하원과 연락은 자녀가 받는 식이라
+   * 매장이 일부러 다른 번호를 적어 둔다. 덮으면 그 아이의 알림이 엉뚱한 곳으로 간다.
+   *
+   * 그래서 **화면이 물어보고, 사용자가 고른 것만** 넘어온다.
+   *
+   * ⚠️ 번호가 재활용된다는 점이 이 기능의 진짜 이유다. 통신사는 해지 번호를 몇 달 뒤
+   * 다른 사람에게 재배정하므로, 옛 번호로 계속 발송하면 **남의 아이 사진과 공개 알림장
+   * 링크가 모르는 사람에게 간다.** 공개 링크는 로그인이 필요 없어 그대로 열린다.
+   */
+  @ApiPropertyOptional({
+    description:
+      "알림 수신 번호를 새 번호로 함께 바꿀 반려동물 id 목록 (phone 과 함께 보낼 때만 유효)",
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  syncPetIds?: string[];
 }

@@ -29,6 +29,7 @@ import {
   InvitationService,
   normalizePhone,
 } from "../../membership/services/invitation.service";
+import { PhoneOtpService } from "./phone-otp.service";
 
 const BCRYPT_ROUNDS = 10;
 
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly mailer: MailerService,
     private readonly invitationService: InvitationService,
+    private readonly phoneOtp: PhoneOtpService,
   ) {}
 
   /** 회원가입 — 이메일 + 비밀번호(bcrypt 해시) */
@@ -335,8 +337,10 @@ export class AuthService {
    * 넣으면 `updateProfile` 이 같은 claim 을 다시 돌린다.
    *
    * ⚠️ TODO(job-042): 번호는 **자기신고**다. 남의 번호를 입력하면 그 아이의 알림장·사진에
-   * 접근할 수 있다(claimForUser → ACTIVE 멤버십 + 펫 소유권). Solapi 로 SMS OTP 를 붙여
-   * 여기서 인증된 번호만 claim 에 넘기기로 되어 있다. 그전까지는 이 경로가 신뢰 경계다.
+   * 접근할 수 있었다(claimForUser → ACTIVE 멤버십 + 펫 소유권). job-042 에서 SMS OTP 를
+   * 붙여, 이제 **본인확인을 통과한 번호만** claim 에 넘어간다(`phoneOtp.assertVerified`).
+   * 단 `ALLOW_UNVERIFIED_PHONE=true` 면 그 검사를 건너뛴다 — 그동안은 이 경로가 다시
+   * 신뢰 경계가 되므로 부팅 로그가 매번 그 사실을 알린다.
    */
   async completeProfile(userId: string, dto: CompleteProfileDto) {
     const user = await prisma.user.findUnique({
@@ -364,6 +368,14 @@ export class AuthService {
 
     // ── 2. 동의 기록 + (선택) 전화번호 ────────────────────────────────────
     const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
+
+    // job-042: 번호를 저장하기 전에 본인확인을 통과해야 한다. 이 번호가 곧 소유권의
+    // 열쇠라(claimForUser → ACTIVE 멤버십 + 펫 소유권), 자기신고를 그대로 믿으면 남의
+    // 번호를 입력하는 것만으로 그 아이의 알림장·사진에 닿는다.
+    //
+    // ⚠️ 약관 검증 **뒤**, 저장 **앞**이다. 번호는 개인정보이고 수집 근거가 그 동의라
+    // 순서가 뒤집히면 동의 없이 개인정보를 받은 것이 된다(job-041).
+    if (phone) await this.phoneOtp.assertVerified(userId, phone);
 
     const updated = await prisma.$transaction(async (tx) => {
       if ((dto.agreements ?? []).length > 0) {
@@ -410,6 +422,20 @@ export class AuthService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
 
+    // job-042: 번호를 저장하기 전에 본인확인을 통과해야 한다. 이 번호 하나로 그 번호에
+    // 묶인 원생·알림장·사진의 소유권이 넘어가므로(claimForUser), 자기신고를 그대로
+    // 믿으면 남의 번호를 입력하는 것만으로 남의 기록에 닿는다.
+    if (phone) await this.phoneOtp.assertVerified(userId, phone);
+
+    // 아이의 알림 번호를 함께 옮기려면 **바꾸기 전 번호**를 알아야 한다. 뒤에서 읽으면
+    // 이미 새 번호라 "옛 번호를 쓰던 아이"를 가려낼 수 없다.
+    const before = await runWithoutTenant(() =>
+      prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { phone: true },
+      }),
+    );
+
     const user = await runWithoutTenant(() =>
       prisma.user.update({
         where: { id: userId },
@@ -421,10 +447,64 @@ export class AuthService {
       }),
     );
 
+    const syncedPets = await this.syncPetGuardianPhones({
+      userId,
+      previousPhone: before.phone,
+      newPhone: phone,
+      petIds: dto.syncPetIds,
+    });
+
     const claimed = phone
       ? await this.invitationService.claimForUser(user.id, user.email, phone)
       : [];
 
-    return { user, claimedInvitations: claimed.length };
+    return { user, claimedInvitations: claimed.length, syncedPets };
+  }
+
+  /**
+   * 번호를 바꾼 회원이 고른 아이들의 알림 수신 번호를 함께 옮긴다 (job-060).
+   *
+   * 두 겹으로 막는다. **사용자가 골랐다는 것만으로는 부족하다** — id 는 요청 본문에
+   * 실려 오므로 남의 아이 id 를 넣어볼 수 있다:
+   *
+   *   1. `userId` — 내 아이만.
+   *   2. `guardianPhone = 바꾸기 전 번호` — 매장이 **일부러 다르게 적어 둔** 번호는
+   *      건드리지 않는다. 부모 계정 + 자녀가 등하원을 맡는 경우가 그 형태라,
+   *      덮으면 그 아이의 알림이 엉뚱한 곳으로 간다.
+   *
+   * 조건에 맞지 않는 id 는 조용히 지나간다(updateMany 라 0건 갱신). 요청을 실패시키면
+   * 번호 변경 자체가 막히는데, 번호 변경은 더 급한 일이다.
+   */
+  private async syncPetGuardianPhones(params: {
+    userId: string;
+    previousPhone: string | null;
+    newPhone?: string;
+    petIds?: string[];
+  }): Promise<number> {
+    const { userId, previousPhone, newPhone, petIds } = params;
+
+    // 번호를 안 바꿨거나, 옮길 아이를 고르지 않았거나, 바꾸기 전 번호가 없으면 할 일이 없다.
+    if (!newPhone || !petIds?.length || !previousPhone) return 0;
+    if (newPhone === previousPhone) return 0;
+
+    const { count } = await runWithoutTenant(() =>
+      prisma.pet.updateMany({
+        where: {
+          id: { in: petIds },
+          userId,
+          guardianPhone: previousPhone,
+        },
+        data: { guardianPhone: newPhone },
+      }),
+    );
+
+    if (count !== petIds.length) {
+      this.logger.warn(
+        `알림 번호 동기화: 요청 ${petIds.length}건 중 ${count}건만 반영했습니다. ` +
+          `(본인 소유가 아니거나 매장이 다른 번호를 적어 둔 아이는 건드리지 않습니다) userId=${userId}`,
+      );
+    }
+
+    return count;
   }
 }

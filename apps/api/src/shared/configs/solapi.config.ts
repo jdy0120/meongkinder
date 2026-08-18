@@ -30,6 +30,8 @@ export const solapiTemplates = {
     process.env.SOLAPI_TEMPLATE_RESERVATION_REMINDER ??
     "PAWLOG_RESERVATION_REMINDER",
   feedPost: process.env.SOLAPI_TEMPLATE_FEED_POST ?? "PAWLOG_FEED_POST",
+  tenantClosure:
+    process.env.SOLAPI_TEMPLATE_TENANT_CLOSURE ?? "PAWLOG_TENANT_CLOSURE",
 };
 
 /**

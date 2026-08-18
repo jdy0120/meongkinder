@@ -6,3 +6,4 @@ export * from "./forgot-password.dto";
 export * from "./reset-password.dto";
 export * from "./update-profile.dto";
 export * from "./complete-profile.dto";
+export * from "./phone-otp.dto";

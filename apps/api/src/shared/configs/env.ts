@@ -71,6 +71,18 @@ const schema = z.object({
   // job-059: 주소 → 좌표 변환(카카오 로컬 API). 미지정이면 KAKAO_CLIENT_ID 를 그대로
   // 쓴다 — 콘솔에서 OAuth client_id 와 REST API 키가 같은 값이다.
   KAKAO_REST_API_KEY: z.string().optional(),
+  // job-042: 휴대폰 본인확인(OTP)
+  OTP_TTL_SEC: z.coerce.number().optional(),
+  OTP_VERIFIED_TTL_SEC: z.coerce.number().optional(),
+  OTP_MAX_ATTEMPTS: z.coerce.number().optional(),
+  OTP_RESEND_COOLDOWN_SEC: z.coerce.number().optional(),
+  OTP_DAILY_LIMIT: z.coerce.number().optional(),
+  ALLOW_UNVERIFIED_PHONE: z.string().optional(),
+  // Solapi (알림 발송) — 미설정이면 알림이 나가지 않는다.
+  SOLAPI_API_KEY: z.string().optional(),
+  SOLAPI_API_SECRET: z.string().optional(),
+  SOLAPI_SENDER_PHONE: z.string().optional(),
+  SOLAPI_KAKAO_PF_ID: z.string().optional(),
   KAKAO_LOCAL_TIMEOUT_MS: z.coerce.number().optional(),
 
   NAVER_CLIENT_ID: z.string().optional(),

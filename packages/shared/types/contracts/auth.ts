@@ -84,3 +84,31 @@ export interface SocialLoginResult {
   user: SafeUser;
   isNewUser: boolean;
 }
+
+// ── 휴대폰 본인확인 (job-042) ──────────────────────────
+//
+// 이 서비스에서 전화번호는 연락처가 아니라 **소유권의 열쇠**다. 매장이 미가입 보호자의
+// 아이를 번호로 등록해 두고(job-040), 그 번호로 가입한 사람에게 아이·알림장·사진이
+// 넘어간다(claimForUser). 번호가 자기신고인 동안은 **남의 번호를 입력하는 것만으로
+// 남의 아이 기록에 접근**할 수 있었고, OTP 가 닫는 것이 정확히 그 한 칸이다.
+//
+// 채널은 SMS 다. 증명하려는 것이 번호의 소유이므로, 카카오 *계정*에 도달하는 알림톡은
+// 한 단계 우회이고 실패 시 결국 SMS 폴백이 필요하다.
+
+export interface RequestPhoneOtpRequest {
+  phone: string; // 하이픈 허용 — 서버가 숫자만 남긴다
+}
+
+export interface RequestPhoneOtpResponse {
+  /** 이 시간(초) 안에 입력해야 한다. 화면의 카운트다운이 이 값을 쓴다. */
+  expiresInSec: number;
+}
+
+export interface VerifyPhoneOtpRequest {
+  phone: string;
+  code: string;
+}
+
+export interface VerifyPhoneOtpResponse {
+  verified: true;
+}

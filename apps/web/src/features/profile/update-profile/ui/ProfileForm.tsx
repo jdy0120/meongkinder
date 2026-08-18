@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Button, Field, FieldLabel, Input } from "@pawlog/ui";
 
-import { PhoneInput } from "@/shared/ui";
+import { PhoneVerifyField } from "@/features/auth/verify-phone";
+import { usePets } from "@/entities/pet";
 
 import { useUpdateProfile } from "../model/useUpdateProfile";
+import { SyncPetPhoneDialog } from "./SyncPetPhoneDialog";
 
 interface FormValues {
   nickname: string;
@@ -29,12 +32,41 @@ export const ProfileForm = ({ defaultValues }: ProfileFormProps) => {
     },
   });
   const updateProfile = useUpdateProfile();
+  const { data: pets } = usePets();
 
-  const onSubmit = (values: FormValues) =>
+  // 번호를 바꾸는 중이면 저장 전에 한 번 멈춘다 (job-060).
+  const [pendingChange, setPendingChange] = useState<FormValues | null>(null);
+  // job-042: 번호를 바꾸려면 본인확인을 마쳐야 한다. 처음 상태(= 원래 번호 그대로)는 통과.
+  const [phoneVerified, setPhoneVerified] = useState(true);
+
+  const previousPhone = defaultValues.phone ?? "";
+
+  /**
+   * 옛 번호를 **그대로 쓰고 있던** 내 아이들. 매장이 일부러 다른 번호를 적어 둔 아이는
+   * 여기 들어오지 않는다 — 그건 덮으면 안 되는 값이다.
+   */
+  const affectedPets = (pets ?? []).filter(
+    (pet) => pet.guardianPhone && pet.guardianPhone === previousPhone,
+  );
+
+  const save = (values: FormValues, syncPetIds?: string[]) =>
     updateProfile.mutate({
       nickname: values.nickname,
       phone: values.phone || undefined,
+      ...(syncPetIds?.length ? { syncPetIds } : {}),
     });
+
+  const onSubmit = (values: FormValues) => {
+    const changingPhone =
+      Boolean(values.phone) && values.phone !== previousPhone;
+
+    // 번호를 바꾸는데 그 번호로 알림받던 아이가 있으면 물어본다.
+    if (changingPhone && affectedPets.length > 0) {
+      setPendingChange(values);
+      return;
+    }
+    save(values);
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
@@ -44,15 +76,19 @@ export const ProfileForm = ({ defaultValues }: ProfileFormProps) => {
       </Field>
 
       <Field>
-        <FieldLabel htmlFor='phone'>휴대폰 번호</FieldLabel>
         <Controller
           control={control}
           name='phone'
           render={({ field }) => (
-            <PhoneInput
-              id='phone'
+            <PhoneVerifyField
               value={field.value}
-              onChange={field.onChange}
+              onChange={(next) => {
+                field.onChange(next);
+                // 원래 번호로 되돌리면 바꾸는 게 아니므로 인증이 필요 없다.
+                setPhoneVerified(next === previousPhone);
+              }}
+              onVerifiedChange={setPhoneVerified}
+              description='번호를 바꾸려면 본인확인이 필요합니다. 이 번호로 등록된 아이의 알림장·사진이 함께 연결되기 때문입니다.'
             />
           )}
         />
@@ -62,9 +98,27 @@ export const ProfileForm = ({ defaultValues }: ProfileFormProps) => {
         </p>
       </Field>
 
-      <Button type='submit' disabled={updateProfile.isPending}>
+      <Button
+        type='submit'
+        disabled={updateProfile.isPending || !phoneVerified}
+      >
         {updateProfile.isPending ? "저장 중…" : "저장"}
       </Button>
+
+      {pendingChange && (
+        <SyncPetPhoneDialog
+          open
+          pets={affectedPets}
+          previousPhone={previousPhone}
+          newPhone={pendingChange.phone}
+          isPending={updateProfile.isPending}
+          onCancel={() => setPendingChange(null)}
+          onConfirm={(petIds) => {
+            save(pendingChange, petIds);
+            setPendingChange(null);
+          }}
+        />
+      )}
     </form>
   );
 };

@@ -15,7 +15,7 @@ import { Public } from "../../shared/decorators/public.decorator";
 import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { JwtRefreshGuard } from "../../shared/guards/jwt-refresh.guard";
 import { AUTH_ROUTES } from "../routes";
-import { AuthService } from "../services";
+import { AuthService, PhoneOtpService } from "../services";
 import {
   ForgotPasswordDto,
   LoginDto,
@@ -23,13 +23,18 @@ import {
   SignupDto,
   CompleteProfileDto,
   UpdateProfileDto,
+  RequestPhoneOtpDto,
+  VerifyPhoneOtpDto,
 } from "../dtos";
 import * as CONST from "../../shared/constants";
 import { getCookieName, getCookieOptions } from "../../shared/utils";
 
 @Controller(AUTH_ROUTES.v1.BASE)
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly phoneOtpService: PhoneOtpService,
+  ) {}
 
   @Public()
   @Post(AUTH_ROUTES.v1.SIGNUP)
@@ -146,5 +151,25 @@ export class AuthController {
   @ResponseMessage("설정이 완료되었습니다.")
   async completeProfile(@Req() req: Request, @Body() dto: CompleteProfileDto) {
     return this.authService.completeProfile(req.user!.userId, dto);
+  }
+
+  // ── 휴대폰 본인확인 (job-042) ─────────────────────────────────────
+  //
+  // 번호를 저장하는 경로(`complete-profile`, `PATCH me`)가 이 인증을 요구한다.
+  // 로그인한 사람만 부를 수 있다 — 검증 결과를 **그 사람의 것**으로 묶어야
+  // A 가 인증한 결과를 B 가 주워 쓰지 못한다.
+
+  @Post(AUTH_ROUTES.v1.REQUEST_PHONE_OTP)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("인증번호를 문자로 보냈습니다.")
+  async requestPhoneOtp(@Req() req: Request, @Body() dto: RequestPhoneOtpDto) {
+    return this.phoneOtpService.issue(req.user!.userId, dto.phone);
+  }
+
+  @Post(AUTH_ROUTES.v1.VERIFY_PHONE_OTP)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("휴대폰 본인확인이 완료되었습니다.")
+  async verifyPhoneOtp(@Req() req: Request, @Body() dto: VerifyPhoneOtpDto) {
+    return this.phoneOtpService.verify(req.user!.userId, dto.phone, dto.code);
   }
 }

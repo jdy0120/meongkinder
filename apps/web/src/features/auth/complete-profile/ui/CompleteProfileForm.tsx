@@ -13,7 +13,7 @@ import {
 import type { PendingRequiredTerms } from "@pawlog/shared";
 
 import { TermsContentDialog } from "@/entities/terms";
-import { PhoneInput } from "@/shared/ui";
+import { PhoneVerifyField } from "@/features/auth/verify-phone";
 
 import { useCompleteProfile } from "../model/useCompleteProfile";
 
@@ -45,6 +45,8 @@ export const CompleteProfileForm = ({
 }: CompleteProfileFormProps) => {
   const [agreed, setAgreed] = useState<Record<string, boolean>>({});
   const [phone, setPhone] = useState("");
+  // job-042: 본인확인을 마쳐야 번호를 저장할 수 있다(서버도 같은 검사를 한다).
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const completeProfile = useCompleteProfile();
 
   const allAgreed = terms.every((item) => agreed[item.id]);
@@ -106,12 +108,13 @@ export const CompleteProfileForm = ({
 
       {!hasPhone && (
         <section className='flex flex-col gap-2'>
-          <Field>
-            <FieldLabel htmlFor='welcome-phone'>
-              휴대폰 번호 <span className='text-muted-foreground'>(선택)</span>
-            </FieldLabel>
-            <PhoneInput id='welcome-phone' value={phone} onChange={setPhone} />
-          </Field>
+          <PhoneVerifyField
+            value={phone}
+            onChange={setPhone}
+            onVerifiedChange={setPhoneVerified}
+            label='휴대폰 번호 (선택)'
+            description='번호로 등록된 아이를 연결하려면 본인확인이 필요합니다. 이 번호 하나로 그 아이의 알림장·사진이 열리기 때문입니다.'
+          />
 
           <div className='flex gap-2 rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground'>
             <Info className='mt-0.5 size-4 shrink-0' />
@@ -130,7 +133,12 @@ export const CompleteProfileForm = ({
 
       <Button
         onClick={submit}
-        disabled={!allAgreed || completeProfile.isPending}
+        disabled={
+          !allAgreed ||
+          completeProfile.isPending ||
+          // 번호를 입력했다면 본인확인까지 마쳐야 한다. 안 그러면 서버가 400 을 준다.
+          (Boolean(phone.trim()) && !phoneVerified)
+        }
         className='w-full'
       >
         {completeProfile.isPending

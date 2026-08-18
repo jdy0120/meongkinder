@@ -23,6 +23,7 @@ import { AuthService } from "./auth.service";
 import type { RedisService } from "../../shared/redis/redis.service";
 import type { MailerService } from "@nestjs-modules/mailer";
 import type { InvitationService } from "../../membership/services/invitation.service";
+import { PhoneOtpService } from "./phone-otp.service";
 
 type RedisMock = {
   set: jest.Mock;
@@ -33,6 +34,9 @@ type RedisMock = {
 type MailerMock = { sendMail: jest.Mock };
 // job-034: 가입 직후 대기 중인 초대를 소속 처리한다. 유닛 테스트에서는 "매칭된 초대 없음"으로 둔다.
 type InvitationMock = { claimForUser: jest.Mock };
+// job-042: 번호 저장 전 본인확인. 유닛 테스트는 인증을 통과한 상태로 둔다
+// (검증 로직 자체는 PhoneOtpService 의 몫이라 여기서 다시 다루지 않는다).
+type PhoneOtpMock = { assertVerified: jest.Mock };
 
 const asUser = (u: Partial<User>): User => u as unknown as User;
 
@@ -41,16 +45,19 @@ describe("AuthService", () => {
   let redis: RedisMock;
   let mailer: MailerMock;
   let invitations: InvitationMock;
+  let phoneOtp: PhoneOtpMock;
 
   beforeEach(() => {
     resetPrismaMock();
     redis = { set: jest.fn(), get: jest.fn(), del: jest.fn() };
     mailer = { sendMail: jest.fn() };
     invitations = { claimForUser: jest.fn().mockResolvedValue([]) };
+    phoneOtp = { assertVerified: jest.fn().mockResolvedValue(undefined) };
     service = new AuthService(
       redis as unknown as RedisService,
       mailer as unknown as MailerService,
       invitations as unknown as InvitationService,
+      phoneOtp as unknown as PhoneOtpService,
     );
   });
 

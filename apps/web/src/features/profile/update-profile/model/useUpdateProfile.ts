@@ -8,10 +8,14 @@ import { Patch } from "@/shared/libs/axios/request";
 interface UpdateProfilePayload {
   nickname?: string;
   phone?: string;
+  /** 알림 수신 번호를 새 번호로 함께 바꿀 아이들 (job-060). */
+  syncPetIds?: string[];
 }
 
 interface UpdateProfileResult {
   claimedInvitations: number;
+  /** 실제로 알림 번호가 옮겨진 아이 수. 요청보다 적을 수 있다(서버가 조건을 다시 본다). */
+  syncedPets?: number;
 }
 
 /**
@@ -34,12 +38,21 @@ export const useUpdateProfile = () => {
     },
     onSuccess: (data) => {
       const claimed = data?.claimedInvitations ?? 0;
+      const synced = data?.syncedPets ?? 0;
+
+      const notes = [
+        claimed > 0 ? `매장 초대 ${claimed}건 연결` : null,
+        synced > 0 ? `아이 ${synced}마리의 알림 번호 변경` : null,
+      ].filter(Boolean);
+
       toast.success(
-        claimed > 0
-          ? `정보를 저장했습니다. 대기 중이던 매장 초대 ${claimed}건이 연결되었습니다.`
+        notes.length
+          ? `정보를 저장했습니다. (${notes.join(" · ")})`
           : "정보를 저장했습니다.",
       );
       queryClient.invalidateQueries({ queryKey: ["memberships"] });
+      // 알림 번호가 바뀌었으면 아이 목록의 연락처도 예전 값이다.
+      queryClient.invalidateQueries({ queryKey: ["pets"] });
     },
     onError: (error) => {
       const msg = error.response?.data?.message || "저장에 실패했습니다.";
