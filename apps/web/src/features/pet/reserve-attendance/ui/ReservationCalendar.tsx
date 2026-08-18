@@ -3,7 +3,14 @@
 import { useMemo, useState } from "react";
 import { ko } from "date-fns/locale";
 import { CalendarOff, Clock, TriangleAlert } from "lucide-react";
-import { Button, Calendar, Card, CardContent, Spinner } from "@pawlog/ui";
+import {
+  Button,
+  Calendar,
+  CalendarDayButton,
+  Card,
+  CardContent,
+  Spinner,
+} from "@pawlog/ui";
 import {
   QUOTA_BLOCKS,
   RESERVATION_BLOCK,
@@ -110,14 +117,32 @@ export const ReservationCalendar = ({ petId }: { petId: string }) => {
   };
 
   /**
-   * 달력이 돌려준 선택 전체로 교체한다 (react-day-picker `mode='multiple'`).
+   * 달력이 돌려준 선택에서 **아직 보내지 않은 것만** 남긴다
+   * (react-day-picker `mode='multiple'`).
    *
-   * 이미 예약된 날은 `disabled` 라 목록에 들어오지도 나가지도 않는다 — 즉 취소는 이
-   * 경로로 일어나지 않는다. 취소를 달력 토글에 묶으면 **한 번의 오터치로 예약이 사라지고**
-   * 그 사실이 화면 어디에도 남지 않는다. 아래 목록에서 명시적으로 누르게 한다.
+   * ⚠️ `selected` 에는 이미 예약된 날(`reservedDates`)도 함께 넣는다 — 달력에 표시되어야
+   * 하기 때문이다. 그런데 `onSelect` 는 **선택 전체**를 돌려주므로, 받은 값을 그대로
+   * `picked` 에 넣으면 예약된 날이 picked 로 섞여 들어간다. 그러면 다음 렌더에서
+   * `selected = reserved + picked` 가 그 날짜를 **두 번** 담고, "선택한 날" 목록에도
+   * 중복으로 뜬다. 게다가 예약된 날은 `disabled` 라 다시 눌러 뺄 수도 없어 **영영
+   * 지워지지 않는다.**
+   *
+   * 그래서 예약된 날을 걷어낸다. 취소는 이 경로로 일어나지 않는다 — 달력 토글에 묶으면
+   * 한 번의 오터치로 예약이 사라지고 그 사실이 화면 어디에도 남지 않는다. 아래 목록에서
+   * 명시적으로 누르게 한다.
    */
-  const replacePicked = (next?: Date[]) =>
-    setPicked((next ?? []).map(toDateKey).sort());
+  const replacePicked = (next?: Date[]) => {
+    const reserved = new Set(
+      data.days.filter((day) => day.reserved).map((day) => day.date),
+    );
+    setPicked(
+      [
+        ...new Set(
+          (next ?? []).map(toDateKey).filter((date) => !reserved.has(date)),
+        ),
+      ].sort(),
+    );
+  };
 
   const remainingAfterPick = data.remaining - picked.length;
 
@@ -203,6 +228,33 @@ export const ReservationCalendar = ({ petId }: { petId: string }) => {
           showOutsideDays={false}
           /* 셀 44px 은 job-052 의 타협값(64px 을 그대로 쓰면 한 달이 화면을 넘긴다). */
           className='w-full [--cell-size:--spacing(11)] p-0'
+          components={{
+            /*
+              날짜 버튼이 칸(td)을 **정확히** 채우게 한다.
+
+              기본 `CalendarDayButton` 은 `Button size='icon'`(= `size-touch`, 52px 고정)
+              위에 `aspect-square min-w-(--cell-size)` 를 얹는다. 그런데 칸의 실제 폭은
+              화면 폭을 7로 나눈 값이라 52px·44px 어느 쪽과도 맞지 않는다 — 그래서 눌리는
+              면(과 선택 시 칠해지는 면)이 칸보다 작거나 커 보인다.
+
+              ⚠️ `size-full`(= `h-full`) 로는 안 된다. td 높이가 `aspect-square` 에서
+              파생돼 퍼센트 기준으로 확정되지 않는 경우가 있어, 그때 `height:100%` 가
+              `auto` 로 풀리면 버튼이 **글자 높이만큼 줄어 위로 붙는다.**
+
+              td 가 `relative` 이므로 `absolute inset-0` 으로 네 변을 맞춘다 — 높이 계산에
+              기대지 않고 칸을 정확히 덮는다. 가운데 정렬은 기본 컴포넌트의
+              `items-center justify-center` 가 그대로 한다.
+
+              **모양은 그대로다** — variant·색·반경은 기본 컴포넌트가 계속 갖는다.
+            */
+            DayButton: (props) => (
+              <CalendarDayButton
+                {...props}
+                locale={ko}
+                className='absolute inset-0 aspect-auto size-auto min-w-0'
+              />
+            ),
+          }}
         />
 
         {/*
@@ -255,7 +307,9 @@ export const ReservationCalendar = ({ petId }: { petId: string }) => {
           size='lg'
         >
           {create.isPending ? <Spinner className='size-5' /> : null}
-          {picked.length > 0 ? `${picked.length}일 예약하기` : "날짜를 선택하세요"}
+          {picked.length > 0
+            ? `${picked.length}일 예약하기`
+            : "날짜를 선택하세요"}
         </Button>
       </section>
 
@@ -292,8 +346,8 @@ export const ReservationCalendar = ({ petId }: { petId: string }) => {
           예약하려다 "이미 등원 예정"이라는 이유로 막히는 이유를 알 수 없다. */}
       {reservedDates.length > cancelableDays.length && (
         <p className='text-label text-muted-foreground'>
-          유치원이 지정한 등원일은 이 화면에서 취소할 수 없습니다. 변경이 필요하면
-          유치원에 문의해주세요.
+          유치원이 지정한 등원일은 이 화면에서 취소할 수 없습니다. 변경이
+          필요하면 유치원에 문의해주세요.
         </p>
       )}
     </div>
