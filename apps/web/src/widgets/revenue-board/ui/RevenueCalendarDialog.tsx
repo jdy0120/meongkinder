@@ -91,7 +91,7 @@ export const RevenueCalendarDialog = ({
         있는데, Tailwind 는 특이도가 같으면 **나중에 선언된 것**이 이기므로 `max-w-*` 만
         얹으면 sm 이상에서 조용히 384px 로 되돌아간다.
       */}
-      <DialogContent className='max-h-[92vh] w-[96vw] max-w-[1400px] overflow-hidden rounded-2xl sm:max-w-[1400px]'>
+      <DialogContent className='max-h-[92vh] w-[96vw] max-w-[1200px] overflow-hidden rounded-2xl sm:max-w-[1200px]'>
         <DialogHeader>
           <DialogTitle>
             {year}년 {month}월 일별 매출
@@ -123,11 +123,15 @@ export const RevenueCalendarDialog = ({
                 헤더(제목·설명)를 빼면 한 줄이 쓸 수 있는 높이가 나온다. `vh` 로 묶어야
                 노트북(768px)과 데스크톱(1080px)에서 같은 규칙으로 맞는다.
 
-                하한 2.75rem 은 세 줄이 겨우 읽히는 크기이고, 상한 5.5rem 을 두는 이유는
-                큰 화면에서 칸만 커지면 숫자 사이 여백이 벌어져 오히려 훑기 어려워지기
-                때문이다.
+                하한 2.5rem 은 세 줄이 겨우 읽히는 크기다.
+
+                ⚠️ **폭도 칸 높이에 묶는다**(`max-w-[calc(var(--cell-size)*13)]`).
+                세로는 뷰포트 높이가, 가로는 모달 폭이 정하므로 "넓고 낮은" 화면
+                (1280×800 같은 노트북)에서는 칸이 167×66 처럼 납작해진다. 폭을 높이의
+                배수로 묶으면 어느 화면에서도 칸 모양이 비슷하게 유지되고, 남는 가로
+                공간은 `mx-auto` 가 양옆 여백으로 돌린다.
               */
-              className='w-full p-0 [--cell-size:clamp(2.5rem,7.5vh,4.5rem)]'
+              className='mx-auto w-full max-w-[calc(var(--cell-size)*13)] p-0 [--cell-size:clamp(2.5rem,calc(10.5vh-18px),8rem)]'
               classNames={{
                 /*
                   ⚠️ **`aspect-square` 를 반드시 걷어내야 한다.**
