@@ -155,4 +155,88 @@ describe("Auth (e2e)", () => {
       await owner.session.get(`${V1_ADMIN}/me`).expect(403);
     });
   });
+
+  /**
+   * 전화번호는 이 서비스에서 **매칭 키**다 — 매장이 번호로 등록해 둔 아이가 가입하는
+   * 사람에게 `claimForUser` 로 넘어간다. 같은 번호를 두 계정이 들고 있으면 그 소유권이
+   * 정해지지 않고, `PetIntakeService` 는 아이를 임의로 넘기지 않으려 409 로 멈춘다
+   * (= 원장이 번호를 아는데도 **원생 조회가 통째로 막힌다**). 그래서 들어올 때 막는다.
+   *
+   * ⚠️ 이 검사는 문자 발송 **전**에 돈다. 그래서 Solapi 가 설정되지 않은 테스트 환경에서도
+   * 503 이 아니라 409 가 나온다 — 발송 뒤에 막았다면 이 스펙 자체를 쓸 수 없었고, 실제
+   * 사용자도 인증번호를 다 입력한 뒤에야 "쓸 수 없는 번호"라는 말을 들었을 것이다.
+   */
+  describe("휴대폰 인증 — 이미 등록된 번호는 발송 전에 막힌다", () => {
+    // ⚠️ 테스트마다 다른 번호를 쓴다. 이 스펙은 케이스 사이에 유저를 지우지 않으므로
+    // 같은 번호를 재사용하면 앞 테스트가 남긴 계정 때문에 "본인 번호"까지 중복으로 잡힌다.
+    const phone = "01055556666";
+    const phone2 = "01055557777";
+    const selfPhone = "01055558888";
+
+    const login = async (email: string, nickname: string) => {
+      const session = request.agent(server());
+      await session
+        .post(`${V1_AUTH}/signup`)
+        .send({ email, password, nickname })
+        .expect(201);
+      await session
+        .post(`${V1_AUTH}/login`)
+        .send({ email, password })
+        .expect(200);
+      return session;
+    };
+
+    it("다른 계정이 쓰는 번호로 인증을 요청하면 409", async () => {
+      const ownerSession = await login("otp-owner@example.com", "otp-owner");
+      const me = await ownerSession.get(`${V1_AUTH}/mypage`).expect(200);
+      const ownerId = (me.body as { data: { user: { id: string } } }).data.user
+        .id;
+      await prisma.user.update({ where: { id: ownerId }, data: { phone } });
+
+      const otherSession = await login("otp-other@example.com", "otp-other");
+      const res = await otherSession
+        .post(`${V1_AUTH}/phone/otp`)
+        .send({ phone })
+        .expect(409);
+
+      expect((res.body as { message: string }).message).toContain(
+        "이미 다른 계정에 등록된",
+      );
+    });
+
+    it("하이픈을 넣어 보내도 같은 번호로 보고 막는다", async () => {
+      const ownerSession = await login("otp-owner2@example.com", "otp-owner2");
+      const me = await ownerSession.get(`${V1_AUTH}/mypage`).expect(200);
+      const ownerId = (me.body as { data: { user: { id: string } } }).data.user
+        .id;
+      await prisma.user.update({
+        where: { id: ownerId },
+        data: { phone: phone2 },
+      });
+
+      const otherSession = await login("otp-other2@example.com", "otp-other2");
+      await otherSession
+        .post(`${V1_AUTH}/phone/otp`)
+        .send({ phone: "010-5555-7777" })
+        .expect(409);
+    });
+
+    it("본인이 이미 등록한 번호는 막지 않는다 (재인증은 정상 흐름)", async () => {
+      const session = await login("otp-self@example.com", "otp-self");
+      const me = await session.get(`${V1_AUTH}/mypage`).expect(200);
+      const userId = (me.body as { data: { user: { id: string } } }).data.user
+        .id;
+      await prisma.user.update({
+        where: { id: userId },
+        data: { phone: selfPhone },
+      });
+
+      // 중복이 아니므로 409 를 지나 발송 단계까지 간다. 이 환경엔 Solapi 가 없어 503 이고,
+      // 그것이 곧 "중복 검사를 통과했다"는 증거다.
+      await session
+        .post(`${V1_AUTH}/phone/otp`)
+        .send({ phone: selfPhone })
+        .expect(503);
+    });
+  });
 });

@@ -2,7 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
-import { Button, Input, Label } from "@pawlog/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+} from "@pawlog/ui";
 
 import { PhoneInput } from "@/shared/ui";
 import { useRequestPhoneOtp, useVerifyPhoneOtp } from "../model/usePhoneOtp";
@@ -50,9 +60,15 @@ export const PhoneVerifyField = ({
   // 인증을 마친 번호. 이 값과 현재 입력이 어긋나면 인증을 무효로 본다.
   const verifiedPhone = useRef<string | null>(null);
 
-  const request = useRequestPhoneOtp((expiresInSec) => {
-    setRemaining(expiresInSec);
-    setCode("");
+  // 이미 다른 계정이 쓰는 번호일 때의 안내. 문자는 나가지 않는다(서버가 발송 전에 막는다).
+  const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
+
+  const request = useRequestPhoneOtp({
+    onSent: (expiresInSec) => {
+      setRemaining(expiresInSec);
+      setCode("");
+    },
+    onDuplicate: setDuplicateMessage,
   });
 
   const verify = useVerifyPhoneOtp(() => {
@@ -145,6 +161,41 @@ export const PhoneVerifyField = ({
           본인확인이 완료되었습니다.
         </p>
       )}
+
+      <Dialog
+        open={duplicateMessage !== null}
+        onOpenChange={(next: boolean) => !next && setDuplicateMessage(null)}
+      >
+        <DialogContent className='rounded-2xl sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>이미 등록된 휴대폰 번호입니다</DialogTitle>
+            <DialogDescription>{duplicateMessage}</DialogDescription>
+          </DialogHeader>
+
+          {/* 무엇을 해야 하는지 적는다. 이 상태는 같은 번호로 다시 눌러도 영영 통과하지
+              못하므로, 대안을 주지 않으면 사용자는 '인증요청'만 반복하다 이탈한다. */}
+          <ul className='flex list-disc flex-col gap-1.5 pl-5 text-body text-muted-foreground'>
+            <li>이전에 다른 계정으로 가입하셨다면 그 계정으로 로그인해주세요.</li>
+            <li>번호를 잘못 입력하셨다면 다시 확인해주세요.</li>
+            <li>본인 번호가 맞는데 계속 이렇게 나오면 유치원에 문의해주세요.</li>
+          </ul>
+
+          <DialogFooter>
+            <Button
+              type='button'
+              className='w-full'
+              onClick={() => {
+                setDuplicateMessage(null);
+                // 다른 번호를 넣도록 입력칸을 비워 준다 — 닫았을 때 막힌 번호가 그대로
+                // 남아 있으면 무엇을 고쳐야 하는지 다시 헷갈린다.
+                onChange("");
+              }}
+            >
+              다른 번호 입력하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -7,6 +8,7 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import * as crypto from "crypto";
+import { prisma } from "@pawlog/database";
 import { normalizePhone, PHONE_MAX_DIGITS } from "@pawlog/shared";
 
 import { RedisService } from "../../shared/redis/redis.service";
@@ -67,6 +69,43 @@ export class PhoneOtpService {
   private hash = (code: string) =>
     crypto.createHash("sha256").update(code).digest("hex");
 
+  /**
+   * 이미 **다른 계정**이 쓰고 있는 번호인지 본다.
+   *
+   * ## 왜 막아야 하나
+   *
+   * 이 번호는 표시 데이터가 아니라 **매칭 키**다. 매장이 미가입 보호자의 아이를 번호로
+   * 등록해 두고(job-040), 가입하는 사람에게 `claimForUser` 가 그 아이·알림장·사진을
+   * 넘긴다. 같은 번호를 두 계정이 들고 있으면 **그 소유권이 누구 것인지 정해지지 않는다.**
+   * 실제로 `PetIntakeService.findSingleUserByPhone` 은 그 상황에서 아이를 임의로 넘기지
+   * 않으려고 409 로 멈추는데, 그 결과 원장은 번호를 알고 있는데도 **원생 조회가 통째로
+   * 막힌다.** 중복은 나중에 푸는 것보다 들어올 때 막는 편이 훨씬 싸다.
+   *
+   * ## 본인 번호 재인증은 막지 않는다
+   *
+   * 이미 자기 번호를 등록한 사람이 프로필에서 다시 인증하는 것은 정상 흐름이다.
+   * 그래서 **다른 userId** 가 쓰고 있을 때만 막는다.
+   *
+   * ⚠️ 이 응답은 "그 번호를 쓰는 계정이 있다"를 알려주므로 계정 열거에 쓰일 여지가 있다.
+   * 다만 이 엔드포인트는 **로그인해야 부를 수 있고**(`@Public()` 없음) 번호당 일일 발송
+   * 한도와 재발송 쿨다운이 함께 걸려 있어 대량 조회로는 쓰기 어렵다. 그 위험보다 "번호가
+   * 겹친 채 가입이 끝나 원생 연결이 막히는" 쪽이 실제로 더 자주, 더 크게 아프다.
+   */
+  private async assertPhoneNotTaken(userId: string, phone: string) {
+    const owner = await prisma.user.findFirst({
+      where: { phone, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (!owner) return;
+
+    this.logger.warn(
+      `이미 등록된 번호로 인증을 시도했습니다. phone=${this.mask(phone)}`,
+    );
+    throw new ConflictException(
+      "이미 다른 계정에 등록된 휴대폰 번호입니다. 이전에 가입한 계정으로 로그인하시거나, 다른 번호를 입력해주세요.",
+    );
+  }
+
   private requireValidPhone(raw: string): string {
     const phone = normalizePhone(raw ?? "");
     if (phone.length < MIN_PHONE_DIGITS || phone.length > PHONE_MAX_DIGITS) {
@@ -87,6 +126,12 @@ export class PhoneOtpService {
    */
   async issue(userId: string, rawPhone: string) {
     const phone = this.requireValidPhone(rawPhone);
+
+    // ⚠️ 중복 검사를 **문자를 보내기 전에** 한다. 보내 놓고 저장 단계에서 막으면 사용자는
+    // 인증번호를 받아 6자리를 정확히 입력하고 나서야 "쓸 수 없는 번호"라는 말을 듣는다.
+    // 실패할 것을 알면서 문자 비용을 쓴 셈이고, 사용자는 자기가 뭘 잘못했는지 모른다.
+    // 막을 것은 인증이 아니라 **인증 시도 자체**다.
+    await this.assertPhoneNotTaken(userId, phone);
 
     if (!solapiConfig.isConfigured) {
       // 조용히 성공한 척하면 사용자는 오지 않는 문자를 기다린다. 명시적으로 막는다.
