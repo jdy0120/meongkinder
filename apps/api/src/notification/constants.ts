@@ -6,6 +6,7 @@ export const NOTIFICATION_TYPE = {
   REMAINING_COUNT_LOW: "REMAINING_COUNT_LOW", // 정기권/회수권 잔여횟수 임박
   RESERVATION_REMINDER: "RESERVATION_REMINDER", // 다음날 등원 예약 리마인드
   FEED_POST: "FEED_POST", // 피드에 오늘 첫 사진이 올라옴 (job-034)
+  TENANT_CLOSURE: "TENANT_CLOSURE", // 매장 임시 휴무로 그 날 등원이 취소됨 (job-060)
 } as const;
 
 export const NOTIFICATION_CHANNEL = {

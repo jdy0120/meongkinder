@@ -1,5 +1,6 @@
 import type { Pet } from "@pawlog/database";
 import type { VaccinationRecord } from "../../src/pet-safety";
+import type { BusinessHours } from "./tenant";
 
 export interface PickupAuthorizedPerson {
   name: string;
@@ -146,4 +147,78 @@ export interface UpdatePetScheduleRequest {
   month?: string;
   /** MONTHLY 일 때 그 달의 등원일 전체. 빈 배열이면 그 달을 비운다. */
   dates?: DateKey[];
+}
+
+// ── 등원 예약 (job-060) ──────────────────────────────────────────────
+//
+// **보호자가** 매장 운영일 중에서 아이가 갈 날을 직접 고른다. 저장되는 곳은 위와 같은
+// `PetSchedule` 이다(`source = "GUARDIAN"`) — 담는 사실이 "이 아이가 이 날 온다"로
+// 완전히 같아서, 나누면 그 사실을 읽는 네 곳(출석부 자동 생성 · 피드 커버리지 · 태그
+// 후보 · 등원 알림)이 전부 두 테이블을 합쳐 읽어야 한다.
+//
+// ⚠️ **예약은 이용권을 차감하지 않는다.** 차감은 등원 체크 한 곳에서만 일어난다. 예약
+// 가능 여부는 `잔액 − 오늘 이후 예약 수` 로 판정한다 — 자세한 이유는
+// `packages/shared/src/reservation.ts` 의 주석에 있다.
+
+/** 예약 달력의 하루. 서버가 이미 판정을 끝내서 내려주므로 화면은 그리기만 한다. */
+export interface ReservationDay {
+  date: DateKey;
+  /** 매장이 이 요일에 문을 여는가 */
+  open: boolean;
+  /** 그 날 운영시간 표기(`"09:00 ~ 19:00 (휴게 13:00~14:00)"`). 휴무면 `null`. */
+  hours: string | null;
+  /** 이미 등원 예정인 날 (보호자 예약 + 원장이 지정한 등원일) */
+  reserved: boolean;
+  /**
+   * 보호자가 이 예약을 취소할 수 있는가.
+   *
+   * 원장이 짜 넣은 등원일(`source = "ADMIN"`)은 `reserved` 지만 `cancelable` 은
+   * `false` 다 — 보호자가 지우면 매장 운영 계획이 말없이 바뀐다.
+   */
+  cancelable: boolean;
+  /** 이미 등원 체크가 끝난 날 (취소 불가) */
+  attended: boolean;
+  /** 선택 불가 사유 (`RESERVATION_BLOCK`). `null` 이면 예약할 수 있다. */
+  blockedBy: string | null;
+  /**
+   * 임시 휴무 사유 — 매장이 적어 둔 문구 (job-060).
+   *
+   * 사유 없이 잠그기만 하면 보호자는 매장에 전화한다. "설 연휴"·"정기 소독"이면 전화가
+   * 필요 없다. `blockedBy === "TEMPORARILY_CLOSED"` 일 때만 값이 있고, 매장이 사유를
+   * 비워 뒀으면 `null` 이다.
+   */
+  closedReason: string | null;
+}
+
+export interface ReservationCalendarResponse {
+  petId: string;
+  petName: string;
+  /** 조회한 달 (`"YYYY-MM"`) */
+  month: string;
+  /** 아이가 소속된 매장. 없으면(=미등록) 어떤 날도 예약할 수 없다. */
+  tenant: { id: string; name: string; subdomain: string } | null;
+  /**
+   * 매장 운영시간. `null` 은 "매장이 등록하지 않았다"이며 이때 달력은 전부 잠긴다 —
+   * 어느 날이 운영일인지 알 수 없는데 열어 두면 보호자가 휴무일에 아이를 데려온다.
+   */
+  businessHours: BusinessHours | null;
+  /** 이용권 잔여 횟수 (`SubscriptionLedger` 마지막 줄) */
+  balance: number;
+  /** 오늘 이후로 이미 잡혀 있는 등원 예정일 수 */
+  reservedAhead: number;
+  /** 더 잡을 수 있는 횟수 = `balance - reservedAhead` (음수는 0으로 깎는다) */
+  remaining: number;
+  days: ReservationDay[];
+}
+
+/** 예약 추가. 여러 날을 한 번에 보낼 수 있고, **하나라도 막히면 전부 거절**한다. */
+export interface CreateReservationRequest {
+  dates: DateKey[];
+}
+
+export interface CreateReservationResponse {
+  /** 이번 호출로 새로 잡힌 날짜 */
+  created: DateKey[];
+  /** 반영 후 남은 예약 가능 횟수 */
+  remaining: number;
 }

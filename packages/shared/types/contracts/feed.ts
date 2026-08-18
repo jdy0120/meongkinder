@@ -149,9 +149,33 @@ export interface FeedDigestResult {
   action: FeedDigestAction;
 }
 
+/**
+ * 마감했는데 **만들어진 알림장이 하나도 없을 때** 그 이유.
+ *
+ * ⚠️ **한 문구로 뭉치면 안 된다.** 예전에는 결과가 비면 무조건
+ * "오늘 발행된 사진이 없어요. 사진을 먼저 올려주세요" 를 띄웠는데, 사진을 이미 올리고
+ * 발행까지 마친 선생님에게도 같은 말을 하게 된다. 실제로 사진 4장을 발행해 둔 매장에서
+ * 이 문구 때문에 원인(태그 0개)을 못 찾고 업로드 화면만 다시 확인한 사례가 있었다.
+ * 세 경우는 **해야 할 일이 서로 다르므로** 끝까지 갈라서 내려준다.
+ *
+ *   NO_POSTS   오늘 올린 사진이 아예 없다        → 사진을 올린다
+ *   ALL_DRAFT  올렸지만 발행하지 않았다          → 발행한다
+ *   NO_TAGS    발행했지만 사진에 태그된 아이가 없다 → 사진마다 아이를 태그한다
+ *
+ * 마감 대상은 "발행된 사진에 **태그된** 아이"다. 태그가 없으면 대상이 0명이라
+ * 에러 없이 조용히 아무 일도 일어나지 않는다 — 그 침묵을 설명하는 것이 이 값이다.
+ */
+export type FeedDigestEmptyReason = "NO_POSTS" | "ALL_DRAFT" | "NO_TAGS";
+
 export interface RunFeedDigestResponse {
   date: string;
   results: FeedDigestResult[];
+  /** `results` 가 비었을 때만 채워진다. 비어 있지 않으면 `undefined`. */
+  emptyReason?: FeedDigestEmptyReason;
+  /** 마감이 훑은 발행 게시물 수. 안내 문구를 구체적인 숫자로 만들기 위한 값. */
+  publishedPostCount: number;
+  /** 아직 발행하지 않은 그날의 초안 수. `results` 가 비었을 때만 집계한다(그 외에는 0). */
+  draftPostCount: number;
 }
 
 // ── 보호자 피드 ───────────────────────────────────────────────────────────

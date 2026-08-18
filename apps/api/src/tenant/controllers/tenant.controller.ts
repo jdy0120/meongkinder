@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -19,7 +20,9 @@ import { ResponseMessage } from "../../shared/decorators/response-message.decora
 import { PaginationQueryDto } from "../../shared/dtos";
 import {
   CheckSubdomainAvailabilityDto,
+  CreateTenantClosureDto,
   OnboardTenantDto,
+  TenantClosureQueryDto,
   TenantDirectoryQueryDto,
   UpdateTenantActiveDto,
   UpdateTenantDto,
@@ -73,6 +76,34 @@ export class TenantController {
   @ResponseMessage("매장 정보가 저장되었습니다.")
   async updateSettings(@Body() dto: UpdateTenantSettingsDto) {
     return this.tenantService.updateSettings(dto);
+  }
+
+  // ── 임시 휴무일 (job-060) ──────────────────────────────────────────
+  // 운영시간과 별도 경로다 — 시간표는 7일을 통째로 덮어쓰지만 휴무일은 개별로
+  // 추가·삭제되므로, 같은 페이로드로 묶으면 휴무 하나를 지우려고 운영시간 전체를
+  // 다시 보내야 한다.
+
+  @Roles(ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN)
+  @Get(TENANT_ROUTES.v1.CLOSURES)
+  @HttpCode(HttpStatus.OK)
+  async listClosures(@Query() query: TenantClosureQueryDto) {
+    return this.tenantService.listClosures(query.month);
+  }
+
+  @Roles(ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN)
+  @Post(TENANT_ROUTES.v1.CLOSURES)
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage("휴무일이 등록되었습니다.")
+  async createClosure(@Body() dto: CreateTenantClosureDto) {
+    return this.tenantService.createClosure(dto);
+  }
+
+  @Roles(ROLES.TENANT_ADMIN, ROLES.SUPER_ADMIN)
+  @Delete(TENANT_ROUTES.v1.DELETE_CLOSURE)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("휴무일이 해제되었습니다.")
+  async deleteClosure(@Param("date") date: string) {
+    return this.tenantService.deleteClosure(date);
   }
 
   // job-034: 매장 개설권(UserSubscription)을 보유한 로그인 회원만 호출할 수 있다.

@@ -10,6 +10,7 @@ import type {
 } from "@pawlog/database";
 import type { MembershipRole, MembershipStatus } from "../../src/roles";
 import type { SafeUser } from "../models/auth/user";
+import type { BusinessHours } from "./tenant";
 
 // ── 요청 ──────────────────────────────────────────────
 
@@ -84,6 +85,13 @@ export interface TenantDirectoryEntry {
   latitude: number | null;
   longitude: number | null;
   contactPhone: string | null;
+  /**
+   * 운영시간 (job-060). 영업 정보라 공개해도 되는 축에 든다 — 오히려 보호자가 매장을
+   * 고를 때 주소 다음으로 먼저 보는 값이다.
+   *
+   * `null` 은 "등록하지 않았다"이며 "휴무"가 아니다. 화면은 이 둘을 구분해서 그려야 한다.
+   */
+  businessHours: BusinessHours | null;
 }
 
 /**

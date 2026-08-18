@@ -14,6 +14,13 @@ import {
   Spinner,
 } from "@pawlog/ui";
 
+import {
+  BUSINESS_STATUS,
+  BUSINESS_STATUS_LABEL,
+  formatTodayHours,
+  resolveBusinessStatus,
+} from "@pawlog/shared";
+
 import { KakaoMap, type MapBounds } from "@/shared/ui";
 import {
   useApplyMembership,
@@ -133,6 +140,35 @@ export const ApplyMembershipDialog = () => {
                   {/* 주소가 있으면 주소를 보여준다 — 보호자에게 서브도메인은 의미가 없다. */}
                   {tenant.roadAddress ?? tenant.subdomain}
                 </p>
+                {/*
+                 * 오늘 영업 여부 (job-060). 운영시간을 등록하지 않은 매장은 **아무것도
+                 * 쓰지 않는다** — "운영시간 미등록"을 매장마다 반복해 적으면 목록이
+                 * 그 문구로 뒤덮이고, 정작 시간을 넣은 매장이 눈에 안 띈다.
+                 */}
+                {tenant.businessHours && (
+                  <p className='truncate text-xs'>
+                    <span
+                      className={
+                        resolveBusinessStatus(tenant.businessHours) ===
+                        BUSINESS_STATUS.OPEN
+                          ? "font-semibold text-primary"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {
+                        BUSINESS_STATUS_LABEL[
+                          resolveBusinessStatus(tenant.businessHours)
+                        ]
+                      }
+                    </span>
+                    {formatTodayHours(tenant.businessHours) && (
+                      <span className='text-muted-foreground'>
+                        {" · "}
+                        {formatTodayHours(tenant.businessHours)}
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
               <Button
                 disabled={apply.isPending}

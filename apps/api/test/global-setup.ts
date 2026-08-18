@@ -26,6 +26,26 @@ export default function globalSetup(): void {
     );
   }
 
+  // 0-b. 타임존 가드 — e2e 는 **UTC 에서만** 의미가 있다.
+  //
+  // 이 코드베이스는 `@db.Date` 컬럼(`pet_schedules.date` · `attendances.date` ·
+  // `tenant_closures.date`)에 **로컬 자정** Date 를 넣는다(`fromDateKey`/`startOfToday`).
+  // Prisma 는 그 값을 UTC ISO 로 직렬화하므로, 프로세스 TZ 가 UTC 보다 앞선 지역
+  // (KST=UTC+9)에서는 로컬 자정이 UTC 로 전날 15:00 이 되어 DATE 컬럼에 **하루 전날**이
+  // 저장된다. 배포 컨테이너는 UTC 라 운영에서는 맞지만, KST 노트북에서 그냥 돌리면
+  // 날짜 관련 스펙이 전부 하루씩 어긋난 채 "테스트가 깨졌다"로만 보인다.
+  //
+  // ⚠️ 그러니 이 가드가 걸린다고 TZ 만 맞추고 지나가지 말 것. `TZ=Asia/Seoul` 로 API 를
+  // 띄우면 실제로 깨지는 문제이고, 제대로 고치려면 날짜 저장 경로 전체를 UTC 자정으로
+  // 통일해야 한다(job-053/job-060).
+  if (new Date().getTimezoneOffset() !== 0) {
+    throw new Error(
+      `[e2e] 안전 가드 실패: 프로세스 타임존이 UTC 가 아닙니다 (TZ="${process.env.TZ ?? "미설정"}"). ` +
+        `\`pnpm test:e2e\` 로 실행하거나 \`TZ=UTC\` 를 붙여주세요. ` +
+        `이유는 이 파일의 주석을 참고하세요.`,
+    );
+  }
+
   // 1. 테스트 인프라 기동
   execSync(`docker compose -f "${compose}" up -d --wait`, { stdio: "inherit" });
 

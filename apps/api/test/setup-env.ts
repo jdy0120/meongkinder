@@ -21,3 +21,10 @@ config({ path: resolve(__dirname, "../../../envs/.env.test"), quiet: true });
 
 // 안전장치: 테스트 컨텍스트임을 명시. (운영 DB 오조준 방지 가드는 e2e 단계에서 강화)
 process.env.NODE_ENV = process.env.NODE_ENV ?? "test";
+
+/**
+ * ⚠️ 타임존은 **여기서 못 고친다.** `process.env.TZ` 를 실행 중에 바꿔도 이미 초기화된
+ * `Date` 의 로컬 시각에는 반영되지 않으므로, Node 를 띄울 때 잡아야 한다 —
+ * `pnpm test:e2e` 스크립트가 `TZ=UTC` 를 앞에 붙인다. 그 조건을 강제하는 가드는
+ * `global-setup.ts` 에 있고, 왜 UTC 여야 하는지도 거기에 적혀 있다.
+ */

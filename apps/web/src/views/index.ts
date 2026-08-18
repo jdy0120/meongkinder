@@ -28,3 +28,4 @@ export * from "./notification-logs/NotificationLogsPage";
 export * from "./plans/PlansPage";
 export * from "./revenue/RevenuePage";
 export * from "./tenant-settings/TenantSettingsPage";
+export * from "./reservations/ReservationsPage";

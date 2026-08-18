@@ -20,3 +20,6 @@ export * from "./DatePicker/DatePicker";
 export * from "./AddressField/AddressField";
 // job-059: 매장 찾기 지도. 좌표 없는 매장은 오지 않으므로 목록과 **함께** 써야 한다.
 export * from "./KakaoMap/KakaoMap";
+// job-060: 매장 운영시간 입력(네이버 스마트플레이스식). 매장 개설과 매장 설정이
+// **같은 편집기**를 쓴다 — feature 두 개가 서로를 import 할 수 없으므로 여기 둔다.
+export * from "./BusinessHoursField/BusinessHoursField";

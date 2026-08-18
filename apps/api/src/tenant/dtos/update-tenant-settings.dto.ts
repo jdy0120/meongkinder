@@ -1,7 +1,15 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString, MaxLength } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from "class-validator";
 import type { UpdateTenantSettingsRequest } from "@pawlog/shared";
 
+import { BusinessHoursDto } from "./business-hours.dto";
 import { TenantAddressDto } from "./tenant-address.dto";
 
 /**
@@ -38,4 +46,21 @@ export class UpdateTenantSettingsDto
   @IsOptional()
   @IsBoolean()
   isListed?: boolean;
+
+  /**
+   * 운영시간 (job-060).
+   *
+   * `null` 을 **명시적으로** 보내면 등록을 지운다(미설정으로 되돌린다). 아예 보내지
+   * 않으면 기존 값을 건드리지 않는다 — 이 둘은 다른 뜻이고, `@IsOptional()` 이 둘 다
+   * 통과시키므로 구분은 서비스가 한다.
+   */
+  @ApiPropertyOptional({
+    type: BusinessHoursDto,
+    description: "매장 운영시간. null 을 보내면 등록을 지운다.",
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BusinessHoursDto)
+  businessHours?: BusinessHoursDto | null;
 }

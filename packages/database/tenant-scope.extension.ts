@@ -34,6 +34,8 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   "SubscriptionLedger",
   "TenantSubscription",
   "TenantBillingKey",
+  // job-060: 임시 휴무일. Tenant 자체는 전역 공용이지만 휴무일은 매장의 것이다.
+  "TenantClosure",
 ]);
 
 const WHERE_OPERATIONS = new Set([

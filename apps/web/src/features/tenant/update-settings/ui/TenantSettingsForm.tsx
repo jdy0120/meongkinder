@@ -14,17 +14,20 @@ import {
   Input,
   Switch,
 } from "@pawlog/ui";
+import { validateBusinessHours } from "@pawlog/shared";
 import type {
+  BusinessHours,
   TenantAddressInput,
   TenantSettings,
   UpdateTenantSettingsRequest,
 } from "@pawlog/shared";
 
-import { AddressField, PhoneInput } from "@/shared/ui";
+import { AddressField, BusinessHoursField, PhoneInput } from "@/shared/ui";
 import {
   useTenantSettings,
   useUpdateTenantSettings,
 } from "../model/useTenantSettings";
+import { ClosuresField } from "./ClosuresField";
 
 type FormValues = {
   name: string;
@@ -65,6 +68,12 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
     addressDetail: settings.addressDetail ?? "",
   });
 
+  // 주소와 같은 이유로 `react-hook-form` 밖에 둔다 — 요일 7개가 중첩된 구조라
+  // register 로는 다룰 수 없고, 편집기가 값을 통째로 갈아끼운다.
+  const [businessHours, setBusinessHours] = useState<BusinessHours | null>(
+    settings.businessHours,
+  );
+
   const {
     register,
     handleSubmit,
@@ -78,12 +87,21 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
     },
   });
 
+  // 운영시간은 서버도 같은 함수로 검사한다(`validateBusinessHours`). 여기서 먼저 보는
+  // 이유는 400 을 왕복하지 않고 어느 요일이 문제인지 그 자리에서 보여주기 위해서다.
+  const businessHoursErrors = businessHours
+    ? validateBusinessHours(businessHours)
+    : [];
+
   const onSubmit = (values: FormValues) => {
+    if (businessHoursErrors.length > 0) return;
+
     const payload: UpdateTenantSettingsRequest = {
       name: values.name,
       contactPhone: values.contactPhone,
       isListed: values.isListed,
       ...address,
+      businessHours,
     };
     update.mutate(payload);
   };
@@ -91,7 +109,8 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
   const onMap = Boolean(settings.latitude && settings.longitude);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-6'>
+      <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
       <Card>
         <CardContent className='pt-6'>
           <FieldGroup>
@@ -170,9 +189,28 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
         </CardContent>
       </Card>
 
-      <Button type='submit' disabled={update.isPending}>
+      <BusinessHoursField
+        value={businessHours}
+        onChange={setBusinessHours}
+      />
+
+      <Button
+        type='submit'
+        disabled={update.isPending || businessHoursErrors.length > 0}
+      >
         {update.isPending ? "저장 중…" : "저장"}
       </Button>
-    </form>
+      </form>
+
+      {/*
+        임시 휴무일은 위 폼 **바깥**이다 (job-060).
+
+        ① 저장 버튼과 무관하게 즉시 반영된다 — 운영시간은 7일을 통째로 덮어쓰지만 휴무일은
+           개별로 추가·삭제되므로, 같은 저장에 묶으면 휴무 하나를 지우려고 운영시간 전체를
+           다시 보내야 하고 그 사이 다른 탭의 편집이 사라진다.
+        ② 폼 안에 두면 날짜 선택 팝오버의 트리거 버튼이 **폼을 제출**할 수 있다.
+      */}
+      <ClosuresField />
+    </div>
   );
 };

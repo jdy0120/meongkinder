@@ -56,6 +56,26 @@ model Tenant {
    */
   isListed Boolean @default(true) @map("is_listed")
 
+  /**
+   * 매장 운영시간 (job-060).
+   *
+   * 모양은 `packages/shared` 의 `BusinessHours` 계약이 정한다 — 요일 7개(휴무/개점/마감/
+   * 휴게시간) + 공휴일 휴무 + 안내 문구.
+   *
+   * **왜 관계 테이블이 아닌가**: 운영시간은 언제나 7일을 통째로 읽고 쓰는 값 객체다.
+   * "수요일만 부분 갱신"이 없으므로 테이블로 쪼개면 저장할 때마다 7행 delete+insert 를
+   * 하고, 그 모델을 Prisma Extension 의 스코프 대상과 RLS 정책에 따로 등록해야 하는데
+   * 그 대가로 얻는 게 없다. Tenant 의 칸으로 두면 테넌트 격리를 그대로 물려받는다.
+   *
+   * ⚠️ **NULL 은 "등록하지 않았다"이며 "매일 휴무"가 아니다.** 이 둘이 같아 보이면
+   * 보호자는 아직 시간을 안 넣은 매장을 문 닫은 매장으로 읽는다(job-052 접종 기록과
+   * 같은 실패 방식이다).
+   *
+   * ⚠️ JSONB 라 **DB 가 모양을 검사해 주지 않는다.** 쓸 때는 `validateBusinessHours` +
+   * `normalizeBusinessHours`, 읽을 때는 `parseBusinessHours` 를 반드시 거친다.
+   */
+  businessHours Json? @map("business_hours")
+
   // job-033: 회원과의 관계는 TenantMembership 을 통한다 (users 직접 관계 제거).
   // 약관 동의/UserInfo 도 회원에 귀속되어 테넌트와의 관계가 사라졌다.
   memberships         TenantMembership[]
@@ -81,6 +101,7 @@ model Tenant {
   billingKey          TenantBillingKey?
 
   invitations         TenantInvitation[]
+  closures            TenantClosure[]
   openedBy            UserSubscription?
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -90,6 +111,44 @@ model Tenant {
   // 이 인덱스로 충분하고, "가까운 순 정렬"이 필요해지면 그때 PostGIS 를 본다.
   @@index([latitude, longitude])
   @@map("tenants")
+}
+
+/**
+ * 임시 휴무일 (job-060) — 매장이 **특정 날짜 하루**를 쉰다.
+ *
+ * `Tenant.businessHours` 의 요일 시간표가 "평소"라면 이 테이블은 그 예외다. 명절·워크샵·
+ * 소독·원장 사정처럼 요일 패턴으로는 표현할 수 없는 하루가 실제로 있고, 등원 예약이
+ * 생긴 뒤로는 이걸 표현하지 못하면 **매장이 쉬는 날에 보호자가 예약을 잡는다.** 그
+ * 실패는 아이를 데리고 현관에 도착해서야 드러나고 되돌릴 수 없다.
+ *
+ * ## 왜 `businessHours` JSONB 안이 아닌가
+ *
+ * 운영시간은 7일짜리 고정 크기 값 객체라 통째로 쓰기가 맞았지만, 휴무일은 **계속 쌓이고
+ * 개별로 추가·삭제된다.** JSONB 배열에 넣으면 휴무일 하나를 추가할 때마다 운영시간
+ * 전체를 다시 써야 하고, 그 사이 다른 탭에서 시간표를 고치면 한쪽이 통째로 사라진다.
+ * 날짜 범위 조회(달력 한 달)도 행이어야 인덱스를 탄다.
+ */
+model TenantClosure {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /** 쉬는 날. `@db.Date` 이므로 로컬 자정으로 넣는다(UTC 자정은 KST 에서 하루 밀린다). */
+  date DateTime @db.Date
+
+  /**
+   * 사유. **보호자에게 그대로 보인다** — 달력에서 잠긴 날을 눌렀을 때 "휴무"만 뜨면
+   * 보호자는 매장에 전화한다. "설 연휴", "정기 소독"이면 전화가 필요 없다.
+   */
+  reason String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 같은 날을 두 번 넣으면 달력이 같은 휴무를 두 줄로 보여준다.
+  @@unique([tenantId, date])
+  // "이 매장 · 이 달"이 유일한 조회 패턴이다(예약 달력 + 설정 화면).
+  @@index([tenantId, date])
+  @@map("tenant_closures")
 }
 
 /**

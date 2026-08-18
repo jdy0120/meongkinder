@@ -51,6 +51,8 @@ export const AppPage = () => {
 
   const hasPet = (pets ?? []).length > 0;
   const hasEmptyTicket = (tickets ?? []).some((ticket) => ticket.balance <= 0);
+  // 예약은 남은 횟수가 있어야 의미가 있다 (job-060).
+  const hasBookableTicket = (tickets ?? []).some((ticket) => ticket.balance > 0);
 
   return (
     <div className='flex min-h-screen flex-col bg-background'>
@@ -136,6 +138,20 @@ export const AppPage = () => {
                   <p className='break-keep text-xs text-destructive'>
                     남은 횟수가 없어요. 유치원에 충전을 요청해주세요.
                   </p>
+                )}
+
+                {/*
+                 * 등원 예약 입구는 바로가기 격자가 아니라 **여기**다 (job-060).
+                 *
+                 * 예약할 수 있는지는 잔여 횟수가 정하므로, 그 숫자를 보고 있는 자리에서
+                 * 바로 이어지는 게 맞다. 격자로 내리면 다섯 번째 칸이 되어 §7 의 상한을
+                 * 넘기고, 무엇보다 "남은 3회로 무엇을 할 수 있는가"와 끊어진다.
+                 * 남은 횟수가 하나도 없으면 띄우지 않는다 — 눌러도 전부 잠긴 달력이다.
+                 */}
+                {hasBookableTicket && (
+                  <Button asChild variant='outline' className='w-full'>
+                    <Link href='/reservations'>등원 예약하기</Link>
+                  </Button>
                 )}
               </section>
             )}

@@ -179,6 +179,9 @@ export const asTenant = (
   get: (url: string) => session.get(url).set("X-Tenant-Id", tenantId),
   post: (url: string) => session.post(url).set("X-Tenant-Id", tenantId),
   patch: (url: string) => session.patch(url).set("X-Tenant-Id", tenantId),
+  // 등원 스케줄 저장(`PUT v1/admin/pets/:id/schedule`)이 PUT 이다 — 그 달을 통째로
+  // 교체하는 조작이라 PATCH 가 아니다 (job-053).
+  put: (url: string) => session.put(url).set("X-Tenant-Id", tenantId),
   delete: (url: string) => session.delete(url).set("X-Tenant-Id", tenantId),
 });
 

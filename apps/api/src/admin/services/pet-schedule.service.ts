@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { prisma, requireTenantId } from "@pawlog/database";
 import {
+  SCHEDULE_SOURCE,
   SCHEDULE_TYPE,
   datesOfWeekdaysInMonth,
   fromDateKey,
@@ -71,40 +72,51 @@ export class PetScheduleService {
     return pet;
   }
 
-  /** 그 달의 등원 예정일. WEEKLY 는 계산값, MONTHLY 는 저장된 행이다. */
+  /**
+   * 그 달의 등원 예정일. WEEKLY 는 계산값, MONTHLY 는 저장된 행이다.
+   *
+   * ⚠️ 어느 쪽이든 **보호자가 잡은 예약(job-060)을 함께 싣는다.** 빼면 원장의 달력이
+   * 실제 등원 예정과 달라지는데, 그 차이는 출석부에서만 드러난다 — 예약한 아이가
+   * 아침에 나타나고 원장은 왜 왔는지 모른다.
+   */
   async list(id: string, month?: string): Promise<PetScheduleResponse> {
     const pet = await this.requirePet(id);
     const monthKey = month ?? this.currentMonthKey();
     const { year, month: monthOfYear } = this.parseMonth(monthKey);
 
-    if (pet.scheduleType === SCHEDULE_TYPE.WEEKLY) {
-      return {
-        scheduleType: pet.scheduleType,
-        scheduleDays: pet.scheduleDays,
-        month: monthKey,
-        dates: datesOfWeekdaysInMonth(year, monthOfYear, pet.scheduleDays),
-      };
-    }
+    // 반경계 구간이다. `lte: 말일` 로 쓰면 `@db.Date` 가 아닌 환경에서 그 날의
+    // 00:00 이후가 잘려 **말일이 통째로 빠진다.**
+    const range = {
+      gte: new Date(year, monthOfYear - 1, 1),
+      lt: new Date(year, monthOfYear, 1),
+    };
 
+    // WEEKLY 아이에게는 요일 계산값 + 보호자 예약이 곧 그 달의 등원일이다. MONTHLY
+    // 아이는 저장된 행이 전부이므로 아래 조회 하나로 둘 다 들어온다.
     const rows = await prisma.petSchedule.findMany({
       where: {
         petId: id,
-        // 반경계 구간이다. `lte: 말일` 로 쓰면 `@db.Date` 가 아닌 환경에서 그 날의
-        // 00:00 이후가 잘려 **말일이 통째로 빠진다.**
-        date: {
-          gte: new Date(year, monthOfYear - 1, 1),
-          lt: new Date(year, monthOfYear, 1),
-        },
+        date: range,
+        ...(pet.scheduleType === SCHEDULE_TYPE.WEEKLY
+          ? { source: SCHEDULE_SOURCE.GUARDIAN }
+          : {}),
       },
       orderBy: { date: "asc" },
       select: { date: true },
     });
 
+    const stored = rows.map((row) => toDateKey(row.date));
+    const computed =
+      pet.scheduleType === SCHEDULE_TYPE.WEEKLY
+        ? datesOfWeekdaysInMonth(year, monthOfYear, pet.scheduleDays)
+        : [];
+
     return {
       scheduleType: pet.scheduleType,
       scheduleDays: pet.scheduleDays,
       month: monthKey,
-      dates: rows.map((row) => toDateKey(row.date)),
+      // 요일 계산값과 보호자 예약이 같은 날을 가리킬 수 있다(정기 요일에 또 예약).
+      dates: [...new Set([...computed, ...stored])].sort(),
     };
   }
 
@@ -189,7 +201,15 @@ export class PetScheduleService {
     // 지우고 넣는 사이에 출석부가 그 달을 읽으면 비어 보이므로 한 트랜잭션으로 묶는다.
     await prisma.$transaction([
       prisma.petSchedule.deleteMany({
-        where: { petId: id, date: { gte: replaceFrom, lt: end } },
+        where: {
+          petId: id,
+          date: { gte: replaceFrom, lt: end },
+          // ⚠️ **보호자가 잡은 예약은 지우지 않는다** (job-060). 이 화면이 교체하는 것은
+          // 원장이 짠 등원일뿐이다. 범위로만 지우면 원장이 8월 달력을 한 번 저장하는
+          // 순간 그 달의 보호자 예약이 통째로 사라지는데, 보호자에게는 아무 알림도 가지
+          // 않아 아이를 데려온 날에야 드러난다.
+          source: SCHEDULE_SOURCE.ADMIN,
+        },
       }),
       prisma.petSchedule.createMany({
         data: dates.map((date) => ({
@@ -197,7 +217,10 @@ export class PetScheduleService {
           petId: id,
           // `new Date("2026-08-07")` 은 UTC 로 파싱돼 KST 에서 하루가 밀린다.
           date: fromDateKey(date),
+          source: SCHEDULE_SOURCE.ADMIN,
         })),
+        // 보호자가 이미 예약한 날을 원장이 함께 고르면 여기서 건너뛴다. 그 날은
+        // GUARDIAN 행으로 남지만 "이 아이가 이 날 온다"는 사실은 같으므로 결과가 맞다.
         skipDuplicates: true,
       }),
       prisma.pet.update({

@@ -8,7 +8,8 @@
   "globalSetup": "<rootDir>/global-setup.ts",
   "globalTeardown": "<rootDir>/global-teardown.ts",
   "moduleNameMapper": {
-    "^file-type$": "<rootDir>/mocks/file-type.ts"
+    "^file-type$": "<rootDir>/mocks/file-type.ts",
+    "^sharp$": "<rootDir>/mocks/sharp.ts"
   },
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"

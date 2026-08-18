@@ -13,6 +13,13 @@ export const TENANT_ROUTES = {
   // 고정 세그먼트이므로 ":id" 보다 **먼저** 선언되어야 한다.
   SETTINGS: "settings", // GET / PATCH
 
+  // ── 임시 휴무일 (job-060) ─────────────────────────────────────────
+  // 운영시간(요일 시간표)과 **별도 경로**다. 시간표는 7일을 통째로 덮어쓰지만 휴무일은
+  // 개별로 추가·삭제되므로, 같은 페이로드에 실으면 휴무 하나를 지우려고 운영시간
+  // 전체를 다시 보내야 한다. 고정 세그먼트이므로 ":id" 보다 먼저 선언한다.
+  CLOSURES: "settings/closures", // GET: 목록 · POST: 등록
+  DELETE_CLOSURE: "settings/closures/:date", // DELETE: 해제
+
   // ── SUPER_ADMIN 전용 (플랫폼 운영) ────────────────────────────────
   // 주의: ":id" 는 고정 세그먼트(onboard·subdomain-availability)보다 뒤에서 매칭되어야 하므로
   // 컨트롤러에서도 반드시 고정 경로 핸들러를 먼저 선언한다.

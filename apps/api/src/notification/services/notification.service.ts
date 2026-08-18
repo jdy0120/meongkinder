@@ -51,7 +51,14 @@ export class NotificationService {
 
   constructor(private readonly solapiClient: SolapiClientService) {}
 
-  private async dispatch(params: DispatchParams) {
+  /**
+   * 실제 발송 + 이력 기록. 돌려주는 값은 **발송이 실제로 나갔는지**다.
+   *
+   * 대부분의 호출부는 이 값을 무시한다(보내고 잊는다). 다만 원장 화면에 "N명에게
+   * 안내를 보냈습니다"처럼 **수를 말하는** 자리는 이 값을 세야 한다 — 알림톡도 SMS 도
+   * 실패한 건을 세면 화면이 거짓말을 한다.
+   */
+  private async dispatch(params: DispatchParams): Promise<boolean> {
     let channel: string = NOTIFICATION_CHANNEL.ALIMTALK;
     let status: string = NOTIFICATION_STATUS.SUCCESS;
     let providerMessageId: string | undefined;
@@ -107,6 +114,8 @@ export class NotificationService {
         errorMessage,
       },
     });
+
+    return status === NOTIFICATION_STATUS.SUCCESS;
   }
 
   /** 등원 알림 */
@@ -153,7 +162,16 @@ export class NotificationService {
     attendanceId: string;
     dailyReportId: string;
     checkOutAt: Date;
+    /** SMS 폴백용 전체 URL. 문자에는 버튼이 없으므로 주소가 본문에 그대로 들어간다. */
     reportUrl: string;
+    /**
+     * 알림톡 버튼용 토큰.
+     *
+     * 알림톡은 **전체 URL 을 치환 변수로 받지 못한다** — 도메인은 템플릿 버튼에 고정으로
+     * 등록하고 가변 부분만 변수가 된다(`https://<도메인>/r/#{reportToken}`). 그래서
+     * 같은 링크를 채널별로 다른 모양으로 넘긴다.
+     */
+    reportToken: string;
   }) {
     if (!params.guardianPhone) {
       this.logger.warn(
@@ -172,7 +190,11 @@ export class NotificationService {
       dailyReportId: params.dailyReportId,
       to: params.guardianPhone,
       templateId: solapiTemplates.checkOutReport,
-      variables: { petName: params.petName, time, reportUrl },
+      variables: {
+        petName: params.petName,
+        time,
+        reportToken: params.reportToken,
+      },
       smsText: `[Pawlog] ${params.petName}(이)가 ${time}에 하원했습니다. 오늘의 리포트: ${reportUrl}`,
     });
   }
@@ -258,8 +280,58 @@ export class NotificationService {
       petId: params.petId,
       to: params.guardianPhone,
       templateId: solapiTemplates.feedPost,
-      variables: { petName: params.petName, feedUrl: params.feedUrl },
+      // 사진 링크는 `${webUrl()}/feed` 로 **고정**이라 치환할 것이 없다. 알림톡 버튼에
+      // 그 주소를 그대로 등록한다. (SMS 폴백만 본문에 주소를 싣는다)
+      variables: { petName: params.petName },
       smsText: `[Pawlog] ${params.petName}의 오늘 사진이 올라왔어요. ${params.feedUrl}`,
+    });
+  }
+
+  /**
+   * 매장 임시 휴무로 그 날 등원이 취소됐음을 알린다 (job-060).
+   *
+   * 이 알림이 없으면 보호자는 **문 닫은 매장 앞에 아이를 데리고 선다.** 예약을 지우는
+   * 것은 서버가 하지만 그 사실은 보호자 화면을 다시 열어야만 보이고, 다시 열 이유가
+   * 없는 사람은 끝까지 모른다 — 취소를 통보하지 않는 취소는 취소가 아니다.
+   *
+   * ⚠️ 발송 실패가 휴무 등록을 되돌리면 안 된다. 매장이 쉬는 것은 이미 정해진 사실이고,
+   * 알림은 그 사실을 전하는 부수 효과다. 그래서 호출부가 트랜잭션 **밖에서** 부른다.
+   */
+  async notifyTenantClosure(params: {
+    userId: string | null;
+    petId: string;
+    petName: string;
+    guardianPhone?: string | null;
+    tenantName: string;
+    date: Date;
+    /** 없으면 문구에서 사유 문장을 통째로 뺀다 — "사유: 없음"은 아무것도 알려주지 않는다. */
+    reason?: string | null;
+  }): Promise<boolean> {
+    if (!params.guardianPhone) {
+      this.logger.warn(
+        `보호자 연락처가 없어 휴무 알림을 발송하지 않습니다. petId=${params.petId}`,
+      );
+      return false;
+    }
+
+    const dateStr = formatDate(params.date);
+    // 알림톡 치환 변수는 빈 문자열을 허용하지 않는 경우가 많아 고정 문구로 대체한다.
+    // 사유가 비어도 템플릿의 문장 구조가 깨지지 않게 하려는 것이다.
+    const reason = params.reason?.trim() || "매장 사정";
+
+    return this.dispatch({
+      type: NOTIFICATION_TYPE.TENANT_CLOSURE,
+      userId: params.userId,
+      petId: params.petId,
+      to: params.guardianPhone,
+      templateId: solapiTemplates.tenantClosure,
+      variables: {
+        petName: params.petName,
+        tenantName: params.tenantName,
+        date: dateStr,
+        reason,
+      },
+      smsText: `[Pawlog] ${params.tenantName}이(가) ${dateStr}에 휴무하여 ${params.petName}의 등원이 취소되었습니다. (사유: ${reason}) 다른 날로 다시 예약해주세요.`,
     });
   }
 

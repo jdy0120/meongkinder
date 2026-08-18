@@ -53,6 +53,51 @@ export const monthRange = (year: number, month: number) => ({
 });
 
 /**
+ * `from` 부터 앞으로 세면서 요일 패턴에 해당하는 날짜를 최대 `limit` 개까지 모은다 (job-060).
+ *
+ * ## 왜 상한이 필요한가
+ *
+ * 매주 반복(WEEKLY)은 **끝이 없다.** "앞으로 올 정기 등원일이 몇 개인가"라는 수는 존재하지
+ * 않으므로, 세는 쪽이 어디서 멈출지를 정해야 한다. 등원 예약 한도에서는 그 상한이 곧
+ * **이용권 잔액**이다 — 잔액만큼 세고 나면 그 이상은 답이 달라지지 않는다(어차피 한도 초과).
+ *
+ * ## 왜 날짜를 하루씩 걷는가
+ *
+ * 주 단위로 계산하면 빨라지지만, 월말·연말을 넘길 때 경계가 어긋나기 쉽다. 최악의 경우도
+ * `7 × limit` 번이고 limit 은 잔액(보통 10~30)이라 실측 비용이 무시할 수준이다. 여기서
+ * 빠르기를 사려고 정확도를 내줄 이유가 없다.
+ *
+ * @param exclude 이미 다른 방식으로 센 날짜(`"YYYY-MM-DD"`). 정기 등원일이면서 보호자가
+ *   따로 예약도 잡아 둔 날을 **두 번 세지 않기 위해** 필요하다.
+ */
+export const upcomingWeekdayDates = (
+  weekdays: number[],
+  from: Date,
+  limit: number,
+  exclude: ReadonlySet<string> = new Set(),
+): string[] => {
+  // 요일이 하나도 없으면 영원히 못 찾는다 — 이 검사가 없으면 무한 루프다.
+  if (weekdays.length === 0 || limit <= 0) return [];
+
+  const picked = new Set(weekdays);
+  const result: string[] = [];
+  const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+
+  // 상한을 못 채우는 경우(요일이 있는데도)는 없지만, 방어적으로 걷는 일수도 묶는다.
+  const maxSteps = limit * 7 + 7;
+
+  for (let step = 0; step < maxSteps && result.length < limit; step += 1) {
+    if (picked.has(cursor.getDay())) {
+      const key = toDateKey(cursor);
+      if (!exclude.has(key)) result.push(key);
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return result;
+};
+
+/**
  * 그 달에서 주어진 요일들에 해당하는 날짜 전부 — 달력의 "요일로 채우기" 버튼용.
  *
  * 계산을 화면과 서버가 따로 구현하지 않도록 여기 둔다. 갈라지면 원장이 채운 달력과

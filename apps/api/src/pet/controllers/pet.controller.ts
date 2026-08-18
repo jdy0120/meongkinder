@@ -15,15 +15,25 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { ResponseMessage } from "../../shared/decorators/response-message.decorator";
 import { PaginationQueryDto } from "../../shared/dtos";
-import { CreatePetDto, EnrollPetDto, UpdatePetDto } from "../dtos";
+import {
+  CreatePetDto,
+  CreateReservationDto,
+  EnrollPetDto,
+  ReservationCalendarQueryDto,
+  UpdatePetDto,
+} from "../dtos";
 import { PET_ROUTES } from "../routes";
+import { PetReservationService } from "../services/pet-reservation.service";
 import { PetService } from "../services/pet.service";
 
 @ApiTags("Pet")
 @ApiBearerAuth()
 @Controller(PET_ROUTES.v1.BASE)
 export class PetController {
-  constructor(private readonly petService: PetService) {}
+  constructor(
+    private readonly petService: PetService,
+    private readonly reservationService: PetReservationService,
+  ) {}
 
   @Post(PET_ROUTES.v1.CREATE)
   @HttpCode(HttpStatus.CREATED)
@@ -86,5 +96,46 @@ export class PetController {
   async unenroll(@Req() req: Request, @Param("id") id: string) {
     const userId = req.user?.userId || "";
     return this.petService.unenroll(userId, id);
+  }
+
+  // ── 등원 예약 (job-060) ────────────────────────────────────────────────
+  //
+  // `@Roles` 를 붙이지 않는다. 보호자는 개인 스코프(활성 테넌트 없음)에서 부르므로
+  // 실효 역할이 `USER` 이고, 테넌트 역할을 요구하면 그 순간 전부 403 이 된다
+  // (CLAUDE.md §5). 실제 제한은 서비스의 소유 검사(`pet.userId = 나`)가 담당한다.
+
+  @Get(PET_ROUTES.v1.RESERVATIONS)
+  @HttpCode(HttpStatus.OK)
+  async reservationCalendar(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Query() query: ReservationCalendarQueryDto,
+  ) {
+    const userId = req.user?.userId || "";
+    return this.reservationService.calendar(userId, id, query.month);
+  }
+
+  @Post(PET_ROUTES.v1.RESERVATIONS)
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage("등원 예약이 완료되었습니다.")
+  async createReservation(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() dto: CreateReservationDto,
+  ) {
+    const userId = req.user?.userId || "";
+    return this.reservationService.create(userId, id, dto);
+  }
+
+  @Delete(PET_ROUTES.v1.CANCEL_RESERVATION)
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage("등원 예약이 취소되었습니다.")
+  async cancelReservation(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Param("date") date: string,
+  ) {
+    const userId = req.user?.userId || "";
+    return this.reservationService.cancel(userId, id, date);
   }
 }

@@ -96,7 +96,7 @@ export class FeedController {
 
   @Post(FEED_ROUTES.v1.DIGEST)
   @HttpCode(HttpStatus.OK)
-  @ResponseMessage("오늘의 알림장이 만들어졌습니다.")
+  // 성공 메시지는 서비스가 결과에 따라 정한다(0건이면 "만들어진 알림장이 없습니다").
   async runDigest(@Body() dto: RunFeedDigestDto) {
     return this.digestService.run(dto);
   }

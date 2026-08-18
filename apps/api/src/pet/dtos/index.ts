@@ -447,3 +447,6 @@ export class EnrollPetDto implements EnrollPetRequest {
   @IsNotEmpty()
   tenantId: string;
 }
+
+// 등원 예약 (job-060). 이 파일은 배럴이 아니라 DTO 정의 파일이라 재수출로 잇는다.
+export * from "./reservation.dto";

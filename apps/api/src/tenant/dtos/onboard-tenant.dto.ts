@@ -1,7 +1,14 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from "class-validator";
 import type { OnboardTenantRequest } from "@pawlog/shared";
 
+import { BusinessHoursDto } from "./business-hours.dto";
 import { TenantAddressDto } from "./tenant-address.dto";
 
 /**
@@ -28,4 +35,20 @@ export class OnboardTenantDto
   @IsString()
   @IsNotEmpty()
   subdomain: string;
+
+  /**
+   * job-060: 운영시간도 **선택**이다(주소와 같은 이유).
+   *
+   * 화면은 기본값을 미리 채워 보여주므로 실제로는 대부분 채워져서 온다 — 그게 중요한
+   * 이유는, 운영시간이 없으면 보호자의 등원 예약 달력이 통째로 잠기기 때문이다.
+   */
+  @ApiPropertyOptional({
+    type: BusinessHoursDto,
+    description: "매장 운영시간",
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BusinessHoursDto)
+  businessHours?: BusinessHoursDto | null;
 }
