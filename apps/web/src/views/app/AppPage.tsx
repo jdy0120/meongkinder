@@ -7,7 +7,6 @@ import {
   Newspaper,
   PawPrint,
   Store,
-  UserRound,
 } from "lucide-react";
 import { Button, Card, CardContent } from "@pawlog/ui";
 
@@ -16,6 +15,7 @@ import { usePets } from "@/entities/pet";
 import { useMyPetTickets } from "@/entities/subscription";
 import { TodayReportSection } from "@/widgets/today-report";
 import { MobileNav } from "@/widgets/mobile-nav";
+import { ProfileAvatar } from "@/widgets/profile-avatar";
 
 /**
  * 바로가기는 **최대 4개**(design-system.md §7). 그 이상은 위계가 없다는 뜻이라
@@ -61,18 +61,10 @@ export const AppPage = () => {
           <PawPrint className='size-5' />
           Pawlog Kids
         </div>
-        {/* 내 정보로 가는 유일한 입구. 하단 탭은 5개가 상한이라 여기 둔다(§8). */}
-        <Button
-          asChild
-          variant='ghost'
-          size='icon'
-          aria-label='내 정보'
-          className='size-11 rounded-full'
-        >
-          <Link href='/profile'>
-            <UserRound className='size-5' />
-          </Link>
-        </Button>
+        {/* 내 정보로 가는 유일한 입구. 하단 탭은 5개가 상한이라 여기 둔다(§8).
+            job-063: 아이콘 대신 실제 프로필 사진을 띄운다 — 이 자리가 "내 계정"임을
+            아이콘보다 사진이 훨씬 빨리 말한다. */}
+        <ProfileAvatar />
       </header>
 
       <main className='mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pb-10'>

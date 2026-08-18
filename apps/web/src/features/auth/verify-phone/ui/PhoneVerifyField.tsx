@@ -56,6 +56,18 @@ export const PhoneVerifyField = ({
 }: PhoneVerifyFieldProps) => {
   const [code, setCode] = useState("");
   const [verified, setVerified] = useState(false);
+  /**
+   * 번호 칸을 열어 둘지.
+   *
+   * **저장된 번호가 있으면 잠긴 채로 시작한다.** 내 정보 화면은 이미 본인확인을 지난
+   * 번호를 들고 열리는데, 그 칸이 그냥 열려 있으면 다른 칸을 고치다 번호를 건드려
+   * 저장이 막히는 일이 생긴다("바꿀 때만 인증"이므로 한 글자만 달라도 인증이 필요해진다).
+   * 바꾸겠다는 의사를 버튼 한 번으로 분명히 받고 연다.
+   *
+   * 반대로 번호가 없는 최초 진입(`/welcome`)은 처음부터 열려 있어야 한다 — 거기서
+   * "내 번호 바꾸기"를 먼저 눌러야 한다면 바꿀 번호가 없는데 바꾸라는 말이 된다.
+   */
+  const [editing, setEditing] = useState(() => !value);
   const [remaining, setRemaining] = useState(0);
   // 인증을 마친 번호. 이 값과 현재 입력이 어긋나면 인증을 무효로 본다.
   const verifiedPhone = useRef<string | null>(null);
@@ -75,6 +87,9 @@ export const PhoneVerifyField = ({
     verifiedPhone.current = value;
     setVerified(true);
     setRemaining(0);
+    // 확인이 끝난 번호는 다시 잠근다. 여기서 열어 두면 저장을 누르기 전에 실수로 한 글자가
+    // 바뀌어 인증이 무효가 되고, 사용자는 방금 인증했는데 왜 또 막히는지 알 수 없다.
+    setEditing(false);
     onVerifiedChange(true);
   });
 
@@ -108,23 +123,37 @@ export const PhoneVerifyField = ({
       </div>
 
       <div className='flex gap-2'>
-        {/* 인증 후에도 잠그지 않는다. 잠그면 `handlePhoneChange` 가 대비해 둔 "인증한 뒤
-            번호를 고치는" 경로에 아예 닿을 수 없어, 번호를 잘못 인증한 사람은 화면을
-            새로 고치는 것 말고 방법이 없다. 고치면 인증이 무효가 되므로 안전하다. */}
-        <PhoneInput value={value} onChange={handlePhoneChange} />
-        <Button
-          type='button'
-          variant='outline'
-          className='shrink-0'
-          disabled={!value || verified || request.isPending}
-          onClick={() => request.mutate(value)}
-        >
-          {request.isPending
-            ? "전송 중…"
-            : waitingForCode
-              ? "재발송"
-              : "인증요청"}
-        </Button>
+        <PhoneInput
+          value={value}
+          onChange={handlePhoneChange}
+          disabled={!editing}
+        />
+        {editing ? (
+          <Button
+            type='button'
+            variant='outline'
+            className='shrink-0'
+            disabled={!value || request.isPending}
+            onClick={() => request.mutate(value)}
+          >
+            {request.isPending
+              ? "전송 중…"
+              : waitingForCode
+                ? "재발송"
+                : "인증요청"}
+          </Button>
+        ) : (
+          /* 잠긴 상태의 유일한 출구. 누르면 칸이 열리고 이 버튼이 '인증요청'이 되며,
+             그 다음부터는 번호를 처음 넣을 때와 똑같은 흐름을 탄다. */
+          <Button
+            type='button'
+            variant='outline'
+            className='shrink-0'
+            onClick={() => setEditing(true)}
+          >
+            내 번호 바꾸기
+          </Button>
+        )}
       </div>
 
       {waitingForCode && (

@@ -6,6 +6,7 @@ import { PageShell } from "@/shared/ui";
 import { ApplyMembershipDialog } from "@/features/membership/apply-membership";
 import { MyTenants } from "@/widgets/my-tenants";
 import { MobileNav } from "@/widgets/mobile-nav";
+import { ProfileAvatar } from "@/widgets/profile-avatar";
 
 /**
  * 내 매장 페이지 (view). 헤더 + 소속 목록 위젯 조합만 담당한다.
@@ -16,7 +17,12 @@ export const MyTenantsPage = () => {
       title='내 매장'
       description='관리자·스태프로 일하는 매장으로 들어가고, 아이를 맡긴 매장의 승인 현황을 확인합니다.'
       width='md'
-      action={<ApplyMembershipDialog />}
+      action={
+      <div className='flex items-center gap-2'>
+        <ApplyMembershipDialog />
+        <ProfileAvatar />
+      </div>
+    }
       nav={<MobileNav />}
     >
       <MyTenants />

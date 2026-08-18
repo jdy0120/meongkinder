@@ -9,6 +9,7 @@ import {
 import { PageShell } from "@/shared/ui";
 import { ProfileForm } from "@/features/profile/update-profile";
 import { MobileNav } from "@/widgets/mobile-nav";
+import { ProfileAvatar } from "@/widgets/profile-avatar";
 
 interface ProfilePageProps {
   user: {
@@ -30,6 +31,7 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
       description={user.email}
       backHref='/app'
       width='sm'
+      action={<ProfileAvatar />}
       nav={<MobileNav />}
     >
       <Card>

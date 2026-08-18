@@ -1,6 +1,7 @@
 import { PageShell } from "@/shared/ui";
 import { ReservationBoard } from "@/widgets/reservation-board";
 import { MobileNav } from "@/widgets/mobile-nav";
+import { ProfileAvatar } from "@/widgets/profile-avatar";
 
 /**
  * 등원 예약 화면 (view, job-060).
@@ -14,7 +15,8 @@ export const ReservationsPage = () => (
     title='등원 예약'
     description='유치원이 문을 여는 날 중에서 아이가 갈 날을 고릅니다. 이용권은 실제 등원한 날에 차감됩니다.'
     width='md'
-    nav={<MobileNav />}
+    action={<ProfileAvatar />}
+      nav={<MobileNav />}
     desktopSidebar
   >
     <ReservationBoard />
