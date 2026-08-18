@@ -138,6 +138,16 @@ export const RevenueCalendarDialog = ({
                   `--cell-size` 로 직접 묶어야 폭과 무관해진다.
                 */
                 day: "group/day relative h-(--cell-size) w-full rounded-(--cell-radius) p-0 text-center select-none",
+                /*
+                  기본 `today` 는 **td 에** `bg-muted` 를 칠한다. 그런데 이 달력의 칸은
+                  버튼이 테두리를 갖고 그 안을 채우는 구조라, td 배경이 테두리 **바깥**으로
+                  삐져나와 오늘 칸만 회색 테가 둘린 것처럼 보인다(모서리 반경도 서로 다른
+                  요소가 그리므로 어긋나 보인다).
+
+                  칸의 겉모습은 **버튼 하나가 전부 갖는다** — td 는 자리만 잡는다.
+                  오늘 표시는 아래 `modifiers.today` 로 버튼에 직접 준다.
+                */
+                today: "bg-transparent text-foreground",
                 /* 기본값은 주마다 `mt-2`(8px) — 6주면 48px 이 그냥 쌓인다. 칸에 테두리가
                    있어 간격 없이도 줄이 구분된다. */
                 week: "mt-px flex w-full",
@@ -145,7 +155,7 @@ export const RevenueCalendarDialog = ({
                 months: "relative flex flex-col gap-1",
               }}
               components={{
-                DayButton: ({ day, ...props }) => {
+                DayButton: ({ day, modifiers, ...props }) => {
                   const key = `${day.date.getFullYear()}-${`${day.date.getMonth() + 1}`.padStart(2, "0")}-${`${day.date.getDate()}`.padStart(2, "0")}`;
                   const row = byDate.get(key);
 
@@ -156,7 +166,11 @@ export const RevenueCalendarDialog = ({
                       /* 매출을 읽는 화면이지 고르는 화면이 아니다 — 누를 수 있는 것처럼
                        보이면 눌러 보고 아무 일도 없는 것을 확인하게 된다. */
                       disabled
-                      className='flex h-full w-full flex-col items-stretch justify-start gap-0 overflow-hidden rounded-btn border p-1 disabled:opacity-100'
+                      className={`flex h-full w-full flex-col items-stretch justify-start gap-0 overflow-hidden rounded-btn border p-1 disabled:opacity-100 ${
+                        // 오늘은 테두리로 표시한다 — 면을 채우면 그 위의 세 숫자(초록·빨강·
+                        // 검정)와 대비가 흔들려 정작 읽어야 할 값이 흐려진다.
+                        modifiers.today ? "border-primary bg-primary-tint" : ""
+                      }`}
                     >
                       <span className='text-left text-[0.625rem] font-semibold sm:text-label'>
                         {day.date.getDate()}
