@@ -24,6 +24,14 @@ export interface AttendanceWithPet extends Attendance {
     name: string;
     profileImageFileId: string | null;
   };
+  /**
+   * 이용권 잔여 (job-063). 관계가 아니라 **집계값**이라 서버가 원장 마지막 줄의
+   * `balanceAfter` 를 붙여 준다.
+   *
+   * `null` 은 "이용권을 판 적이 없음"이고 `0` 은 "다 써서 없음"이다. 둘을 합치면 원장이
+   * 충전이 필요한 아이와 아직 안 판 아이를 구분할 수 없다(원생 목록과 같은 규칙).
+   */
+  passRemaining: number | null;
 }
 
 export interface CheckInAttendanceRequest {

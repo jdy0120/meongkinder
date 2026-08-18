@@ -51,6 +51,19 @@ import { CreateReservationDto } from "../dtos";
  * 자동 주입을 명시적으로 끈다. 쓰기는 반대로 아이가 속한 매장을 **명시해서** 연다 —
  * `PetSchedule.tenantId` 는 NOT NULL 이고, 그 매장은 아이가 등록된 곳 하나뿐이다.
  */
+/**
+ * 그 날의 이용권 사용 여부가 **이미 결판난** 출석 상태 (job-063).
+ *
+ * 예약 한도는 "앞으로 이용권을 몇 번 더 쓸 것인가"를 세는 것이므로, 결과가 정해진 날은
+ * 세지 않는다. `SCHEDULED`(아직 안 옴)와 `MAKEUP`(보강 예정)만 남는다.
+ */
+const SETTLED_ATTENDANCE = [
+  "CHECKED_IN",
+  "CHECKED_OUT",
+  "ABSENT",
+  "CANCELED",
+];
+
 @Injectable()
 export class PetReservationService {
   constructor(private readonly ledgerService: SubscriptionLedgerService) {}
@@ -138,7 +151,7 @@ export class PetReservationService {
     pet: { id: string; scheduleType: string; scheduleDays: number[] },
     from: Date,
   ) {
-    const [balance, rows] = await Promise.all([
+    const [balance, rows, settled] = await Promise.all([
       runWithoutTenant(() => this.ledgerService.balanceOf(pet.id)),
       runWithoutTenant(() =>
         prisma.petSchedule.findMany({
@@ -152,19 +165,46 @@ export class PetReservationService {
           select: { date: true },
         }),
       ),
+      // job-063: **오늘 이미 결판난 날**. `from` 이 오늘이라 오늘은 "앞으로"에 들어가는데,
+      // 그 날의 등원이 이미 끝났으면 이용권을 더 쓸 일이 없다.
+      runWithoutTenant(() =>
+        prisma.attendance.findMany({
+          where: { petId: pet.id, date: { gte: from }, status: { in: SETTLED_ATTENDANCE } },
+          select: { date: true },
+        }),
+      ),
     ]);
 
-    const rowKeys = new Set(rows.map((row) => toDateKey(row.date)));
+    // 결판난 날을 빼는 이유 (job-063 버그):
+    //
+    //   · 등원해서 차감됐다면 → 잔액이 이미 줄었다. 그 날을 또 세면 **한 번의 등원으로
+    //     이용권을 두 번 쓰는 계산**이 된다.
+    //   · 잔액 0이라 차감되지 않았다면(`amount: 0`) → 그 날은 그냥 지나갔다. 나중에 충전한
+    //     이용권이 **이미 끝난 날에 묶여** 다음 예약에 쓰이지 못한다.
+    //   · 결석·취소라면 → 아이가 오지 않으므로 이용권을 쓸 일이 없다.
+    //
+    // 실제로 잔액 1회인 아이가 "이미 예정된 등원일로 모두 사용될 예정"이라며 예약이
+    // 막혔는데, 그 예정일이 **오늘 아침에 이미 하원까지 끝난 날**이었다. 같은 아이가
+    // 같은 날 두 번 올 수는 없으므로(`@@unique([petId, date])`) 이 중복은 언제나
+    // 보호자에게 손해 방향이다.
+    const settledKeys = new Set(settled.map((row) => toDateKey(row.date)));
+
+    const rowKeys = new Set(
+      rows
+        .map((row) => toDateKey(row.date))
+        .filter((key) => !settledKeys.has(key)),
+    );
     let scheduledAhead = rowKeys.size;
 
     if (pet.scheduleType === SCHEDULE_TYPE.WEEKLY && scheduledAhead < balance) {
       // 정기 등원일이면서 보호자가 따로 예약도 잡아 둔 날은 `rowKeys` 로 걸러 **두 번
-      // 세지 않는다** — 두 번 세면 실제보다 한도가 좁아진다.
+      // 세지 않는다** — 두 번 세면 실제보다 한도가 좁아진다. 결판난 날도 같은 이유로 뺀다
+      // (요일 패턴은 날짜 행이 없어 위 필터가 닿지 않으므로 여기서 함께 넘긴다).
       scheduledAhead += upcomingWeekdayDates(
         pet.scheduleDays,
         from,
         balance - scheduledAhead,
-        rowKeys,
+        new Set([...rowKeys, ...settledKeys]),
       ).length;
     }
 

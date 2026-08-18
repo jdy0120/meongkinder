@@ -5,7 +5,7 @@ export interface CreateSubscriptionLedgerRequest {
   userId?: string;
   subscriptionId?: string;
   attendanceId?: string;
-  type: string; // CHARGE | USE | REFUND | EXPIRE
+  type: string; // CHARGE | USE | UNPAID_USE(잔액 0인데 등원 — 미수) | REFUND | EXPIRE
   amount: number;
   description?: string;
 }

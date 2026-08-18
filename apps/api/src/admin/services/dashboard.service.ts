@@ -15,6 +15,9 @@ import {
 
 import { startOfToday } from "../../shared/utils";
 
+/** 이용권을 차감하지 못하고 받은 등원 (job-063). `SubscriptionLedger.type`. */
+const LEDGER_TYPE_UNPAID_USE = "UNPAID_USE";
+
 /** 이 잔여 횟수 이하면 하원 때 보호자에게 말해야 한다 (design-system.md §6.2 5순위). */
 const LOW_PASS_THRESHOLD = 2;
 
@@ -264,7 +267,7 @@ export class DashboardService {
    * 필요해지면 그때 `TenantSale.status` 또는 별도 미수금 모델을 먼저 만들어야 한다.
    */
   private async buildPasses(petIds: string[]) {
-    if (petIds.length === 0) return { lowBalance: [] };
+    if (petIds.length === 0) return { lowBalance: [], unpaid: [] };
 
     const latest = await tenantTransaction(prisma, (tx) =>
       tx.subscriptionLedger.findMany({
@@ -279,6 +282,23 @@ export class DashboardService {
       }),
     );
 
+    // job-063: 이용권 없이 받은 등원. 잔액 0이어도 등원을 막지 않기로 했으므로(현관에서
+    // 막으면 앱 밖에서 처리돼 기록 자체가 사라진다) **그렇게 지나간 날이 어딘가에는
+    // 보여야 한다.** 여기가 아니면 원장은 영영 알 수 없다.
+    //
+    // ⚠️ 오늘 하루가 아니라 **미정산 누계**다. 하루치만 세면 어제 넘어간 건이 사라진다.
+    const unpaidRows = await tenantTransaction(prisma, (tx) =>
+      tx.subscriptionLedger.groupBy({
+        by: ["petId"],
+        where: { petId: { in: petIds }, type: LEDGER_TYPE_UNPAID_USE },
+        _count: { _all: true },
+      }),
+    );
+
+    const nameByPet = new Map(
+      latest.map((row) => [row.petId, row.pet?.name ?? ""]),
+    );
+
     return {
       lowBalance: latest
         .filter((row) => row.balanceAfter <= LOW_PASS_THRESHOLD)
@@ -288,6 +308,13 @@ export class DashboardService {
           balance: row.balanceAfter,
         }))
         .sort((a, b) => a.balance - b.balance),
+      unpaid: unpaidRows
+        .map((row) => ({
+          petId: row.petId,
+          name: nameByPet.get(row.petId) ?? "",
+          count: row._count._all,
+        }))
+        .sort((a, b) => b.count - a.count),
     };
   }
 }

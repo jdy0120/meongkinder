@@ -329,5 +329,31 @@ const PassesBlock = ({
         ))}
       </ul>
     )}
+
+    {/* job-063: 이용권 없이 받은 등원.
+        잔액 0이어도 등원을 막지 않기로 했으므로(현관에서 막으면 앱 밖에서 처리돼 기록
+        자체가 사라진다) 그렇게 지나간 날이 여기에는 보여야 한다. 없으면 아예 그리지
+        않는다 — "0건"을 늘 띄우면 카드만 하나 늘고 읽히지 않는다. */}
+    {data.unpaid.length > 0 && (
+      <ul className='mt-3 space-y-2 rounded-card border-2 border-danger bg-surface p-5 shadow-card'>
+        <li className='text-body font-semibold text-danger'>
+          이용권 없이 받은 등원
+        </li>
+        {data.unpaid.map((pet) => (
+          <li
+            key={pet.petId}
+            className='flex items-center justify-between gap-3'
+          >
+            <span className='flex items-center gap-2 truncate text-body'>
+              <Ticket className='size-4 text-muted-foreground' />
+              {pet.name}
+            </span>
+            <LevelBadge level={BADGE_LEVEL.CRITICAL}>
+              미차감 {pet.count}회
+            </LevelBadge>
+          </li>
+        ))}
+      </ul>
+    )}
   </section>
 );

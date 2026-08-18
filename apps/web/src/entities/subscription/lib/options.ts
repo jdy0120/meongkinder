@@ -21,4 +21,7 @@ export const ledgerTypeLabelMap: Record<string, string> = {
   USE: "사용",
   REFUND: "환불/복구",
   EXPIRE: "소멸",
+  // job-063: 잔액 0인데 등원해서 차감하지 못한 날. "사용"과 같은 말로 적으면 원장이
+  // 이용권을 쓴 것으로 읽어 미수가 보이지 않는다.
+  UNPAID_USE: "미차감 이용",
 };

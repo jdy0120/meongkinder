@@ -513,7 +513,15 @@ export class SubscriptionLedgerService {
         userId: params.userId,
         subscriptionId: activeSubscription?.id,
         attendanceId: params.attendanceId,
-        type: "USE",
+        // job-063: `USE` 가 아니라 **`UNPAID_USE`** 다.
+        //
+        // 무제한 요금제의 이용 기록도 `amount: 0` 이라, 둘을 같은 type 으로 두면 "이용권
+        // 없이 받은 날"을 나중에 세는 방법이 description 문자열 비교밖에 없다. 그건
+        // 문구를 한 번만 다듬어도 조용히 깨진다.
+        //
+        // 잔액 계산에는 영향이 없다 — `balanceOf` 는 type 이 아니라 마지막 줄의
+        // `balanceAfter` 를 읽고, amount 가 0 이라 그 값도 그대로다.
+        type: "UNPAID_USE",
         amount: 0,
         description: "잔여 이용권 없음 — 차감하지 않음 (충전 필요)",
       });

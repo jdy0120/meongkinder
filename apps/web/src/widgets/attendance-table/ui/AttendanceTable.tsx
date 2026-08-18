@@ -19,6 +19,7 @@ import type { AttendanceWithPet } from "@pawlog/shared";
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { AttendanceStatusBadge, formatTime } from "@/entities/attendance";
 import { CheckInButton } from "@/features/attendance/check-in";
+import { SellTicketDialog } from "@/features/subscription/sell-ticket";
 import { CheckOutButton } from "@/features/attendance/check-out";
 import { UpdateStatusDialog } from "@/features/attendance/update-status";
 
@@ -91,6 +92,14 @@ export const AttendanceTable = () => {
                             <CheckInButton
                               attendanceId={attendance.id}
                               petName={attendance.pet.name}
+                              // job-063: 잔액 0이면 확인 시트를 띄운다(막지 않는다).
+                              passRemaining={attendance.passRemaining}
+                              sellAction={
+                                <SellTicketDialog
+                                  petId={attendance.pet.id}
+                                  petName={attendance.pet.name}
+                                />
+                              }
                             />
                           )}
                           {attendance.status === "CHECKED_IN" && (

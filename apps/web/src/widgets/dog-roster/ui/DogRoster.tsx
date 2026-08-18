@@ -16,6 +16,7 @@ import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
 import { EmptyState, SegmentedControl, type SegmentOption } from "@/shared/ui";
 import { DogCard, resolvePetSafety } from "@/entities/pet";
 import { CheckInButton } from "@/features/attendance/check-in";
+import { SellTicketDialog } from "@/features/subscription/sell-ticket";
 import { CheckOutButton } from "@/features/attendance/check-out";
 import { PetIntakeDialog } from "@/features/pet/intake-pet";
 import { PetDetailSheet } from "./PetDetailSheet";
@@ -234,6 +235,10 @@ const RosterAction = ({ pet }: { pet: PetWithOwner }) => {
         expiredVaccinationTypes={resolvePetSafety(pet).expiredVaccinations.map(
           (vaccination) => vaccination.type,
         )}
+        // job-063: 잔액 0도 같은 방식이다(막지 않고 알린다). 판매는 feature 끼리 import 할
+        // 수 없어 widget 인 여기서 끼워 넣는다.
+        passRemaining={pet.passRemaining}
+        sellAction={<SellTicketDialog petId={pet.id} petName={pet.name} />}
       />
     );
   }

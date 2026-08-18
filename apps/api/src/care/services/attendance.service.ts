@@ -142,7 +142,35 @@ export class AttendanceService {
       return [items, total] as const;
     });
 
-    return buildPaginatedData(items, { page, pageSize, total });
+    // job-063: 이용권 잔여를 함께 싣는다. 출석부가 등원 버튼을 누르는 주된 화면인데,
+    // 잔액이 없으면 화면이 그 사실을 말할 수 없어 **조용히 미차감으로 지나간다.**
+    //
+    // ⚠️ 아이마다 부르면 페이지당 N+1 이다. 원생 목록과 같은 방식으로 한 번에 뽑는다 —
+    // `distinct` 는 `orderBy` 의 **첫 필드와 같아야** Postgres DISTINCT ON 으로 내려간다.
+    const petIds = [...new Set(items.map((item) => item.petId))];
+    const latestLedgers = petIds.length
+      ? await tenantTransaction(prisma, (tx) =>
+          tx.subscriptionLedger.findMany({
+            where: { petId: { in: petIds } },
+            orderBy: [{ petId: "asc" }, { createdAt: "desc" }],
+            distinct: ["petId"],
+            select: { petId: true, balanceAfter: true },
+          }),
+        )
+      : [];
+    const balanceByPet = new Map(
+      latestLedgers.map((row) => [row.petId, row.balanceAfter]),
+    );
+
+    return buildPaginatedData(
+      items.map((item) => ({
+        ...item,
+        // `null` 은 "이용권을 판 적이 없음"이고 `0` 은 "다 써서 없음"이다. 합치면 원장이
+        // 충전이 필요한 아이와 아직 안 판 아이를 구분할 수 없다(원생 목록과 같은 규칙).
+        passRemaining: balanceByPet.get(item.petId) ?? null,
+      })),
+      { page, pageSize, total },
+    );
   }
 
   /**
