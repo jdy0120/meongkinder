@@ -84,8 +84,14 @@ export const RevenueCalendarDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* 화면을 거의 덮는다 — 칸마다 숫자가 세 줄이라 좁으면 읽을 수 없다. */}
-      <DialogContent className='max-h-[92vh] w-[96vw] max-w-5xl overflow-y-auto rounded-2xl'>
+      {/*
+        화면을 거의 덮는다 — 칸 하나에 숫자가 세 줄이라 좁으면 읽을 수 없다.
+
+        ⚠️ `sm:max-w-*` 를 함께 지정해야 한다. `DialogContent` 기본값에 `sm:max-w-sm` 이 들어
+        있는데, Tailwind 는 특이도가 같으면 **나중에 선언된 것**이 이기므로 `max-w-*` 만
+        얹으면 sm 이상에서 조용히 384px 로 되돌아간다.
+      */}
+      <DialogContent className='max-h-[92vh] w-[96vw] max-w-[1400px] overflow-y-auto rounded-2xl sm:max-w-[1400px]'>
         <DialogHeader>
           <DialogTitle>
             {year}년 {month}월 일별 매출
@@ -109,7 +115,7 @@ export const RevenueCalendarDialog = ({
             showOutsideDays={false}
             /* 달 이동을 막는다 — 어느 달을 보고 있는지는 위 막대가 정한다. */
             disableNavigation
-            className='w-full [--cell-size:--spacing(20)] p-0'
+            className='w-full [--cell-size:--spacing(24)] p-0'
             components={{
               DayButton: ({ day, ...props }) => {
                 const key = `${day.date.getFullYear()}-${`${day.date.getMonth() + 1}`.padStart(2, "0")}-${`${day.date.getDate()}`.padStart(2, "0")}`;
@@ -122,29 +128,29 @@ export const RevenueCalendarDialog = ({
                     /* 매출을 읽는 화면이지 고르는 화면이 아니다 — 누를 수 있는 것처럼
                        보이면 눌러 보고 아무 일도 없는 것을 확인하게 된다. */
                     disabled
-                    className='flex aspect-square size-auto w-full min-w-(--cell-size) flex-col items-center justify-start gap-0.5 rounded-btn border p-1 disabled:opacity-100'
+                    className='flex h-(--cell-size) w-full min-w-(--cell-size) flex-col items-stretch justify-start gap-0.5 rounded-btn border p-1.5 disabled:opacity-100'
                   >
-                    <span className='text-label font-semibold'>
+                    <span className='text-left text-label font-semibold'>
                       {day.date.getDate()}
                     </span>
 
                     {row && (
                       <span className='flex w-full flex-col items-end gap-0 leading-tight'>
                         {/* 수익 — 초록 */}
-                        <span className='w-full truncate text-right text-[11px] font-semibold text-success-text'>
+                        <span className='w-full truncate text-right text-label font-semibold text-success-text'>
                           {compact(row.gross)}
                         </span>
                         {/* 환불 — 빨강. 0원이어도 자리를 지운다(줄이 밀리면 세 줄의
                             위치가 날마다 달라져 한눈에 비교되지 않는다). */}
                         <span
-                          className={`w-full truncate text-right text-[11px] font-semibold ${
+                          className={`w-full truncate text-right text-label font-semibold ${
                             row.refunded > 0 ? "text-danger" : "text-transparent"
                           }`}
                         >
                           {row.refunded > 0 ? `-${compact(row.refunded)}` : "0"}
                         </span>
                         {/* 총 매출 — 검정 */}
-                        <span className='w-full truncate border-t pt-0.5 text-right text-[11px] font-bold text-foreground'>
+                        <span className='w-full truncate border-t pt-0.5 text-right text-label font-bold text-foreground'>
                           {compact(row.total)}
                         </span>
                       </span>

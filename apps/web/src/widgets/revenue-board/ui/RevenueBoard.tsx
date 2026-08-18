@@ -76,23 +76,13 @@ export const RevenueBoard = () => {
   const months = trend?.months ?? [];
   const peak = Math.max(1, ...months.map((m) => m.total));
 
-  /** 달력을 띄울 달. 열려 있지 않으면 `null`. */
-  const [calendarOf, setCalendarOf] = useState<{
-    year: number;
-    month: number;
-  } | null>(null);
-
-  /**
-   * 막대 클릭 — **고르기와 열기를 함께** 한다 (job-063).
-   *
-   * 다른 달의 막대를 눌렀는데 아래 상세는 그대로 두고 달력만 그 달로 열리면, 한 화면에
-   * 서로 다른 두 달이 동시에 보인다. 원장은 어느 쪽이 지금 보는 달인지 알 수 없다.
-   */
-  const openMonth = (y: number, m: number) => {
+  const selectMonth = (y: number, m: number) => {
     setYear(y);
     setMonth(m);
-    setCalendarOf({ year: y, month: m });
   };
+
+  /** 일별 매출 달력을 열어 둔 상태인가 (job-063). */
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
     <div className='flex flex-col gap-6'>
@@ -107,10 +97,6 @@ export const RevenueBoard = () => {
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>최근 6개월</CardTitle>
-          {/* 누를 수 있다는 것을 적어 준다 — 막대는 보통 그림이라 눌러 볼 생각을 하지 않는다. */}
-          <p className='text-label text-muted-foreground'>
-            월을 누르면 일별 매출 달력이 열립니다.
-          </p>
         </CardHeader>
         <CardContent>
           {trendLoading ? (
@@ -125,10 +111,9 @@ export const RevenueBoard = () => {
                   <button
                     key={m.label}
                     type='button'
-                    onClick={() => openMonth(m.year, m.month)}
+                    onClick={() => selectMonth(m.year, m.month)}
                     aria-pressed={isSelected}
-                    aria-label={`${m.month}월 일별 매출 보기`}
-                    className='flex min-w-14 flex-1 cursor-pointer flex-col items-center gap-1.5 rounded-btn p-1 transition-colors hover:bg-accent'
+                    className='flex min-w-14 flex-1 flex-col items-center gap-1.5'
                   >
                     <span className='text-xs text-muted-foreground'>
                       {m.total > 0 ? `${Math.round(m.total / 10000)}만` : "-"}
@@ -171,9 +156,13 @@ export const RevenueBoard = () => {
       ) : (
         <>
           <div className='grid grid-cols-2 gap-3'>
+            {/* job-063: 이 타일이 일별 매출 달력의 입구다.
+                월 합계는 "얼마 벌었나"에 답하지만 **"언제 버는가"** 에는 답하지 못한다 —
+                그 질문의 답을 보러 가는 자리가 곧 이 숫자를 보고 있는 지점이다. */}
             <StatTile
               label={`${summary.month}월 매출`}
               value={won(summary.total)}
+              onClick={() => setCalendarOpen(true)}
             />
             <StatTile label='판매 건수' value={`${summary.count}건`} />
           </div>
@@ -292,14 +281,12 @@ export const RevenueBoard = () => {
           </Card>
         </>
       )}
-      {calendarOf && (
-        <RevenueCalendarDialog
-          open
-          onOpenChange={(next: boolean) => !next && setCalendarOf(null)}
-          year={calendarOf.year}
-          month={calendarOf.month}
-        />
-      )}
+      <RevenueCalendarDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        year={year}
+        month={month}
+      />
     </div>
   );
 };
