@@ -230,29 +230,23 @@ export const ReservationCalendar = ({ petId }: { petId: string }) => {
           className='w-full [--cell-size:--spacing(11)] p-0'
           components={{
             /*
-              날짜 버튼이 칸(td)을 **정확히** 채우게 한다.
+              날짜 버튼이 칸(td)을 정확히 채우게 한다.
 
-              기본 `CalendarDayButton` 은 `Button size='icon'`(= `size-touch`, 52px 고정)
-              위에 `aspect-square min-w-(--cell-size)` 를 얹는다. 그런데 칸의 실제 폭은
-              화면 폭을 7로 나눈 값이라 52px·44px 어느 쪽과도 맞지 않는다 — 그래서 눌리는
-              면(과 선택 시 칠해지는 면)이 칸보다 작거나 커 보인다.
+              기본 `CalendarDayButton` 에는 `min-w-(--cell-size)`(44px)가 걸려 있는데,
+              칸의 실제 폭은 달력 폭을 7로 나눈 값이라 좁은 화면에서 그보다 작아진다.
+              그러면 **버튼이 칸보다 넓어져** 눌리는 면과 선택 시 칠해지는 면이 칸 밖으로
+              삐져나온다. 그 하한만 푼다 — 폭은 `w-full`, 높이는 `aspect-square` 가
+              이미 칸과 같은 값을 만든다.
 
-              ⚠️ `size-full`(= `h-full`) 로는 안 된다. td 높이가 `aspect-square` 에서
-              파생돼 퍼센트 기준으로 확정되지 않는 경우가 있어, 그때 `height:100%` 가
-              `auto` 로 풀리면 버튼이 **글자 높이만큼 줄어 위로 붙는다.**
+              ⚠️ `absolute` 로 덮으면 안 된다. 칸 높이(`h-full`)와 주 행 높이가 **버튼의
+              in-flow 높이에서** 나오므로, 버튼을 흐름에서 빼면 행이 0 으로 무너져 날짜가
+              전부 위로 몰린다. `size-full`(=`h-full`)도 같은 이유로 위험하다 — 칸 높이가
+              확정되지 않으면 `auto` 로 풀려 글자 높이만 남는다.
 
-              td 가 `relative` 이므로 `absolute inset-0` 으로 네 변을 맞춘다 — 높이 계산에
-              기대지 않고 칸을 정확히 덮는다. 가운데 정렬은 기본 컴포넌트의
-              `items-center justify-center` 가 그대로 한다.
-
-              **모양은 그대로다** — variant·색·반경은 기본 컴포넌트가 계속 갖는다.
+              모양(variant·색·반경·가운데 정렬)은 기본 컴포넌트가 그대로 갖는다.
             */
             DayButton: (props) => (
-              <CalendarDayButton
-                {...props}
-                locale={ko}
-                className='absolute inset-0 aspect-auto size-auto min-w-0'
-              />
+              <CalendarDayButton {...props} locale={ko} className='min-w-0' />
             ),
           }}
         />
