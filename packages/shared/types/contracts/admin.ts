@@ -69,7 +69,7 @@ export interface UpdateTermsActiveResponse {
  */
 export type PetWithOwner = Prisma.PetGetPayload<{
   include: {
-    user: { select: { email: true; nickname: true } };
+    user: { select: { email: true; nickname: true; phone: true } };
     /**
      * job-052: **오늘의 출석 0건 또는 1건.** 원생 목록의 필터 칩("등원 중 / 등원 예정 /
      * 하원 완료")이 전부 오늘의 출석 상태이고, 카드의 등원 처리 버튼도 이 `id` 로 부른다.
@@ -96,6 +96,21 @@ export type PetWithOwner = Prisma.PetGetPayload<{
    * 충전이 필요한 아이와 아직 안 판 아이를 구분할 수 없다.
    */
   passRemaining: number | null;
+
+  /**
+   * 화면에 보여줄 보호자 연락처 (job-062).
+   *
+   * `Pet.guardianPhone` 이 비어 있고 계정에만 번호가 있는 아이가 실제로 있다 — 보호자가
+   * 앱에서 직접 등록하면 `guardianPhone` 은 선택 입력이라 비기 쉽다. 그동안 화면은
+   * `guardianPhone` 만 읽어서 그런 아이를 **"등록된 번호 없음"** 으로 표시했다. 알림톡은
+   * `resolveGuardianPhone`(guardianPhone → user.phone) 폴백을 타고 정상 발송되는데,
+   * **원장이 전화를 걸어야 할 때만 번호가 없는** 상태였다.
+   *
+   * ⚠️ `guardianPhone` 을 이 값으로 덮어쓰지 않고 **별도 필드로 준다.** 수정 폼이
+   * `guardianPhone` 을 그대로 프리필하므로, 덮어쓰면 원장이 아이 정보를 한 번 저장하는
+   * 것만으로 계정 번호가 펫 컬럼에 조용히 복사된다.
+   */
+  contactPhone: string | null;
 };
 
 // ── 매장 대시보드 (job-052, design-system.md §6.2) ───────────────────────────

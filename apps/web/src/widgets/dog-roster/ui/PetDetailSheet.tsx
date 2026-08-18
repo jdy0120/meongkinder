@@ -63,7 +63,9 @@ export const PetDetailSheet = ({
       ]
         .filter(Boolean)
         .join(" · ")}
-      guardianPhone={pet.guardianPhone}
+      // 시트 최상단의 '보호자에게 전화' 버튼. `guardianPhone` 만 보면 계정에만 번호가 있는
+      // 아이는 버튼이 사라져, 정작 급할 때 앱 밖에서 번호를 찾아야 한다.
+      guardianPhone={pet.contactPhone}
       footer={
         // job-053: 등원 스케줄을 여기 두는 이유 — 원장이 "이 아이 요일 바꿔야지"를
         // 떠올리는 순간은 목록을 훑다가 카드를 열었을 때다. 별도 화면으로 빼면
@@ -150,7 +152,11 @@ export const PetDetailSheet = ({
           <Row label='이름' value={pet.guardianName || "-"} />
           <Row
             label='연락처'
-            value={formatPhone(pet.guardianPhone) || "등록된 번호 없음"}
+            value={
+              formatPhone(pet.contactPhone) ||
+              // 알림톡도 못 가는 상태다 — 원장이 직접 받아 적어야 한다는 뜻.
+              "등록된 번호 없음"
+            }
           />
           <Row
             label='비상 연락처'

@@ -24,7 +24,7 @@ import {
   toVaccinationsJson,
 } from "../../pet/services/pet.service";
 import { FileService } from "../../shared/file/services/file.service";
-import { startOfToday } from "../../shared/utils";
+import { resolveGuardianPhone, startOfToday } from "../../shared/utils";
 import type { UpdatePetDto } from "../../pet/dtos";
 import type { AdminCreatePetDto } from "../dtos";
 
@@ -159,7 +159,9 @@ export class AdminService {
         // 페이지네이션에서 같은 아이가 두 번 나오거나 빠진다. 이름으로 고정한다.
         orderBy: [{ [sortField]: order }, { name: "asc" }],
         include: {
-          user: { select: { email: true, nickname: true } },
+          // `phone` 은 `contactPhone` 폴백용이다 — 펫에 번호가 없고 계정에만 있는 아이가
+          // 화면에서 "등록된 번호 없음"으로 보이던 것을 막는다.
+          user: { select: { email: true, nickname: true, phone: true } },
           // job-052: **오늘의 출석**을 함께 싣는다.
           //
           // 원생 목록의 필터 칩이 "등원 중 / 등원 예정 / 하원 완료 / 주의"인데
@@ -211,6 +213,9 @@ export class AdminService {
         // 이용권을 판 적이 없는 아이는 `null` 이다 — 0회(다 써서 없음)와 구분해야
         // 원장이 "충전이 필요한 아이"와 "아직 안 판 아이"를 다르게 대할 수 있다.
         passRemaining: balanceByPet.get(pet.id) ?? null,
+        // 알림톡이 쓰는 폴백과 **같은 함수**로 정한다. 화면이 따로 구현하면 "알림은 갔는데
+        // 화면엔 번호가 없다"가 반대 방향으로 또 생긴다.
+        contactPhone: resolveGuardianPhone(pet),
       })),
       { page, pageSize, total },
     );
