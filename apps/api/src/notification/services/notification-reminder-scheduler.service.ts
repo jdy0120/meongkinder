@@ -1,19 +1,17 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
+import { Cron } from "@nestjs/schedule";
 import {
   prisma,
   requireTenantId,
   runWithoutTenant,
   runWithTenant,
 } from "@pawlog/database";
-import { resolveGuardianPhone, scheduledOn } from "../../shared/utils";
+import {
+  resolveGuardianPhone,
+  scheduledOn,
+  startOfTomorrow,
+} from "../../shared/utils";
 import { NotificationService } from "./notification.service";
-
-/** 내일 날짜(서버 로컬 타임존 기준) 00:00:00 */
-const startOfTomorrow = () => {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-};
 
 @Injectable()
 export class NotificationReminderSchedulerService {
@@ -24,11 +22,15 @@ export class NotificationReminderSchedulerService {
   constructor(private readonly notificationService: NotificationService) {}
 
   /**
-   * 매일 저녁 8시, 내일 등원 예정(요일 스케줄)인 이용중 펫에 대해
+   * 매일 저녁 8시(한국 시각), 내일 등원 예정(요일 스케줄)인 이용중 펫에 대해
    * 내일자 출석 기록을 SCHEDULED 로 미리 생성한 뒤 예약 리마인드 알림을 발송한다.
    * @Cron 은 요청 컨텍스트 밖이라 ALS 에 tenantId 가 없다 — 활성 테넌트를 순회하며 처리한다.
+   *
+   * ⚠️ `timeZone` 을 반드시 붙인다. 배포 컨테이너는 UTC 라 `EVERY_DAY_AT_8PM`(서버 로컬
+   * 20:00)은 **KST 새벽 5시**에 돌았다 — 보호자가 자는 시간에 알림톡이 나갔고, 그때의
+   * "내일"은 한국 달력으로는 이미 당일이라 등원 당일 새벽에 "내일 오세요"를 보낸 셈이다.
    */
-  @Cron(CronExpression.EVERY_DAY_AT_8PM)
+  @Cron("0 20 * * *", { timeZone: "Asia/Seoul" })
   async handleReservationReminder() {
     const tenants = await runWithoutTenant(() =>
       prisma.tenant.findMany({ where: { isActive: true } }),
