@@ -63,10 +63,10 @@ export const RevenueCalendarDialog = ({
   const { data, isLoading } = useQuery({
     queryKey: ["revenue-daily", tenantId, year, month],
     queryFn: async () => {
-      const res = await Get<DailyRevenueResponse, { year: number; month: number }>(
-        "/v1/revenue/daily",
-        { year, month },
-      );
+      const res = await Get<
+        DailyRevenueResponse,
+        { year: number; month: number }
+      >("/v1/revenue/daily", { year, month });
       return res.data.data;
     },
     // 닫혀 있으면 부르지 않는다 — 매출 화면을 여는 것만으로 12번의 요청이 생기면 안 된다.
@@ -91,7 +91,7 @@ export const RevenueCalendarDialog = ({
         있는데, Tailwind 는 특이도가 같으면 **나중에 선언된 것**이 이기므로 `max-w-*` 만
         얹으면 sm 이상에서 조용히 384px 로 되돌아간다.
       */}
-      <DialogContent className='max-h-[92vh] w-[96vw] max-w-[1400px] overflow-y-auto rounded-2xl sm:max-w-[1400px]'>
+      <DialogContent className='max-h-[92vh] w-[96vw] max-w-[1400px] overflow-hidden rounded-2xl sm:max-w-[1400px]'>
         <DialogHeader>
           <DialogTitle>
             {year}년 {month}월 일별 매출
@@ -107,59 +107,88 @@ export const RevenueCalendarDialog = ({
             <Spinner className='size-8 text-primary' />
           </div>
         ) : (
-          <Calendar
-            mode='single'
-            month={cursor}
-            locale={ko}
-            /* 이 달의 매출만 받아 왔으므로 옆 달 칸은 그릴 근거가 없다. */
-            showOutsideDays={false}
-            /* 달 이동을 막는다 — 어느 달을 보고 있는지는 위 막대가 정한다. */
-            disableNavigation
-            className='w-full [--cell-size:--spacing(24)] p-0'
-            components={{
-              DayButton: ({ day, ...props }) => {
-                const key = `${day.date.getFullYear()}-${`${day.date.getMonth() + 1}`.padStart(2, "0")}-${`${day.date.getDate()}`.padStart(2, "0")}`;
-                const row = byDate.get(key);
+          /*
+            좁은 화면에서는 **가로로** 스크롤한다.
+            7열 달력을 폭에 맞춰 줄이면 칸이 40px 밑으로 내려가 세 줄이 아예 안 읽힌다.
+            읽히지 않는 표를 다 보여주는 것보다 밀어서 보는 편이 낫다.
+          */
+          <div className='overflow-x-auto'>
+            <Calendar
+              mode='single'
+              month={cursor}
+              locale={ko}
+              /* 이 달의 매출만 받아 왔으므로 옆 달 칸은 그릴 근거가 없다. */
+              showOutsideDays={false}
+              /* 달 이동을 막는다 — 어느 달을 보고 있는지는 위 막대가 정한다. */
+              disableNavigation
+              /*
+                세로 스크롤이 생기지 않도록 **칸 높이를 뷰포트에서 역산**한다.
 
-                return (
-                  <button
-                    {...props}
-                    type='button'
-                    /* 매출을 읽는 화면이지 고르는 화면이 아니다 — 누를 수 있는 것처럼
+                달력이 쌓는 줄은 8개다 — 상단 라벨 1 + 요일 1 + 주 6. 여기에 모달 패딩과
+                헤더(제목·설명)를 빼면 한 줄이 쓸 수 있는 높이가 나온다. `vh` 로 묶어야
+                노트북(768px)과 데스크톱(1080px)에서 같은 규칙으로 맞는다.
+
+                하한 2.75rem 은 세 줄이 겨우 읽히는 크기이고, 상한 5.5rem 을 두는 이유는
+                큰 화면에서 칸만 커지면 숫자 사이 여백이 벌어져 오히려 훑기 어려워지기
+                때문이다.
+              */
+              className='w-full min-w-[42rem] p-0 [--cell-size:clamp(2.75rem,8.5vh,5.5rem)]'
+              classNames={{
+                /* 기본값은 주마다 `mt-2`(8px) — 6주면 48px 이 세로로 쌓여 스크롤을
+                   만든다. 칸에 테두리가 있어 간격 없이도 줄이 구분된다. */
+                week: "mt-0.5 flex w-full",
+                month: "flex w-full flex-col gap-1",
+                months: "relative flex flex-col gap-1",
+              }}
+              components={{
+                DayButton: ({ day, ...props }) => {
+                  const key = `${day.date.getFullYear()}-${`${day.date.getMonth() + 1}`.padStart(2, "0")}-${`${day.date.getDate()}`.padStart(2, "0")}`;
+                  const row = byDate.get(key);
+
+                  return (
+                    <button
+                      {...props}
+                      type='button'
+                      /* 매출을 읽는 화면이지 고르는 화면이 아니다 — 누를 수 있는 것처럼
                        보이면 눌러 보고 아무 일도 없는 것을 확인하게 된다. */
-                    disabled
-                    className='flex h-(--cell-size) w-full min-w-(--cell-size) flex-col items-stretch justify-start gap-0.5 rounded-btn border p-1.5 disabled:opacity-100'
-                  >
-                    <span className='text-left text-label font-semibold'>
-                      {day.date.getDate()}
-                    </span>
-
-                    {row && (
-                      <span className='flex w-full flex-col items-end gap-0 leading-tight'>
-                        {/* 수익 — 초록 */}
-                        <span className='w-full truncate text-right text-label font-semibold text-success-text'>
-                          {compact(row.gross)}
-                        </span>
-                        {/* 환불 — 빨강. 0원이어도 자리를 지운다(줄이 밀리면 세 줄의
-                            위치가 날마다 달라져 한눈에 비교되지 않는다). */}
-                        <span
-                          className={`w-full truncate text-right text-label font-semibold ${
-                            row.refunded > 0 ? "text-danger" : "text-transparent"
-                          }`}
-                        >
-                          {row.refunded > 0 ? `-${compact(row.refunded)}` : "0"}
-                        </span>
-                        {/* 총 매출 — 검정 */}
-                        <span className='w-full truncate border-t pt-0.5 text-right text-label font-bold text-foreground'>
-                          {compact(row.total)}
-                        </span>
+                      disabled
+                      className='flex h-(--cell-size) w-full min-w-(--cell-size) flex-col items-stretch justify-start gap-0.5 rounded-btn border p-1.5 disabled:opacity-100'
+                    >
+                      <span className='text-left text-label font-semibold'>
+                        {day.date.getDate()}
                       </span>
-                    )}
-                  </button>
-                );
-              },
-            }}
-          />
+
+                      {row && (
+                        <span className='flex w-full flex-col items-end gap-0 leading-tight'>
+                          {/* 수익 — 초록 */}
+                          <span className='w-full truncate text-right text-label font-semibold text-success-text'>
+                            {compact(row.gross)}
+                          </span>
+                          {/* 환불 — 빨강. 0원이어도 자리를 지운다(줄이 밀리면 세 줄의
+                            위치가 날마다 달라져 한눈에 비교되지 않는다). */}
+                          <span
+                            className={`w-full truncate text-right text-label font-semibold ${
+                              row.refunded > 0
+                                ? "text-danger"
+                                : "text-transparent"
+                            }`}
+                          >
+                            {row.refunded > 0
+                              ? `-${compact(row.refunded)}`
+                              : "0"}
+                          </span>
+                          {/* 총 매출 — 검정 */}
+                          <span className='w-full truncate border-t pt-0.5 text-right text-label font-bold text-foreground'>
+                            {compact(row.total)}
+                          </span>
+                        </span>
+                      )}
+                    </button>
+                  );
+                },
+              }}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>
