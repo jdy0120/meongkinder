@@ -163,6 +163,9 @@ export type TenantSettings = Pick<
   | "longitude"
   | "isListed"
   | "isActive"
+  // job-063: 매장 소개 · 대표 이미지
+  | "description"
+  | "profileImageFileId"
 > & {
   /**
    * 운영시간. **`null` 은 "아직 등록하지 않았다"** 이며 "매일 휴무"가 아니다.
@@ -242,6 +245,18 @@ export interface UpdateTenantSettingsRequest extends TenantAddressInput {
   name?: string;
   contactPhone?: string;
   isListed?: boolean;
+  /**
+   * 매장 소개 (job-063). **공개 정보**라 매장 찾기 목록에 그대로 나간다.
+   * 빈 문자열이면 지운다(보내지 않는 것과 다른 뜻이다).
+   */
+  description?: string;
+  /**
+   * 매장 대표 이미지 파일 id (job-063). 빈 문자열이면 지운다.
+   *
+   * 서버가 저장 시 `FileOwnership.shared` 로 승격한다 — 로그인 없이 열리는 공개 화면에
+   * 나가야 하므로 매장 소유로 두면 그 화면에서 403 이 된다(job-055).
+   */
+  profileImageFileId?: string;
   /**
    * 운영시간. `null` 을 **명시적으로** 보내면 등록을 지운다(미설정으로 되돌린다).
    * 보내지 않으면(`undefined`) 기존 값을 건드리지 않는다 — 이 둘은 다른 뜻이다.

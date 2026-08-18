@@ -11,7 +11,12 @@ import { ProfileForm } from "@/features/profile/update-profile";
 import { MobileNav } from "@/widgets/mobile-nav";
 
 interface ProfilePageProps {
-  user: { nickname: string; phone: string | null; email: string };
+  user: {
+    nickname: string;
+    phone: string | null;
+    email: string;
+    profileImageFileId: string | null;
+  };
 }
 
 /**
@@ -36,7 +41,11 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
         </CardHeader>
         <CardContent>
           <ProfileForm
-            defaultValues={{ nickname: user.nickname, phone: user.phone }}
+            defaultValues={{
+              nickname: user.nickname,
+              phone: user.phone,
+              profileImageFileId: user.profileImageFileId,
+            }}
           />
         </CardContent>
       </Card>

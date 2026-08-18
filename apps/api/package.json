@@ -101,6 +101,10 @@
     "setupFiles": [
       "<rootDir>/../test/setup-env.ts"
     ],
+    "moduleNameMapper": {
+      "^file-type$": "<rootDir>/../test/mocks/file-type.ts",
+      "^sharp$": "<rootDir>/../test/mocks/sharp.ts"
+    },
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

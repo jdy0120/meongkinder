@@ -108,11 +108,10 @@ export const PhoneVerifyField = ({
       </div>
 
       <div className='flex gap-2'>
-        <PhoneInput
-          value={value}
-          onChange={handlePhoneChange}
-          disabled={verified}
-        />
+        {/* 인증 후에도 잠그지 않는다. 잠그면 `handlePhoneChange` 가 대비해 둔 "인증한 뒤
+            번호를 고치는" 경로에 아예 닿을 수 없어, 번호를 잘못 인증한 사람은 화면을
+            새로 고치는 것 말고 방법이 없다. 고치면 인증이 무효가 되므로 안전하다. */}
+        <PhoneInput value={value} onChange={handlePhoneChange} />
         <Button
           type='button'
           variant='outline'

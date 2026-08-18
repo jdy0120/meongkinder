@@ -24,6 +24,7 @@ import type { RedisService } from "../../shared/redis/redis.service";
 import type { MailerService } from "@nestjs-modules/mailer";
 import type { InvitationService } from "../../membership/services/invitation.service";
 import { PhoneOtpService } from "./phone-otp.service";
+import { FileService } from "../../shared/file/services/file.service";
 
 type RedisMock = {
   set: jest.Mock;
@@ -38,6 +39,8 @@ type InvitationMock = { claimForUser: jest.Mock };
 // (검증 로직 자체는 PhoneOtpService 의 몫이라 여기서 다시 다루지 않는다).
 type PhoneOtpMock = { assertVerified: jest.Mock };
 
+type FileMock = { promoteTempFile: jest.Mock };
+
 const asUser = (u: Partial<User>): User => u as unknown as User;
 
 describe("AuthService", () => {
@@ -46,6 +49,7 @@ describe("AuthService", () => {
   let mailer: MailerMock;
   let invitations: InvitationMock;
   let phoneOtp: PhoneOtpMock;
+  let files: FileMock;
 
   beforeEach(() => {
     resetPrismaMock();
@@ -53,11 +57,13 @@ describe("AuthService", () => {
     mailer = { sendMail: jest.fn() };
     invitations = { claimForUser: jest.fn().mockResolvedValue([]) };
     phoneOtp = { assertVerified: jest.fn().mockResolvedValue(undefined) };
+    files = { promoteTempFile: jest.fn().mockResolvedValue(undefined) };
     service = new AuthService(
       redis as unknown as RedisService,
       mailer as unknown as MailerService,
       invitations as unknown as InvitationService,
       phoneOtp as unknown as PhoneOtpService,
+      files as unknown as FileService,
     );
   });
 

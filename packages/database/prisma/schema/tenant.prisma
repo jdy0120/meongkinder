@@ -15,6 +15,22 @@ model Tenant {
    * 길이 없다. 저장은 숫자만(job-043).
    */
   contactPhone String? @map("contact_phone")
+  /**
+   * 매장 대표 이미지 (job-063). 공개 매장 찾기·공개 알림장에 노출된다.
+   *
+   * ⚠️ **테넌트 소유로 두면 안 된다**(`FileOwnership.shared`, job-055). 이 이미지를 보는
+   * 화면 중에는 로그인도 테넌트 컨텍스트도 없는 곳(공개 매장 목록, `/r/<token>`)이 있고,
+   * `assertReadable` 은 `tenantId = null` 인 파일만 그런 스코프에서 열어 준다.
+   */
+  profileImageFileId String? @map("profile_image_file_id")
+
+  /**
+   * 매장 소개 (job-063). 보호자가 매장을 고를 때 이름·주소만으로는 아무것도 알 수 없다.
+   *
+   * 공개 정보다 — 매장 찾기 목록과 상세에 그대로 나간다.
+   */
+  description String?
+
   isActive  Boolean @default(true) @map("is_active") // 구독 상태로 갱신, 미들웨어 게이트
 
   // ── 위치 (job-059) ──────────────────────────────────────────────────

@@ -29,6 +29,7 @@ import {
   InvitationService,
   normalizePhone,
 } from "../../membership/services/invitation.service";
+import { FileService } from "../../shared/file/services/file.service";
 import { PhoneOtpService } from "./phone-otp.service";
 
 const BCRYPT_ROUNDS = 10;
@@ -48,6 +49,7 @@ export class AuthService {
     private readonly mailer: MailerService,
     private readonly invitationService: InvitationService,
     private readonly phoneOtp: PhoneOtpService,
+    private readonly fileService: FileService,
   ) {}
 
   /** 회원가입 — 이메일 + 비밀번호(bcrypt 해시) */
@@ -419,13 +421,27 @@ export class AuthService {
    * 주지 않으므로, 유치원이 전화번호로 미리 등록해 둔 초대는 이 시점에야 매칭될 수 있다.
    * (가입 시점의 claimForUser 는 전화번호가 없어 이메일만 맞춰봤다)
    */
+  /**
+   * 회원 프로필 사진을 영구 저장소로 올린다 (job-063).
+   *
+   * ⚠️ **`ownership: "shared"` 를 반드시 유지한다** (job-055 의 교훈). 파일의 테넌트는
+   * 업로드한 요청의 스코프로 정해지는데, 회원은 여러 매장에 걸치거나 아무 데도 속하지
+   * 않는다. 매장 화면에서 올린 사진이 매장 소유로 찍히면 개인 화면(`/profile`)에서 열 때
+   * `assertReadable` 에 걸려 404 가 난다 — 펫 사진에서 이미 한 번 겪은 실패다.
+   *
+   * 승격 호출부를 늘리지 말고 이 함수만 쓸 것.
+   */
+  private promoteProfileImage(fileId?: string | null) {
+    return this.fileService.promoteTempFile({
+      fileId,
+      domain: "user",
+      newPath: "avatar",
+      ownership: "shared",
+    });
+  }
+
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
-
-    // job-042: 번호를 저장하기 전에 본인확인을 통과해야 한다. 이 번호 하나로 그 번호에
-    // 묶인 원생·알림장·사진의 소유권이 넘어가므로(claimForUser), 자기신고를 그대로
-    // 믿으면 남의 번호를 입력하는 것만으로 남의 기록에 닿는다.
-    if (phone) await this.phoneOtp.assertVerified(userId, phone);
 
     // 아이의 알림 번호를 함께 옮기려면 **바꾸기 전 번호**를 알아야 한다. 뒤에서 읽으면
     // 이미 새 번호라 "옛 번호를 쓰던 아이"를 가려낼 수 없다.
@@ -436,12 +452,35 @@ export class AuthService {
       }),
     );
 
+    // job-042: 번호를 저장하기 전에 본인확인을 통과해야 한다. 이 번호 하나로 그 번호에
+    // 묶인 원생·알림장·사진의 소유권이 넘어가므로(claimForUser), 자기신고를 그대로
+    // 믿으면 남의 번호를 입력하는 것만으로 남의 기록에 닿는다.
+    //
+    // ⚠️ **바뀔 때만** 요구한다. 내 정보 수정 폼은 번호 칸을 늘 함께 보내므로, 값이 같아도
+    // 검사하면 **닉네임만 고치는 저장까지 전부 400 이 된다** — 화면은 저장 버튼이 눌리는데
+    // 서버만 거절하니 사용자는 이유를 알 수 없다. 이미 저장돼 있는 번호는 저장될 때
+    // 본인확인을 지난 값이므로 다시 물어봐야 할 새 사실이 없다.
+    if (phone && phone !== before.phone) {
+      await this.phoneOtp.assertVerified(userId, phone);
+    }
+
+    // job-063: 프로필 사진. 임시 업로드를 영구 저장소로 옮긴다.
+    //
+    // ⚠️ `ownership: "shared"` 가 핵심이다(job-055). 회원은 여러 매장에 걸치거나 아무
+    // 데도 속하지 않으므로, 업로드한 요청의 스코프로 파일 테넌트를 정하면 다른 스코프에서
+    // 열 때 404 가 난다 — 매장 화면에서 올린 사진이 개인 화면에서 안 보이는 식이다.
+    await this.promoteProfileImage(dto.profileImageFileId);
+
     const user = await runWithoutTenant(() =>
       prisma.user.update({
         where: { id: userId },
         data: {
           ...(dto.nickname !== undefined ? { nickname: dto.nickname } : {}),
           ...(phone !== undefined ? { phone } : {}),
+          // 빈 문자열은 "지웠다"이므로 null 로 저장한다. 안 보낸 것(undefined)과 구분한다.
+          ...(dto.profileImageFileId !== undefined
+            ? { profileImageFileId: dto.profileImageFileId || null }
+            : {}),
         },
         omit: { password: true },
       }),

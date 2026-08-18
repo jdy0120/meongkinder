@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { NotificationModule } from "../notification/notification.module";
+import { FileModule } from "../shared/file/file.module";
 import { SubscriptionModule } from "../subscription/subscription.module";
 import { TenantController } from "./controllers/tenant.controller";
 import { TenantService } from "./services/tenant.service";
@@ -8,7 +9,8 @@ import { TenantService } from "./services/tenant.service";
   // 온보딩이 매장 개설권을 검사·소비하므로 PlatformSubscriptionService 가 필요하다.
   // job-060: 임시 휴무 등록이 그 날 예약된 보호자에게 통보를 보내므로 NotificationService
   // 도 필요하다. NotificationModule 은 아무 모듈도 import 하지 않아 순환이 생기지 않는다.
-  imports: [SubscriptionModule, NotificationModule],
+  // job-063: 매장 대표 이미지의 임시 업로드를 영구 저장소로 옮긴다(FileService).
+  imports: [SubscriptionModule, NotificationModule, FileModule],
   controllers: [TenantController],
   providers: [TenantService],
   exports: [TenantService],

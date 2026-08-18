@@ -6,6 +6,7 @@ import { Button, Field, FieldLabel, Input } from "@pawlog/ui";
 
 import { PhoneVerifyField } from "@/features/auth/verify-phone";
 import { usePets } from "@/entities/pet";
+import { AvatarUpload } from "@/entities/file";
 
 import { useUpdateProfile } from "../model/useUpdateProfile";
 import { SyncPetPhoneDialog } from "./SyncPetPhoneDialog";
@@ -13,10 +14,16 @@ import { SyncPetPhoneDialog } from "./SyncPetPhoneDialog";
 interface FormValues {
   nickname: string;
   phone: string;
+  /** 빈 문자열이면 "지웠다" — 서버가 그것과 "안 보냄"을 구분한다. */
+  profileImageFileId: string;
 }
 
 interface ProfileFormProps {
-  defaultValues: { nickname: string; phone: string | null };
+  defaultValues: {
+    nickname: string;
+    phone: string | null;
+    profileImageFileId: string | null;
+  };
 }
 
 /**
@@ -25,10 +32,11 @@ interface ProfileFormProps {
  * 유일한 경로이기 때문이다.
  */
 export const ProfileForm = ({ defaultValues }: ProfileFormProps) => {
-  const { register, handleSubmit, control } = useForm<FormValues>({
+  const { register, handleSubmit, control, watch } = useForm<FormValues>({
     defaultValues: {
       nickname: defaultValues.nickname,
       phone: defaultValues.phone ?? "",
+      profileImageFileId: defaultValues.profileImageFileId ?? "",
     },
   });
   const updateProfile = useUpdateProfile();
@@ -53,6 +61,9 @@ export const ProfileForm = ({ defaultValues }: ProfileFormProps) => {
     updateProfile.mutate({
       nickname: values.nickname,
       phone: values.phone || undefined,
+      // 사진은 **언제나 보낸다.** 빈 문자열이 곧 "지웠다"이고, 안 보내면 서버가 기존
+      // 값을 유지하므로 삭제가 저장되지 않는다.
+      profileImageFileId: values.profileImageFileId,
       ...(syncPetIds?.length ? { syncPetIds } : {}),
     });
 
@@ -70,6 +81,20 @@ export const ProfileForm = ({ defaultValues }: ProfileFormProps) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
+      <Controller
+        control={control}
+        name='profileImageFileId'
+        render={({ field }) => (
+          <AvatarUpload
+            value={field.value || undefined}
+            // AvatarUpload 는 삭제를 `undefined` 로 알린다. 폼은 빈 문자열로 들고 있어야
+            // "지웠다"가 서버까지 간다 — `undefined` 로 두면 payload 에서 빠진다.
+            onChange={(fileId) => field.onChange(fileId ?? "")}
+            name={watch("nickname")}
+          />
+        )}
+      />
+
       <Field>
         <FieldLabel htmlFor='nickname'>닉네임</FieldLabel>
         <Input id='nickname' {...register("nickname", { required: true })} />

@@ -239,4 +239,97 @@ describe("Auth (e2e)", () => {
         .expect(503);
     });
   });
+
+  /**
+   * 내 정보 수정에서 번호를 **바꿀 때만** 본인확인을 요구한다.
+   *
+   * 폼은 번호 칸을 늘 함께 보내므로, 값이 같아도 검사하면 **닉네임만 고치는 저장까지
+   * 전부 400 이 된다** — 화면은 저장 버튼이 눌리는데 서버만 거절하니 사용자는 이유를
+   * 알 수 없다. 실제로 그 상태였고, 이 스펙이 그 회귀를 막는다.
+   */
+  describe("내 정보 수정 — 번호가 바뀔 때만 본인확인", () => {
+    const login = async (email: string, nickname: string) => {
+      const session = request.agent(server());
+      await session
+        .post(`${V1_AUTH}/signup`)
+        .send({ email, password, nickname })
+        .expect(201);
+      await session
+        .post(`${V1_AUTH}/login`)
+        .send({ email, password })
+        .expect(200);
+      return session;
+    };
+    const myId = async (session: request.Agent) => {
+      const res = await session.get(`${V1_AUTH}/mypage`).expect(200);
+      return (res.body as { data: { user: { id: string } } }).data.user.id;
+    };
+
+    it("번호를 그대로 둔 채 닉네임만 바꾸면 본인확인 없이 저장된다", async () => {
+      const session = await login("prof-nick@example.com", "prof-nick");
+      const userId = await myId(session);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { phone: "01077770001" },
+      });
+
+      const res = await session
+        .patch(`${V1_AUTH}/me`)
+        .send({ nickname: "바뀐닉네임", phone: "01077770001" })
+        .expect(200);
+
+      expect(
+        (res.body as { data: { user: { nickname: string } } }).data.user
+          .nickname,
+      ).toBe("바뀐닉네임");
+    });
+
+    it("하이픈 표기로 보내도 같은 번호로 보고 통과시킨다", async () => {
+      const session = await login("prof-hyphen@example.com", "prof-hyphen");
+      const userId = await myId(session);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { phone: "01077770002" },
+      });
+
+      await session
+        .patch(`${V1_AUTH}/me`)
+        .send({ nickname: "표기무관", phone: "010-7777-0002" })
+        .expect(200);
+    });
+
+    it("번호를 바꾸려면 본인확인이 필요하다 (400)", async () => {
+      const session = await login("prof-change@example.com", "prof-change");
+      const userId = await myId(session);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { phone: "01077770003" },
+      });
+
+      const res = await session
+        .patch(`${V1_AUTH}/me`)
+        .send({ phone: "01077779999" })
+        .expect(400);
+
+      expect((res.body as { message: string }).message).toContain(
+        "본인확인이 필요합니다",
+      );
+
+      // 거절된 요청의 번호가 저장되지 않아야 한다.
+      const after = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { phone: true },
+      });
+      expect(after.phone).toBe("01077770003");
+    });
+
+    it("번호가 없던 사람이 번호를 넣을 때도 본인확인이 필요하다 (400)", async () => {
+      const session = await login("prof-first@example.com", "prof-first");
+
+      await session
+        .patch(`${V1_AUTH}/me`)
+        .send({ phone: "01077770004" })
+        .expect(400);
+    });
+  });
 });

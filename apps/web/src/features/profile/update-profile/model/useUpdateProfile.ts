@@ -8,6 +8,8 @@ import { Patch } from "@/shared/libs/axios/request";
 interface UpdateProfilePayload {
   nickname?: string;
   phone?: string;
+  /** 프로필 사진 (job-063). 빈 문자열이면 삭제. */
+  profileImageFileId?: string;
   /** 알림 수신 번호를 새 번호로 함께 바꿀 아이들 (job-060). */
   syncPetIds?: string[];
 }
@@ -51,6 +53,8 @@ export const useUpdateProfile = () => {
           : "정보를 저장했습니다.",
       );
       queryClient.invalidateQueries({ queryKey: ["memberships"] });
+      // 헤더·홈이 보는 내 정보(닉네임·사진)가 바뀌었다.
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       // 알림 번호가 바뀌었으면 아이 목록의 연락처도 예전 값이다.
       queryClient.invalidateQueries({ queryKey: ["pets"] });
     },

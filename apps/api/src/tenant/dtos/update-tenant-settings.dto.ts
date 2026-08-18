@@ -40,6 +40,31 @@ export class UpdateTenantSettingsDto
   @IsString()
   contactPhone?: string;
 
+  /**
+   * 매장 소개 (job-063).
+   *
+   * 보호자가 매장을 고를 때 이름과 주소만으로는 아무것도 알 수 없다. **공개 정보**이므로
+   * 매장 찾기 목록에 그대로 나간다 — 원장이 여기 적는 것이 곧 첫인상이다.
+   */
+  @ApiPropertyOptional({ description: "매장 소개 (공개)" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
+
+  /**
+   * 매장 대표 이미지 (job-063). `v1/file/upload` 로 올린 임시 파일의 id.
+   *
+   * 빈 문자열이면 **지운다** — `undefined`(안 보냄)와 구분해야, 폼에서 이미지를 치운 것이
+   * 저장되지 않고 조용히 남는 일이 없다.
+   */
+  @ApiPropertyOptional({
+    description: "매장 대표 이미지 파일 id. 빈 문자열이면 삭제",
+  })
+  @IsOptional()
+  @IsString()
+  profileImageFileId?: string;
+
   @ApiPropertyOptional({
     description: "공개 매장 찾기(지도·목록) 노출 여부",
   })

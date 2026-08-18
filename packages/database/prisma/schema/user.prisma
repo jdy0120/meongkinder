@@ -13,6 +13,16 @@ model User {
   // 아직 유니크는 아니다 — 기존 계정에 번호가 없고 본인인증 절차도 없기 때문.
   phone     String?
 
+  /**
+   * 프로필 사진 (job-063). `File.id` 를 가리키는 값만 두고 관계는 걸지 않는다 —
+   * `Pet.profileImageFileId` 와 같은 규칙이다.
+   *
+   * ⚠️ 이 파일은 **테넌트 소유가 아니다**(`FileOwnership.shared`, job-055). 회원은 여러
+   * 매장에 걸치거나 아무 데도 속하지 않으므로, 업로드한 요청의 스코프로 파일 테넌트를
+   * 정하면 다른 스코프에서 열 때 404 가 난다.
+   */
+  profileImageFileId String? @map("profile_image_file_id")
+
   // 플랫폼 레벨 역할만 보관: "USER" | "SUPER_ADMIN". @pawlog/shared 의 PLATFORM_ROLES 와 일치.
   // 테넌트 안에서의 역할(TENANT_ADMIN/STAFF/GUARDIAN)은 TenantMembership.role 이 갖는다.
   role      String @default("USER")

@@ -24,6 +24,19 @@ export class UpdateProfileDto {
   phone?: string;
 
   /**
+   * 프로필 사진 (job-063). `v1/file/upload` 로 올린 임시 파일의 id.
+   *
+   * 빈 문자열이면 사진을 **지운다** — `undefined`(안 보냄)와 구분해야, 폼에서 사진을
+   * 치운 것이 저장되지 않고 조용히 남는 일이 없다.
+   */
+  @ApiPropertyOptional({
+    description: "프로필 사진 파일 id. 빈 문자열이면 삭제",
+  })
+  @IsOptional()
+  @IsString()
+  profileImageFileId?: string;
+
+  /**
    * 알림 수신 번호를 함께 바꿀 아이들 (job-060).
    *
    * ## 왜 자동으로 하지 않는가

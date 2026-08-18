@@ -13,6 +13,7 @@ import {
   FieldLabel,
   Input,
   Switch,
+  Textarea,
 } from "@pawlog/ui";
 import { validateBusinessHours } from "@pawlog/shared";
 import type {
@@ -22,6 +23,7 @@ import type {
   UpdateTenantSettingsRequest,
 } from "@pawlog/shared";
 
+import { AvatarUpload } from "@/entities/file";
 import { AddressField, BusinessHoursField, PhoneInput } from "@/shared/ui";
 import {
   useTenantSettings,
@@ -33,6 +35,10 @@ type FormValues = {
   name: string;
   contactPhone: string;
   isListed: boolean;
+  /** 매장 소개 (job-063). 공개 매장 찾기에 그대로 나간다. */
+  description: string;
+  /** 대표 이미지. 빈 문자열이면 "지웠다" — 서버가 "안 보냄"과 구분한다. */
+  profileImageFileId: string;
 };
 
 /**
@@ -78,12 +84,15 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
       name: settings.name,
       contactPhone: settings.contactPhone ?? "",
       isListed: settings.isListed,
+      description: settings.description ?? "",
+      profileImageFileId: settings.profileImageFileId ?? "",
     },
   });
 
@@ -100,6 +109,10 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
       name: values.name,
       contactPhone: values.contactPhone,
       isListed: values.isListed,
+      // 소개·이미지는 **언제나 보낸다.** 빈 문자열이 곧 "지웠다"이고, 안 보내면 서버가
+      // 기존 값을 유지하므로 삭제가 저장되지 않는다.
+      description: values.description,
+      profileImageFileId: values.profileImageFileId,
       ...address,
       businessHours,
     };
@@ -114,6 +127,20 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
       <Card>
         <CardContent className='pt-6'>
           <FieldGroup>
+            <Controller
+              control={control}
+              name='profileImageFileId'
+              render={({ field }) => (
+                <AvatarUpload
+                  value={field.value || undefined}
+                  // AvatarUpload 는 삭제를 `undefined` 로 알린다. 폼은 빈 문자열로 들고
+                  // 있어야 "지웠다"가 서버까지 간다.
+                  onChange={(fileId) => field.onChange(fileId ?? "")}
+                  name={watch("name")}
+                />
+              )}
+            />
+
             <Field>
               <FieldLabel htmlFor='name'>매장 이름</FieldLabel>
               <Input
@@ -121,6 +148,20 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
                 {...register("name", { required: "매장 이름을 입력하세요." })}
               />
               {errors.name && <FieldError>{errors.name.message}</FieldError>}
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor='description'>매장 소개</FieldLabel>
+              <Textarea
+                id='description'
+                rows={4}
+                maxLength={1000}
+                placeholder='어떤 곳인지 한두 문단으로 적어주세요. 보호자가 매장을 고를 때 이름과 주소 다음으로 읽는 값입니다.'
+                {...register("description")}
+              />
+              <p className='text-label text-muted-foreground'>
+                공개 매장 찾기에 그대로 표시됩니다.
+              </p>
             </Field>
 
             <Field>

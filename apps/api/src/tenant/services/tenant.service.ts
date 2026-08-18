@@ -29,6 +29,7 @@ import {
 } from "../dtos";
 import { PlatformSubscriptionService } from "../../subscription/services/platform-subscription.service";
 import { NotificationService } from "../../notification/services/notification.service";
+import { FileService } from "../../shared/file/services/file.service";
 import { GeocodingService } from "../../shared/geo/services/geocoding.service";
 import { buildAddressData } from "../../shared/utils/address";
 import {
@@ -57,6 +58,8 @@ export class TenantService {
     private readonly geocoding: GeocodingService,
     // job-060: 임시 휴무로 풀린 등원 예정일을 보호자에게 통보한다.
     private readonly notification: NotificationService,
+    // job-063: 매장 대표 이미지를 영구 저장소로 옮긴다.
+    private readonly fileService: FileService,
   ) {}
 
   /** 서브도메인 형식/예약어를 검증하고, 이미 사용 중이면 사유를 담아 반환한다. */
@@ -132,6 +135,10 @@ export class TenantService {
         // job-060: 운영시간은 영업 정보라 공개해도 되는 축에 든다 — 오히려 보호자가
         // 매장을 고를 때 주소 다음으로 먼저 보는 값이다.
         businessHours: true,
+        // job-063: 소개와 대표 이미지는 원장이 공개를 전제로 적고 올린 값이다. 오히려
+        // 이게 없으면 목록이 이름과 주소만 남아 어느 매장을 고를 근거가 없다.
+        description: true,
+        profileImageFileId: true,
       },
       orderBy: { name: "asc" },
       // 지도는 화면 안의 매장을 한 번에 받아야 핀이 빠지지 않으므로 영역 조회일 때 넉넉히 준다.
@@ -370,6 +377,9 @@ export class TenantService {
     isListed: true,
     isActive: true,
     businessHours: true,
+    // job-063: 매장 소개 · 대표 이미지
+    description: true,
+    profileImageFileId: true,
   } as const;
 
   /**
@@ -403,6 +413,23 @@ export class TenantService {
   }
 
   /** 매장 설정 수정. 보내지 않은 칸은 건드리지 않는다. */
+  /**
+   * 매장 대표 이미지를 영구 저장소로 올린다 (job-063).
+   *
+   * ⚠️ **`ownership: "shared"` 를 반드시 유지한다** (job-055 의 교훈). 이 이미지를 보는
+   * 화면에는 로그인도 테넌트 컨텍스트도 없는 곳이 있다 — 공개 매장 찾기 목록과 공개
+   * 알림장(`/r/<token>`). `assertReadable` 은 그런 스코프에서 `tenantId = null` 인 파일만
+   * 열어 주므로, 매장 소유로 저장하면 **정작 보여줘야 할 화면에서 403 이 난다.**
+   */
+  private promoteTenantImage(fileId?: string | null) {
+    return this.fileService.promoteTempFile({
+      fileId,
+      domain: "tenant",
+      newPath: "profile",
+      ownership: "shared",
+    });
+  }
+
   async updateSettings(dto: UpdateTenantSettingsDto) {
     const tenantId = requireTenantId();
 
@@ -416,6 +443,9 @@ export class TenantService {
 
     const businessHours = this.buildBusinessHoursData(dto.businessHours);
 
+    // job-063: 대표 이미지의 임시 업로드를 영구 저장소로 옮긴다.
+    await this.promoteTenantImage(dto.profileImageFileId);
+
     const tenant = await prisma.tenant.update({
       where: { id: tenantId },
       data: {
@@ -426,6 +456,13 @@ export class TenantService {
           ? { contactPhone: normalizePhone(dto.contactPhone) || null }
           : {}),
         ...(dto.isListed !== undefined ? { isListed: dto.isListed } : {}),
+        // job-063: 빈 문자열은 "지웠다"이므로 null 로 저장한다(안 보낸 것과 구분).
+        ...(dto.description !== undefined
+          ? { description: dto.description.trim() || null }
+          : {}),
+        ...(dto.profileImageFileId !== undefined
+          ? { profileImageFileId: dto.profileImageFileId || null }
+          : {}),
         ...address.data,
         ...businessHours,
       },
