@@ -130,6 +130,31 @@ export interface MonthlyRevenueResponse {
   months: MonthlyRevenueItem[];
 }
 
+// ── 날짜별 매출 (job-063) — 매출 화면의 달력 ──────────────────────────
+//
+// 날짜 접기를 **서버가** 한다. `RevenueSummaryResponse.sales` 의 `soldAt` 은 UTC ISO 라
+// 화면에서 접으면 KST 09시 이전 판매가 전날로 붙고, 같은 화면의 월 합계와 어긋난다.
+
+export interface DailyRevenueItem {
+  /** `"YYYY-MM-DD"` (한국 달력 기준) */
+  date: string;
+  /** 그날 받은 돈. 환불을 빼기 전 금액이다. */
+  gross: number;
+  /** 그날 판매분에서 돌려준 돈. */
+  refunded: number;
+  /** 순매출 = `gross - refunded`. */
+  total: number;
+  /** 판매 건수 (전액 환불 건도 센다 — 판 적이 없던 게 아니다). */
+  count: number;
+}
+
+export interface DailyRevenueResponse {
+  year: number;
+  month: number;
+  /** 판매가 **있는 날만** 담는다. 없는 날은 화면이 빈 칸으로 그린다. */
+  days: DailyRevenueItem[];
+}
+
 export interface RevenueByMethod {
   method: SaleMethod;
   total: number;

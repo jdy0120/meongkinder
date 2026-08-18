@@ -26,6 +26,7 @@ export const REVENUE_ROUTES = {
   BASE: "v1/revenue",
   MONTHLY: "monthly", // GET ?months=: 최근 N개월 매출 추이
   SUMMARY: "summary", // GET ?year=&month=: 특정 월 상세 (결제수단별·요금제별·건별)
+  DAILY: "daily", // GET ?year=&month=: 그 달의 **날짜별** 매출 (달력용, job-063)
 } as const;
 
 /**

@@ -27,6 +27,13 @@ export class RevenueController {
     return this.revenueService.monthly(query.months);
   }
 
+  @Get(REVENUE_ROUTES.v1.DAILY)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "특정 월의 날짜별 매출 (달력용)" })
+  async daily(@Query() query: RevenueSummaryQueryDto) {
+    return this.revenueService.daily(query.year, query.month);
+  }
+
   @Get(REVENUE_ROUTES.v1.SUMMARY)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "특정 월 매출 상세 (결제수단별·요금제별·건별)" })

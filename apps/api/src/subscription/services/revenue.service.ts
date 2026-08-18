@@ -76,6 +76,65 @@ export class RevenueService {
    * 결제수단별을 첫 화면에 두는 이유: 현금·계좌이체는 원장이 직접 입력한 값이라
    * 카드와 달리 대사할 근거가 없다. 그 비중이 보여야 장부를 얼마나 믿을지 판단할 수 있다.
    */
+  /**
+   * 그 달의 **날짜별** 매출 (job-063) — 매출 화면의 달력이 쓴다.
+   *
+   * ## 왜 `summary` 의 건별 목록으로 화면에서 접지 않는가
+   *
+   * `summary.sales` 는 `soldAt` 이 UTC ISO 로 나가므로, 화면이 그걸 날짜로 접으면 **KST
+   * 09시 이전 판매가 전날로 붙는다.** 아침에 결제를 많이 받는 업종이라 그 오차가 작지
+   * 않고, 같은 화면의 월 합계(`monthly`)와 어긋나 원장이 숫자를 못 믿게 된다.
+   * 날짜 경계는 이미 이 서비스가 KST 로 다루고 있으므로 여기서 접어 내려보낸다.
+   *
+   * ## 세 숫자를 다 내려보내는 이유
+   *
+   * 순매출만 주면 "그날 0원"이 **판매가 없었다**인지 **팔고 전액 환불했다**인지 구분되지
+   * 않는다. 원장에게 그 둘은 완전히 다른 하루다.
+   */
+  async daily(year: number, month: number) {
+    const tenantId = requireTenantId();
+    const start = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET_MS);
+    const end = new Date(Date.UTC(year, month, 1) - KST_OFFSET_MS);
+
+    const sales = await prisma.tenantSale.findMany({
+      where: { tenantId, soldAt: { gte: start, lt: end } },
+      select: { amount: true, refundedAmount: true, soldAt: true },
+    });
+
+    const byDate = new Map<
+      string,
+      { gross: number; refunded: number; count: number }
+    >();
+
+    for (const sale of sales) {
+      // UTC 시각에 +9h 를 더한 뒤 UTC 달력으로 읽으면 그것이 곧 한국 달력 날짜다.
+      const date = new Date(sale.soldAt.getTime() + KST_OFFSET_MS)
+        .toISOString()
+        .slice(0, 10);
+      const row = byDate.get(date) ?? { gross: 0, refunded: 0, count: 0 };
+      row.gross += sale.amount;
+      row.refunded += sale.refundedAmount;
+      row.count += 1;
+      byDate.set(date, row);
+    }
+
+    return {
+      year,
+      month,
+      // 판매가 있는 날만 담는다 — 빈 날까지 채워 보내면 한 달치가 통째로 커지는데,
+      // 화면은 어차피 없는 날을 빈 칸으로 그린다.
+      days: [...byDate.entries()]
+        .map(([date, row]) => ({
+          date,
+          gross: row.gross,
+          refunded: row.refunded,
+          total: row.gross - row.refunded,
+          count: row.count,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    };
+  }
+
   async summary(year: number, month: number) {
     const tenantId = requireTenantId();
     const start = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET_MS);

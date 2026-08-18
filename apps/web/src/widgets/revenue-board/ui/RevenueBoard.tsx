@@ -25,6 +25,7 @@ import { Wallet } from "lucide-react";
 
 import { EmptyState, StatTile } from "@/shared/ui";
 import { RefundSaleDialog } from "@/features/subscription/refund-sale";
+import { RevenueCalendarDialog } from "./RevenueCalendarDialog";
 import { Get } from "@/shared/libs/axios/request";
 import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
 
@@ -75,9 +76,22 @@ export const RevenueBoard = () => {
   const months = trend?.months ?? [];
   const peak = Math.max(1, ...months.map((m) => m.total));
 
-  const selectMonth = (y: number, m: number) => {
+  /** 달력을 띄울 달. 열려 있지 않으면 `null`. */
+  const [calendarOf, setCalendarOf] = useState<{
+    year: number;
+    month: number;
+  } | null>(null);
+
+  /**
+   * 막대 클릭 — **고르기와 열기를 함께** 한다 (job-063).
+   *
+   * 다른 달의 막대를 눌렀는데 아래 상세는 그대로 두고 달력만 그 달로 열리면, 한 화면에
+   * 서로 다른 두 달이 동시에 보인다. 원장은 어느 쪽이 지금 보는 달인지 알 수 없다.
+   */
+  const openMonth = (y: number, m: number) => {
     setYear(y);
     setMonth(m);
+    setCalendarOf({ year: y, month: m });
   };
 
   return (
@@ -93,6 +107,10 @@ export const RevenueBoard = () => {
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>최근 6개월</CardTitle>
+          {/* 누를 수 있다는 것을 적어 준다 — 막대는 보통 그림이라 눌러 볼 생각을 하지 않는다. */}
+          <p className='text-label text-muted-foreground'>
+            월을 누르면 일별 매출 달력이 열립니다.
+          </p>
         </CardHeader>
         <CardContent>
           {trendLoading ? (
@@ -107,9 +125,10 @@ export const RevenueBoard = () => {
                   <button
                     key={m.label}
                     type='button'
-                    onClick={() => selectMonth(m.year, m.month)}
+                    onClick={() => openMonth(m.year, m.month)}
                     aria-pressed={isSelected}
-                    className='flex min-w-14 flex-1 flex-col items-center gap-1.5'
+                    aria-label={`${m.month}월 일별 매출 보기`}
+                    className='flex min-w-14 flex-1 cursor-pointer flex-col items-center gap-1.5 rounded-btn p-1 transition-colors hover:bg-accent'
                   >
                     <span className='text-xs text-muted-foreground'>
                       {m.total > 0 ? `${Math.round(m.total / 10000)}만` : "-"}
@@ -272,6 +291,14 @@ export const RevenueBoard = () => {
             </CardContent>
           </Card>
         </>
+      )}
+      {calendarOf && (
+        <RevenueCalendarDialog
+          open
+          onOpenChange={(next: boolean) => !next && setCalendarOf(null)}
+          year={calendarOf.year}
+          month={calendarOf.month}
+        />
       )}
     </div>
   );
