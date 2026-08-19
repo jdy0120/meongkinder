@@ -94,7 +94,7 @@ const AttendanceBlock = ({
       오늘 등원
     </SectionHeading>
 
-    <div className='space-y-4 rounded-card border bg-surface p-5 shadow-card'>
+    <div className='space-y-4 rounded-card border bg-surface p-4'>
       <p className='text-display'>
         {data.checkedIn}
         <span className='text-title text-muted-foreground'>
@@ -156,7 +156,7 @@ const AttentionBlock = ({
     <SectionHeading>오늘 주의할 아이</SectionHeading>
 
     {data.length === 0 ? (
-      <p className='rounded-card border bg-surface p-5 text-body text-muted-foreground shadow-card'>
+      <p className='rounded-card border bg-surface p-4 text-body text-muted-foreground'>
         오늘 오는 아이 중 특별히 신경 쓸 아이는 없어요.
       </p>
     ) : (
@@ -164,7 +164,7 @@ const AttentionBlock = ({
         {data.map((pet) => (
           <li
             key={pet.id}
-            className={`space-y-3 rounded-card bg-surface p-5 shadow-card ${
+            className={`space-y-3 rounded-card border border-border bg-surface p-4 ${
               pet.level === BADGE_LEVEL.CRITICAL
                 ? "border-2 border-danger"
                 : "border border-border"
@@ -195,7 +195,7 @@ const StaffingBlock = ({ data }: { data: DashboardResponse["staffing"] }) => (
   <section className='space-y-3'>
     <SectionHeading>훈련사 배치</SectionHeading>
 
-    <div className='flex items-center justify-between gap-3 rounded-card border bg-surface p-5 shadow-card'>
+    <div className='flex items-center justify-between gap-3 rounded-card border bg-surface p-4'>
       <div className='space-y-1.5'>
         <p className='text-label text-muted-foreground'>훈련사 1명당</p>
         <p className='text-display'>
@@ -223,7 +223,7 @@ const PickupBlock = ({ data }: { data: DashboardResponse["pickup"] }) => {
     <section className='space-y-3'>
       <SectionHeading>하원·픽업</SectionHeading>
 
-      <div className='space-y-4 rounded-card border bg-surface p-5 shadow-card'>
+      <div className='space-y-4 rounded-card border bg-surface p-4'>
         {data.hours.length === 0 ? (
           <p className='text-body text-muted-foreground'>
             픽업 시각이 입력된 아이가 없어요. 원생 정보에서 넣으면 여기 시간대별로 모입니다.
@@ -304,11 +304,11 @@ const PassesBlock = ({
     </SectionHeading>
 
     {data.lowBalance.length === 0 ? (
-      <p className='rounded-card border bg-surface p-5 text-body text-muted-foreground shadow-card'>
+      <p className='rounded-card border bg-surface p-4 text-body text-muted-foreground'>
         곧 소진되는 이용권이 없어요.
       </p>
     ) : (
-      <ul className='space-y-2 rounded-card border bg-surface p-5 shadow-card'>
+      <ul className='space-y-2 rounded-card border bg-surface p-4'>
         {data.lowBalance.map((pet) => (
           <li
             key={pet.petId}
@@ -335,7 +335,7 @@ const PassesBlock = ({
         자체가 사라진다) 그렇게 지나간 날이 여기에는 보여야 한다. 없으면 아예 그리지
         않는다 — "0건"을 늘 띄우면 카드만 하나 늘고 읽히지 않는다. */}
     {data.unpaid.length > 0 && (
-      <ul className='mt-3 space-y-2 rounded-card border-2 border-danger bg-surface p-5 shadow-card'>
+      <ul className='mt-3 space-y-2 rounded-card border-2 border-danger bg-surface p-4'>
         <li className='text-body font-semibold text-danger'>
           이용권 없이 받은 등원
         </li>

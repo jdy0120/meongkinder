@@ -13,7 +13,7 @@ export const PetProfileList = () => {
 
   if (isLoading) {
     return (
-      <div className='flex justify-center py-8'>
+      <div className='flex justify-center py-5'>
         <Spinner className='size-6' />
       </div>
     );

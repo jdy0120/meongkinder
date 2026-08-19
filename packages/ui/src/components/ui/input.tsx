@@ -14,11 +14,12 @@ import { cn } from "../../lib/utils";
  *
  * 그래서 화면마다 덧칠하지 않고 **정의를 고친다**(job-050·job-052 와 같은 판단):
  *
- *   default 64px — 기본. `h-touch` 로 Button 기본값과 같은 토큰을 참조한다
- *   sm      48px — 데스크톱 콘솔의 조밀한 표 안 (Button `sm` 과 짝)
- *   xs      40px — @pawlog/ui 내부 조립용 (Button `xs` 와 짝). 화면 코드 금지
+ *   default 44px — 기본. `h-touch` 로 Button 기본값과 같은 토큰을 참조한다
+ *   control 36px — 데스크톱(lg+) 표·툴바 (Button `control` 과 짝). 마우스 전제
+ *   sm      40px — 밀집한 카드 안 (Button `sm` 과 짝)
+ *   xs      36px — @pawlog/ui 내부 조립용 (Button `xs` 와 짝). 화면 코드 금지
  *
- * 높이만 맞추면 안 된다 — 글자 크기도 Button 과 같은 눈금(`text-body`/`text-label`)을
+ * 높이만 맞추면 안 된다 — 글자 크기도 Button 과 같은 눈금(`text-body-sm`/`text-label`)을
  * 쓴다. 예전 `text-base ... md:text-sm` 는 뷰포트에 따라 입력만 글자가 줄어, 옆 버튼과
  * 높이는 같은데 글자만 달라 보이는 상태였다.
  */
@@ -27,9 +28,10 @@ const inputVariants = cva(
   {
     variants: {
       inputSize: {
-        default: "h-touch px-4 py-1 text-body",
-        sm: "h-12 px-3 py-1 text-label",
-        xs: "h-10 px-2.5 py-1 text-label",
+        default: "h-touch px-3 py-1 text-body-sm",
+        control: "h-control px-2.5 py-1 text-label",
+        sm: "h-10 px-3 py-1 text-body-sm",
+        xs: "h-control px-2.5 py-1 text-label",
       },
     },
     defaultVariants: {

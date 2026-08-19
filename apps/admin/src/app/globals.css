@@ -135,7 +135,25 @@
   --surface: var(--adm-bg);
   --text: var(--adm-text);
   --line: var(--adm-edge);
+  /* ⚠️ tokens.css 가 새로 추가한 별칭이라 **여기서 덮지 않으면 web 값을 그대로 받는다.**
+     web 의 `--line-soft` 는 `#eef2f6`(거의 흰색)이라, 그걸 그대로 쓰면 이 어두운
+     콘솔의 표 행 구분선이 흰 줄로 그어진다. `TableRow` 가 이 토큰을 쓰므로 admin 의
+     표 4종이 전부 해당한다. 여기서는 면 경계보다 한 단계 옅은 값을 쓴다. */
+  --line-soft: color-mix(in srgb, var(--adm-edge) 60%, var(--adm-bg));
   --line-input: var(--adm-edge-strong);
+
+  /* CTA — tokens.css 신설. admin 은 아직 `variant='cta'` 를 쓰지 않지만, 기본값
+     (에메랄드)이 이 팔레트와 맞지 않으므로 미리 콘솔 강조색에 묶어 둔다.
+     쓰이기 시작한 뒤에 고치면 그때는 이미 화면에 초록 버튼이 나가 있다. */
+  --cta: var(--adm-accent);
+  --cta-hover: var(--adm-accent-hover);
+  --cta-foreground: #ffffff;
+  --cta-tint: var(--adm-accent-tint);
+  --cta-on-tint: var(--adm-accent-on-tint);
+
+  /* 정보 계열 — 마찬가지로 신설분. */
+  --info-text: var(--adm-accent-text);
+  --info-tint: var(--adm-accent-tint);
 
   --danger: var(--adm-danger);
   --danger-strong: var(--adm-danger-text);

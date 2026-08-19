@@ -159,7 +159,7 @@ export const MultiPhotoUpload = ({
         }}
         onDragLeave={() => setIsDropping(false)}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center transition-colors ${
           isDropping ? "border-primary bg-primary/5" : "border-border"
         }`}
       >

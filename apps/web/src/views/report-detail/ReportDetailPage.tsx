@@ -36,7 +36,7 @@ export const ReportDetailPage = ({ reportId }: { reportId: string }) => {
             존재하지 않거나 아직 발행되지 않은 리포트예요.
           </p>
         ) : (
-          <div className='flex flex-col gap-6'>
+          <div className='flex flex-col gap-4'>
             <div className='flex items-center gap-3'>
               <PetAvatar name={report.pet.name} className='size-12' />
               <div>

@@ -9,13 +9,18 @@ import { ChevronLeft } from "lucide-react";
 const WIDTH_CLASS = {
   sm: "max-w-md",
   md: "max-w-2xl",
-  lg: "max-w-5xl",
+  lg: "max-w-console",
 } as const;
 
 interface PageShellProps {
   /** 상단 고정 헤더에 표시할 화면 이름. */
   title: ReactNode;
-  /** 제목 아래 본문 첫 줄로 들어가는 설명. 헤더가 아니라 본문에 둬야 헤더가 얇게 유지된다. */
+  /**
+   * 제목 바로 아래 한 줄 설명. **헤더 블록 안**에 들어간다.
+   *
+   * ⚠️ 한 줄로 잘린다(`truncate`). 여기 문단을 넣으면 안 된다 — 화면의 성격을 말하는
+   * 한 문장만 둔다. 길게 설명해야 하는 것은 본문 첫 카드에 두는 게 맞다.
+   */
   description?: ReactNode;
   /** 지정하면 헤더 왼쪽에 뒤로가기 화살표가 생긴다. */
   backHref?: string;
@@ -87,37 +92,52 @@ export const PageShell = ({
 
   return (
     <div className={`flex min-h-screen flex-col bg-background ${offset}`}>
-      <header className='sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
+      {/*
+        페이지 헤더 (mini SaaS 패턴).
+
+        v2 는 헤더에 제목만 두고 설명은 본문 첫 줄로 내려보냈다 — "헤더를 얇게 유지"가
+        목적이었다. 여기서는 **설명을 제목 바로 아래로 되돌린다.** 이유는 밀도가 아니라
+        의미다: 설명이 본문 안에 있으면 그 화면의 첫 콘텐츠 카드와 같은 층으로 읽혀,
+        "이 화면이 무엇인가"와 "이 화면의 데이터"가 구분되지 않았다. 헤더 블록 안에
+        있으면 제목의 부속으로 읽힌다.
+
+        높이는 `--spacing-topbar`(56px)로 고정한다. 화면마다 제목 길이에 따라 헤더가
+        1~2px 씩 달라지면 화면을 옮길 때 본문이 미세하게 튄다.
+      */}
+      <header className='sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
         <div
-          className={`mx-auto flex w-full ${widthClass} items-center gap-2 px-5 py-2 md:px-6`}
+          className={`mx-auto flex w-full ${widthClass} min-h-topbar items-center gap-2 px-4 py-2 md:px-6`}
         >
           {backHref && (
-            // 뒤로가기도 누르는 것이므로 64px 터치 타겟이다 (design-system.md §2.3).
             <Link
               href={backHref}
               aria-label='뒤로 가기'
-              className='-ml-3 flex size-touch shrink-0 items-center justify-center rounded-pill text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+              className='-ml-2 flex size-touch shrink-0 items-center justify-center rounded-btn text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground'
             >
-              <ChevronLeft className='size-6' />
+              <ChevronLeft className='size-5' />
             </Link>
           )}
 
-          <h1 className='min-w-0 flex-1 truncate text-name font-semibold tracking-tight'>
-            {title}
-          </h1>
+          <div className='flex min-w-0 flex-1 flex-col justify-center'>
+            {/* 제목 눈금은 `text-title`. 예전엔 `text-name` 이었는데 그 유틸리티는
+                정의가 없어 통째로 죽어 있었고, 결과적으로 **모든 화면의 제목이 본문
+                크기**로 나왔다(굵기만 살아 "굵은 본문"으로 보였다). `text-name` 은
+                이제 개체 이름 전용 눈금이다. */}
+            <h1 className='min-w-0 truncate text-title'>{title}</h1>
+            {description && (
+              <p className='min-w-0 truncate text-meta text-muted-foreground'>
+                {description}
+              </p>
+            )}
+          </div>
 
           {action && <div className='shrink-0'>{action}</div>}
         </div>
       </header>
 
       <main
-        className={`mx-auto w-full ${widthClass} flex-1 space-y-8 px-5 py-6 md:px-6`}
+        className={`mx-auto w-full ${widthClass} flex-1 space-y-5 px-4 py-5 md:px-6`}
       >
-        {description && (
-          <p className='max-w-prose-ko break-keep text-label text-muted-foreground'>
-            {description}
-          </p>
-        )}
         {children}
       </main>
 

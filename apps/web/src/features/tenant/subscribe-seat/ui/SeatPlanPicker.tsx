@@ -19,7 +19,7 @@ export const SeatPlanPicker = () => {
 
   if (isLoading) {
     return (
-      <div className='flex justify-center py-8'>
+      <div className='flex justify-center py-5'>
         <Spinner className='size-6 text-primary' />
       </div>
     );
@@ -27,7 +27,7 @@ export const SeatPlanPicker = () => {
 
   if (plans.length === 0) {
     return (
-      <p className='py-6 text-center text-sm text-muted-foreground'>
+      <p className='py-5 text-center text-sm text-muted-foreground'>
         판매 중인 개설권 요금제가 없습니다. 플랫폼 관리자에게 문의하세요.
       </p>
     );

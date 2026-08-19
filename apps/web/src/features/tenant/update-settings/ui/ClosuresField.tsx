@@ -51,7 +51,7 @@ export const ClosuresField = () => {
 
   return (
     <Card>
-      <CardContent className='flex flex-col gap-6 pt-6'>
+      <CardContent className='flex flex-col gap-4 pt-6'>
         <div className='flex flex-col gap-1'>
           <SectionHeading>임시 휴무일</SectionHeading>
           <p className='break-keep text-label text-muted-foreground'>
@@ -98,7 +98,7 @@ export const ClosuresField = () => {
         </div>
 
         {isLoading ? (
-          <div className='flex justify-center py-6'>
+          <div className='flex justify-center py-5'>
             <Spinner className='size-6 text-primary' />
           </div>
         ) : closures && closures.length > 0 ? (

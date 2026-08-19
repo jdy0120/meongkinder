@@ -172,7 +172,7 @@ export const ReservationCalendar = ({ petId }: { petId: string }) => {
   const summary = summarizeBusinessHours(data.businessHours);
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       <div className='grid grid-cols-2 gap-3'>
         <StatTile label='남은 이용권' value={data.balance} unit='회' />
         <StatTile

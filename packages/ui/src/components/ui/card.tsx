@@ -2,6 +2,18 @@ import * as React from "react";
 
 import { cn } from "../../lib/utils";
 
+/**
+ * 카드 (mini SaaS · Swiss).
+ *
+ * ⚠️ **`ring-1 ring-foreground/10` 을 `border` 로 바꿨다.** 셋이 함께 달라진다:
+ *   ① `ring` 은 레이아웃 밖(바깥쪽)에 그려져 카드끼리 맞붙을 때 선이 겹쳐 두꺼워진다.
+ *      `border` 는 박스 안에 있어 표·격자에서 간격이 일정하게 유지된다.
+ *   ② `ring` 은 `focus-visible:ring` 과 **같은 속성**이라, 카드 안 요소에 초점이 갔을 때
+ *      두 링이 서로를 덮는 경우가 있었다.
+ *   ③ Swiss 방향에서 카드는 그림자가 아니라 **선**으로 선다(tokens.css 의 elevation-sm
+ *      을 거의 0으로 내린 것과 짝이다). 선이 구조를 만들면 그림자는 "떠 있음"이라는
+ *      진짜 신호로 남는다.
+ */
 function Card({
   className,
   size = "default",
@@ -12,7 +24,7 @@ function Card({
       data-slot='card'
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card flex flex-col gap-3 overflow-hidden rounded-card border border-border bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-2 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-card *:[img:last-child]:rounded-b-card",
         className,
       )}
       {...props}

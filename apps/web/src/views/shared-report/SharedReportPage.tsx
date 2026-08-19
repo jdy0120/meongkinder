@@ -46,7 +46,7 @@ export const SharedReportPage = ({ token }: { token: string }) => {
           </p>
         </div>
       ) : (
-        <div className='flex flex-col gap-6'>
+        <div className='flex flex-col gap-4'>
           <div className='flex items-center gap-3'>
             <PetAvatar name={report.pet.name} className='size-12' />
             <div>

@@ -26,7 +26,7 @@ export const EmptyState = ({
   description,
   action,
 }: EmptyStateProps) => (
-  <div className='flex flex-col items-center gap-4 rounded-card border border-dashed px-5 py-12 text-center'>
+  <div className='flex flex-col items-center gap-4 rounded-card border border-dashed px-4 py-12 text-center'>
     <Icon className='size-8 text-muted-foreground' />
     <div className='space-y-1.5'>
       <p className='text-body font-semibold'>{title}</p>

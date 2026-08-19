@@ -85,7 +85,7 @@ export const RevenueBoard = () => {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       {/* 기준을 화면에 적어두는 이유는 위 주석 참고 — 모르면 숫자를 오해한다. */}
       <p className='break-keep text-xs text-muted-foreground'>
         받은 날짜 기준입니다. 10회권을 팔면 <b>판 달에 전액</b>이 잡히고, 아이가
@@ -100,7 +100,7 @@ export const RevenueBoard = () => {
         </CardHeader>
         <CardContent>
           {trendLoading ? (
-            <div className='flex justify-center py-6'>
+            <div className='flex justify-center py-5'>
               <Spinner />
             </div>
           ) : (

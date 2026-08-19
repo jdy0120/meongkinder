@@ -64,7 +64,7 @@ export const BottomSheet = ({
 
     <DrawerContent className='rounded-t-2xl'>
       <div className='mx-auto flex w-full max-w-2xl flex-col overflow-hidden'>
-        <div className='flex items-start gap-3 px-5 pt-4'>
+        <div className='flex items-start gap-3 px-4 pt-4'>
           <div className='min-w-0 flex-1 space-y-1.5'>
             <DrawerTitle className='truncate text-title'>{title}</DrawerTitle>
             {description ? (
@@ -87,7 +87,7 @@ export const BottomSheet = ({
         </div>
 
         {guardianPhone && (
-          <div className='px-5 pt-4'>
+          <div className='px-4 pt-4'>
             <Button asChild size='lg' className='w-full'>
               <a href={`tel:${guardianPhone}`}>
                 <Phone />
@@ -99,12 +99,12 @@ export const BottomSheet = ({
 
         {/* `overflow-y-auto` 만 주면 CSS 규칙상 overflow-x 가 visible → **auto** 로
             승격돼, 안에 조금만 넓은 요소가 있어도 가로 스크롤바가 생긴다. 명시적으로 막는다. */}
-        <div className='min-h-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto px-5 py-6'>
+        <div className='min-h-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto px-4 py-5'>
           {children}
         </div>
 
         {footer && (
-          <DrawerFooter className='gap-3 border-t px-5 py-4'>
+          <DrawerFooter className='gap-3 border-t px-4 py-4'>
             {footer}
           </DrawerFooter>
         )}

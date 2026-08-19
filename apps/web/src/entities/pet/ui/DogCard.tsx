@@ -88,13 +88,13 @@ const Root = ({ pet, action, onOpen, children }: RootProps) => {
       : "border border-border";
 
   const body = (
-    <div className='min-w-0 flex-1 space-y-3 p-5 text-left'>{children}</div>
+    <div className='min-w-0 flex-1 space-y-3 p-4 text-left'>{children}</div>
   );
 
   return (
     <DogCardContext.Provider value={{ pet, safety }}>
       <div
-        className={`flex items-stretch overflow-hidden rounded-card bg-surface shadow-card ${borderClass}`}
+        className={`flex items-stretch overflow-hidden rounded-card border border-border bg-surface ${borderClass}`}
       >
         {onOpen ? (
           <button

@@ -96,7 +96,7 @@ export const BusinessHoursField = ({ value, onChange }: Props) => {
 
   return (
     <Card>
-      <CardContent className='flex flex-col gap-6 pt-6'>
+      <CardContent className='flex flex-col gap-4 pt-6'>
         <div className='flex flex-col gap-1'>
           <SectionHeading
             action={

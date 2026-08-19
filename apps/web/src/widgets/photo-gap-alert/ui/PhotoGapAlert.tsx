@@ -34,7 +34,7 @@ export const PhotoGapAlert = () => {
 
   if (isLoading) {
     return (
-      <Card className='flex items-center justify-center py-8'>
+      <Card className='flex items-center justify-center py-5'>
         <Spinner className='size-6 text-primary' />
       </Card>
     );
@@ -48,7 +48,7 @@ export const PhotoGapAlert = () => {
     <Card
       // job-052: 팔레트 밖 색(emerald/amber) → 토큰. 사진이 빠진 상태는 '주의'이고,
       // 다 채운 상태는 '정상'이다 — 이미 §3.1 이 이름 붙여 둔 두 레벨 그대로다.
-      className={`gap-3 rounded-card p-5 ${
+      className={`gap-3 rounded-card p-4 ${
         allCovered
           ? "border-transparent bg-primary-tint text-primary-on-tint"
           : "border-transparent bg-caution-tint text-caution-text"

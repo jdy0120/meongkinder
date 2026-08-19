@@ -31,14 +31,14 @@ export const UsageHistorySection = ({ subscriptionId }: { subscriptionId: string
 
   if (isLoading) {
     return (
-      <div className='flex justify-center py-6'>
+      <div className='flex justify-center py-5'>
         <Spinner className='size-5' />
       </div>
     );
   }
 
   if (!data?.items || data.items.length === 0) {
-    return <p className='py-6 text-center text-sm text-muted-foreground'>사용 내역이 없어요.</p>;
+    return <p className='py-5 text-center text-sm text-muted-foreground'>사용 내역이 없어요.</p>;
   }
 
   return (

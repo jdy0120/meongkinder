@@ -29,7 +29,7 @@ export const PlatformViewBanner = ({ tenantName }: PlatformViewBannerProps) => (
     // 사이드바 밑에 깔려 "…에 소속되어 있지 않으며"부터 보인다. 매장 영역 전용
     // 컴포넌트라 사이드바가 항상 함께 있다. padding 이 아니라 margin 인 이유는
     // `px-5` 를 그대로 둬야 본문(`PageShell` 도 `px-5`)과 글자 시작점이 맞기 때문이다.
-    className='flex items-start gap-2 border-b border-caution bg-caution-tint px-5 py-3 text-caution-text lg:ml-nav'
+    className='flex items-start gap-2 border-b border-caution bg-caution-tint px-4 py-3 text-caution-text lg:ml-nav'
   >
     <ShieldAlert className='mt-0.5 size-5 shrink-0' />
     <p className='break-keep text-label'>

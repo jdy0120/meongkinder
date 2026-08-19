@@ -199,7 +199,7 @@ export const KakaoMap = ({
   if (error) {
     return (
       <div
-        className={`flex items-center justify-center rounded-xl border bg-muted p-6 text-center text-label text-muted-foreground ${className ?? ""}`}
+        className={`flex items-center justify-center rounded-xl border bg-muted p-5 text-center text-label text-muted-foreground ${className ?? ""}`}
       >
         {error}
         <br />

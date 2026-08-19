@@ -15,7 +15,7 @@ function Table({
     >
       <table
         data-slot='table'
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom text-body-sm", className)}
         {...props}
       />
     </div>
@@ -29,7 +29,16 @@ function TableHeader({
   return (
     <thead
       data-slot='table-header'
-      className={cn("[&_tr]:border-b", className)}
+      className={cn(
+        // 머리 행을 가라앉은 면에 올려 데이터와 층을 나눈다(Swiss: 색이 아니라 면).
+        //
+        // ⚠️ **`sticky top-0` 을 넣지 않았다.** 넣으면 `PageShell` 의 페이지 헤더가
+        // 같은 `sticky top-0` 에 `z-20` 이라 표 머리가 그 **뒤로 숨는다**. 제대로
+        // 하려면 높이가 고정된 스크롤 컨테이너 안에서 그 컨테이너 기준으로 붙여야
+        // 하는데, 지금 레이아웃에는 그런 경계가 없다. 화면 구조를 바꾸기 전까지 보류.
+        "bg-muted [&_tr]:border-b",
+        className,
+      )}
       {...props}
     />
   );
@@ -72,7 +81,9 @@ function TableRow({
     <tr
       data-slot='table-row'
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        // 밀도가 오르면 행이 촘촘해져 진한 구분선이 격자처럼 읽힌다 → `line-soft`.
+        // hover 는 마우스 전용 신호이므로 색만 바꾸고 움직이지 않는다(변위 0).
+        "border-b border-line-soft transition-colors duration-150 hover:bg-muted/60 data-[state=selected]:bg-accent",
         className,
       )}
       {...props}
@@ -100,7 +111,9 @@ function TableHead({
       data-slot='table-head'
       scope='col'
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        // 열 이름은 **읽는 글이 아니라 표지**다. 본문과 같은 크기·굵기면 첫 행과
+        // 구별되지 않으므로, 작고 굵고 자간을 벌려 데이터와 다른 층으로 보낸다.
+        "h-9 px-3 text-left align-middle text-label font-semibold tracking-wide whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -116,7 +129,9 @@ function TableCell({
     <td
       data-slot='table-cell'
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        // 높이를 토큰(`--spacing-row-dense` 44px)으로 고정한다. 셀 내용에 배지가
+        // 있는 행만 커지면 표가 들쭉날쭉해져 눈이 행을 따라가지 못한다.
+        "h-row-dense px-3 py-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

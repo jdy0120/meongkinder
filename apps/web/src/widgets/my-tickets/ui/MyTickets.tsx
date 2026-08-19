@@ -36,7 +36,7 @@ export const MyTickets = () => {
 
   if (isLoading) {
     return (
-      <div className='flex justify-center py-8'>
+      <div className='flex justify-center py-5'>
         <Spinner className='size-6' />
       </div>
     );
@@ -56,7 +56,7 @@ export const MyTickets = () => {
   }
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       <section className='flex flex-col gap-2'>
         <h2 className='text-sm font-semibold text-muted-foreground'>
           아이별 잔여 횟수
@@ -84,7 +84,7 @@ export const MyTickets = () => {
           등원 이력
         </h2>
         {(attendances ?? []).length === 0 ? (
-          <p className='py-6 text-center text-sm text-muted-foreground'>
+          <p className='py-5 text-center text-sm text-muted-foreground'>
             아직 등원 기록이 없어요.
           </p>
         ) : (

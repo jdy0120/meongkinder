@@ -189,7 +189,7 @@ export const PetScheduleDialog = ({
             <Spinner className='size-8 text-primary' />
           </div>
         ) : (
-          <div className='flex flex-col gap-6'>
+          <div className='flex flex-col gap-4'>
             <SegmentedControl
               label='등원 스케줄 방식'
               value={scheduleType}

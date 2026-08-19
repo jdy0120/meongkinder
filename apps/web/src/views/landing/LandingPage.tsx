@@ -162,7 +162,7 @@ export const LandingPage = () => {
   return (
     <div className='flex min-h-screen flex-col bg-background font-sans text-foreground'>
       <header className='sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70'>
-        <div className='mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3.5 md:px-6'>
+        <div className='mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3.5 md:px-5'>
           <Link
             href='/'
             className='flex items-center gap-2 text-xl font-bold text-primary'
@@ -171,7 +171,7 @@ export const LandingPage = () => {
             Pawlog Kids
           </Link>
 
-          <nav className='hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex'>
+          <nav className='hidden items-center gap-4 text-sm font-medium text-muted-foreground md:flex'>
             <a href='#features' className='transition-colors hover:text-foreground'>
               기능
             </a>
@@ -210,7 +210,7 @@ export const LandingPage = () => {
             className='pointer-events-none absolute -top-40 left-1/2 size-[38rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl'
           />
 
-          <div className='relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-5 py-20 text-center md:px-6 md:py-28'>
+          <div className='relative mx-auto flex w-full max-w-3xl flex-col items-center gap-4 px-4 py-20 text-center md:px-5 md:py-28'>
             <span className='inline-flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary'>
               <span className='relative flex size-2'>
                 <span className='absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75' />
@@ -235,7 +235,7 @@ export const LandingPage = () => {
               <Button
                 asChild
                 size='lg'
-                className='rounded-full shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg'
+                className='rounded-full shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md'
               >
                 <Link href={isLoggedIn ? "/launch" : "/auth/login"}>
                   {isLoggedIn ? "내 아이 리포트 보기" : "카카오로 시작하기"}
@@ -261,7 +261,7 @@ export const LandingPage = () => {
         {/* ── 보호자 기능 ───────────────────────────────────────── */}
         <section
           id='features'
-          className='mx-auto w-full max-w-5xl scroll-mt-20 px-5 py-16 md:px-6 md:py-24'
+          className='mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16 md:px-5 md:py-24'
         >
           <div className='mb-10 flex flex-col items-center gap-3 text-center'>
             <span className='text-sm font-bold tracking-wide text-primary uppercase'>
@@ -293,10 +293,10 @@ export const LandingPage = () => {
               ({ title, description, icon: Icon, className }) => (
                 <Card
                   key={title}
-                  className={`group overflow-hidden border-border/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg ${className}`}
+                  className={`group overflow-hidden border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg ${className}`}
                 >
-                  <CardContent className='flex h-full flex-col p-6 text-left'>
-                    <div className='w-fit rounded-2xl bg-primary/10 p-3 text-primary transition-colors duration-300 group-hover:bg-primary/15'>
+                  <CardContent className='flex h-full flex-col p-5 text-left'>
+                    <div className='w-fit rounded-2xl bg-primary/10 p-3 text-primary transition-colors duration-200 group-hover:bg-primary/15'>
                       <Icon className='size-6' />
                     </div>
                     <div className='mt-auto pt-4'>
@@ -314,7 +314,7 @@ export const LandingPage = () => {
           </div>
 
           <Card className='mt-4 border-border/60 bg-primary/5'>
-            <CardContent className='flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center'>
+            <CardContent className='flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center'>
               <div className='rounded-2xl bg-primary/10 p-3 text-primary'>
                 <Instagram className='size-6' />
               </div>
@@ -334,7 +334,7 @@ export const LandingPage = () => {
           id='how'
           className='scroll-mt-20 border-y border-border/60 bg-card/60'
         >
-          <div className='mx-auto w-full max-w-5xl px-5 py-16 md:px-6 md:py-24'>
+          <div className='mx-auto w-full max-w-5xl px-4 py-16 md:px-5 md:py-24'>
             <div className='mb-10 flex flex-col items-center gap-3 text-center'>
               <span className='text-sm font-bold tracking-wide text-primary uppercase'>
                 How it works
@@ -348,7 +348,7 @@ export const LandingPage = () => {
               {STEPS.map(({ title, description, icon: Icon }, index) => (
                 <li key={title}>
                   <Card className='h-full border-border/60'>
-                    <CardContent className='flex h-full flex-col gap-3 p-6'>
+                    <CardContent className='flex h-full flex-col gap-3 p-5'>
                       <div className='flex items-center gap-3'>
                         <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground'>
                           {index + 1}
@@ -370,7 +370,7 @@ export const LandingPage = () => {
         {/* ── 유치원 운영자 ─────────────────────────────────────── */}
         <section
           id='for-stores'
-          className='mx-auto w-full max-w-5xl scroll-mt-20 px-5 py-16 md:px-6 md:py-24'
+          className='mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16 md:px-5 md:py-24'
         >
           <div className='mb-10 flex flex-col items-center gap-3 text-center'>
             <span className='text-sm font-bold tracking-wide text-primary uppercase'>
@@ -389,9 +389,9 @@ export const LandingPage = () => {
             {STORE_FEATURES.map(({ title, description, icon: Icon }) => (
               <Card
                 key={title}
-                className='h-full border-border/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg'
+                className='h-full border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg'
               >
-                <CardContent className='flex h-full flex-col gap-3 p-6'>
+                <CardContent className='flex h-full flex-col gap-3 p-5'>
                   <div className='w-fit rounded-2xl bg-primary/10 p-2.5 text-primary'>
                     <Icon className='size-5' />
                   </div>
@@ -419,7 +419,7 @@ export const LandingPage = () => {
           id='faq'
           className='scroll-mt-20 border-y border-border/60 bg-card/60'
         >
-          <div className='mx-auto w-full max-w-3xl px-5 py-16 md:px-6 md:py-24'>
+          <div className='mx-auto w-full max-w-3xl px-4 py-16 md:px-5 md:py-24'>
             <h2 className='mb-10 text-center text-3xl font-extrabold tracking-tight sm:text-4xl'>
               자주 묻는 질문
             </h2>
@@ -430,7 +430,7 @@ export const LandingPage = () => {
               {FAQS.map(({ question, answer }) => (
                 <details
                   key={question}
-                  className='group rounded-2xl border border-border/60 bg-card px-5 py-4 transition-colors open:border-primary/30 [&_summary::-webkit-details-marker]:hidden'
+                  className='group rounded-2xl border border-border/60 bg-card px-4 py-4 transition-colors open:border-primary/30 [&_summary::-webkit-details-marker]:hidden'
                 >
                   <summary className='flex cursor-pointer list-none items-center justify-between gap-4 font-bold'>
                     {question}
@@ -451,9 +451,9 @@ export const LandingPage = () => {
         </section>
 
         {/* ── 마지막 CTA ───────────────────────────────────────── */}
-        <section className='mx-auto w-full max-w-5xl px-5 py-16 md:px-6 md:py-24'>
+        <section className='mx-auto w-full max-w-5xl px-4 py-16 md:px-5 md:py-24'>
           <Card className='overflow-hidden border-border/60 bg-primary/5'>
-            <CardContent className='flex flex-col items-center gap-4 px-6 py-14 text-center'>
+            <CardContent className='flex flex-col items-center gap-4 px-5 py-14 text-center'>
               <PawPrint className='size-10 text-primary' />
               <h2 className='text-3xl font-extrabold tracking-tight text-balance sm:text-4xl'>
                 오늘부터 아이의 하루를 받아보세요
@@ -464,7 +464,7 @@ export const LandingPage = () => {
               <Button
                 asChild
                 size='lg'
-                className='rounded-full shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg'
+                className='rounded-full shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md'
               >
                 <Link href={isLoggedIn ? "/launch" : "/auth/login"}>
                   {isLoggedIn ? "콘솔로 이동" : "카카오로 시작하기"}
@@ -477,7 +477,7 @@ export const LandingPage = () => {
       </main>
 
       <footer className='border-t border-border/60'>
-        <div className='mx-auto flex w-full max-w-6xl flex-col gap-4 px-5 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between md:px-6'>
+        <div className='mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between md:px-5'>
           <div className='flex items-center gap-2 font-bold text-foreground'>
             <PawPrint className='size-4 text-primary' />
             Pawlog Kids

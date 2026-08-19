@@ -56,7 +56,7 @@ export const AppPage = () => {
 
   return (
     <div className='flex min-h-screen flex-col bg-background'>
-      <header className='flex items-center justify-between px-5 py-4'>
+      <header className='flex items-center justify-between px-4 py-4'>
         <div className='flex items-center gap-2 text-lg font-bold text-primary'>
           <PawPrint className='size-5' />
           Pawlog Kids
@@ -67,7 +67,7 @@ export const AppPage = () => {
         <ProfileAvatar />
       </header>
 
-      <main className='mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pb-10'>
+      <main className='mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pb-10'>
         {!isLoadingPets && !hasPet ? (
           <EmptyState
             icon={PawPrint}

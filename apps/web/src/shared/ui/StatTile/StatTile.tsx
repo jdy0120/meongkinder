@@ -45,12 +45,12 @@ export const StatTile = ({
 }: StatTileProps) => {
   const body = (
     <>
-      <div className='min-w-0 space-y-1.5 text-left'>
-        <p className='text-label text-muted-foreground'>{label}</p>
+      <div className='min-w-0 space-y-1 text-left'>
+        <p className='text-label tracking-wide text-muted-foreground'>{label}</p>
         <p className={`text-display ${TONE_CLASS[tone]}`}>
           {value}
           {unit && (
-            <span className='ml-1 text-label font-semibold text-muted-foreground'>
+            <span className='ml-1 text-label text-muted-foreground'>
               {unit}
             </span>
           )}
@@ -60,8 +60,11 @@ export const StatTile = ({
     </>
   );
 
+  // mini SaaS 의 KPI 타일: **그림자 없이 테두리로만** 선다. 대시보드에 타일이 넷씩
+  // 늘어서는데 각자 그림자를 지면 화면이 울퉁불퉁해지고, 정작 떠 있어야 하는 모달과
+  // 구분되지 않는다(tokens.css 가 elevation-sm 을 거의 0으로 내린 것과 짝이다).
   const shell =
-    "flex items-center justify-between gap-3 rounded-card border bg-surface p-5 shadow-card";
+    "flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4";
 
   if (!onClick) return <div className={shell}>{body}</div>;
 
@@ -69,7 +72,7 @@ export const StatTile = ({
     <button
       type='button'
       onClick={onClick}
-      className={`${shell} w-full cursor-pointer text-left transition-colors hover:bg-accent`}
+      className={`${shell} w-full cursor-pointer text-left transition-colors duration-150 hover:border-primary/40 hover:bg-accent`}
     >
       {body}
     </button>

@@ -48,7 +48,7 @@ export const TermsContentDialog = ({
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
           {isLoading ? (
-            <div className='flex justify-center py-8'>
+            <div className='flex justify-center py-5'>
               <Spinner className='size-5' />
             </div>
           ) : (

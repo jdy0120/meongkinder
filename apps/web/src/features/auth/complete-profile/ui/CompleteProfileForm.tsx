@@ -69,7 +69,7 @@ export const CompleteProfileForm = ({
   };
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       <section className='flex flex-col gap-3'>
         <div className='flex items-center gap-2 rounded-xl border p-3'>
           <Checkbox

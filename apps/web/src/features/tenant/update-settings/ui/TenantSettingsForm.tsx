@@ -122,8 +122,8 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
   const onMap = Boolean(settings.latitude && settings.longitude);
 
   return (
-    <div className='flex flex-col gap-6'>
-      <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
+      <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
       <Card>
         <CardContent className='pt-6'>
           <FieldGroup>

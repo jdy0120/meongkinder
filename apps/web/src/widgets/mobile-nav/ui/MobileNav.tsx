@@ -109,7 +109,7 @@ export const MobileNav = ({ withBottomBar = true }: MobileNavProps) => {
     return (
       <>
         {withBottomBar && (
-          <nav className='sticky bottom-0 z-10 h-[3.75rem] border-t bg-background lg:hidden' />
+          <nav className='sticky bottom-0 z-10 h-touch border-t border-border bg-background lg:hidden' />
         )}
         <aside className='fixed inset-y-0 left-0 z-30 hidden w-nav border-r border-sidebar-border bg-sidebar lg:block' />
       </>
@@ -155,7 +155,7 @@ export const MobileNav = ({ withBottomBar = true }: MobileNavProps) => {
               key={href}
               href={href}
               aria-current={isActive(href) ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-1.5 py-2.5 text-xs transition-colors ${
+              className={`flex min-h-touch flex-1 flex-col items-center justify-center gap-1 py-1.5 text-meta transition-colors duration-150 ${
                 isActive(href)
                   ? "font-semibold text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -171,9 +171,11 @@ export const MobileNav = ({ withBottomBar = true }: MobileNavProps) => {
       {hasSidebar && (
         <aside className='fixed inset-y-0 left-0 z-30 hidden w-nav flex-col border-r border-sidebar-border bg-sidebar lg:flex'>
           {/* 어느 매장을 보고 있는지 — 겸업이면 두 탭에 서로 다른 매장이 열려 있을 수 있다. */}
-          <div className='flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4'>
-            <Store className='size-5 shrink-0 text-primary' />
-            <span className='truncate text-label font-semibold text-sidebar-foreground'>
+          {/* 사이드바 머리 높이를 본문 헤더(`--spacing-topbar`)와 **같은 토큰**으로 맞춘다.
+              달라지면 사이드바 경계선과 헤더 경계선이 몇 px 어긋나 화면이 삐뚤어 보인다. */}
+          <div className='flex min-h-topbar shrink-0 items-center gap-2 border-b border-sidebar-border px-3'>
+            <Store className='size-5 shrink-0 text-brand' />
+            <span className='truncate text-name text-sidebar-foreground'>
               {currentTenantName ?? tenant}
             </span>
           </div>
@@ -181,7 +183,7 @@ export const MobileNav = ({ withBottomBar = true }: MobileNavProps) => {
           <nav className='flex flex-1 flex-col gap-4 overflow-y-auto p-3'>
             {sidebarGroups.map(({ group, items }) => (
               <div key={group} className='flex flex-col gap-1'>
-                <span className='px-3 pb-1 text-label font-semibold text-muted-foreground'>
+                <span className='px-2.5 pb-1 text-label tracking-wide text-muted-foreground'>
                   {TENANT_MENU_GROUP_LABEL[group]}
                 </span>
                 {items.map(({ href, short, icon: Icon }) => (
@@ -189,7 +191,7 @@ export const MobileNav = ({ withBottomBar = true }: MobileNavProps) => {
                     key={href}
                     href={href}
                     aria-current={isActive(href) ? "page" : undefined}
-                    className={`flex min-h-touch items-center gap-3 rounded-btn px-3 text-label transition-colors ${
+                    className={`flex min-h-control items-center gap-2.5 rounded-btn px-2.5 text-body-sm transition-colors duration-150 ${
                       isActive(href)
                         ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
                         : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

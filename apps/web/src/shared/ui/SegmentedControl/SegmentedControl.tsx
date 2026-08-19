@@ -39,7 +39,7 @@ export const SegmentedControl = <T extends string>({
     role='tablist'
     aria-label={label}
     // 스크롤바를 숨기지 않는다 — 오른쪽에 더 있다는 유일한 단서다.
-    className='-mx-5 flex items-center gap-2 overflow-x-auto px-5'
+    className='-mx-4 flex items-center gap-1.5 overflow-x-auto px-4'
   >
     {options.map((option) => {
       const selected = option.value === value;
@@ -51,11 +51,13 @@ export const SegmentedControl = <T extends string>({
           role='tab'
           aria-selected={selected}
           onClick={() => onChange(option.value)}
-          // 히트 영역 64px: 바깥 버튼이 h-touch, 안쪽 칩이 48px.
+          // ⚠️ **히트 영역과 보이는 칩을 분리한다.** 바깥 버튼이 `h-touch`(44px)라
+          // 손가락이 닿는 면적은 그대로고, 안쪽 칩만 36px 로 줄여 밀도를 얻는다.
+          // 칩 자체를 44px 로 두면 필터 줄이 화면 높이를 크게 먹는다.
           className='flex h-touch shrink-0 items-center'
         >
           <span
-            className={`flex h-12 items-center gap-2 rounded-pill border px-4 text-label font-semibold transition-colors ${
+            className={`flex h-control items-center gap-1.5 rounded-pill border px-3 text-label font-medium transition-colors duration-150 ${
               selected
                 ? "border-primary bg-primary text-primary-foreground"
                 : option.tone === "caution"

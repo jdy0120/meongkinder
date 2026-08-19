@@ -50,7 +50,7 @@ export const ReservationBoard = () => {
   const selected = petId ?? pets[0]!.id;
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       {pets.length > 1 && (
         <div className='flex flex-wrap gap-2'>
           {pets.map((pet) => (

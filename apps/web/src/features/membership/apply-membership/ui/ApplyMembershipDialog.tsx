@@ -123,13 +123,13 @@ export const ApplyMembershipDialog = () => {
 
         <div className='max-h-64 space-y-2 overflow-y-auto'>
           {isFetching && (
-            <div className='flex justify-center py-6'>
+            <div className='flex justify-center py-5'>
               <Spinner className='h-6 w-6' />
             </div>
           )}
 
           {!isFetching && (search || bounds) && tenants?.length === 0 && (
-            <p className='py-6 text-center text-sm text-muted-foreground'>
+            <p className='py-5 text-center text-sm text-muted-foreground'>
               이 지역에는 등록된 매장이 없습니다. 이름으로 검색해보세요.
             </p>
           )}
