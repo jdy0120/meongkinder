@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
   Input,
+  Label,
   Spinner,
 } from "@pawlog/ui";
 
@@ -87,9 +88,15 @@ export const ApplyMembershipDialog = () => {
             e.preventDefault();
             setSearch(keyword);
           }}
+          role='search'
           className='flex gap-2'
         >
+          <Label htmlFor='tenant-directory-search' className='sr-only'>
+            매장 이름으로 검색
+          </Label>
           <Input
+            id='tenant-directory-search'
+            type='search'
             placeholder='매장 이름으로 검색'
             value={keyword}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Newspaper } from "lucide-react";
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Spinner } from "@pawlog/ui";
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@pawlog/ui";
 import type { DailyReportWithPetAndContents } from "@pawlog/shared";
 
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, ListSkeleton } from "@/shared/ui";
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { usePets } from "@/entities/pet";
 import { ReportCard } from "@/entities/daily-report";
@@ -59,9 +59,7 @@ export const ReportArchiveList = () => {
       )}
 
       {isLoading ? (
-        <div className='flex justify-center py-12'>
-          <Spinner className='size-6' />
-        </div>
+        <ListSkeleton variant='card' count={4} label='지난 알림장 불러오는 중' />
       ) : data?.items && data.items.length > 0 ? (
         <div className='flex flex-col gap-3'>
           {data.items.map((report) => (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CalendarOff } from "lucide-react";
-import { Button, Card, CardContent, Input, Spinner } from "@pawlog/ui";
+import { Button, Card, CardContent, Input, Label, Spinner } from "@pawlog/ui";
 import { fromDateKey } from "@pawlog/shared";
 
 import { DatePicker, EmptyState, SectionHeading } from "@/shared/ui";
@@ -62,7 +62,13 @@ export const ClosuresField = () => {
         </div>
 
         <div className='flex flex-col gap-3'>
+          {/* 두 칸 모두 placeholder 만으로 이름을 삼고 있었다. 날짜를 고르는 순간
+              "쉬는 날 선택"이 사라져, 옆의 사유 칸과 구분이 없어진다. */}
+          <Label htmlFor='closure-date' className='sr-only'>
+            쉬는 날
+          </Label>
           <DatePicker
+            id='closure-date'
             value={date}
             onChange={setDate}
             placeholder='쉬는 날 선택'
@@ -70,7 +76,11 @@ export const ClosuresField = () => {
             disabled={{ before: new Date() }}
             clearable
           />
+          <Label htmlFor='closure-reason' className='sr-only'>
+            휴무 사유
+          </Label>
           <Input
+            id='closure-reason'
             value={reason}
             maxLength={100}
             placeholder='사유 (예: 설 연휴) — 보호자에게 보입니다'

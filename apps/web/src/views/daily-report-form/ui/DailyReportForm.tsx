@@ -329,12 +329,12 @@ const DailyReportFormBody = ({
         </CardHeader>
         <CardContent className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
           <div className='space-y-2'>
-            <Label className='text-sm font-semibold'>
+            <Label htmlFor='report-pet' className='text-sm font-semibold'>
               아이 태그
             </Label>
             {mode === "create" ? (
               <Select value={petId} onValueChange={setPetId}>
-                <SelectTrigger className='w-full rounded-xl'>
+                <SelectTrigger id='report-pet' className='w-full rounded-xl'>
                   <SelectValue placeholder='아이 선택' />
                 </SelectTrigger>
                 <SelectContent className='rounded-xl'>
@@ -355,10 +355,11 @@ const DailyReportFormBody = ({
           </div>
 
           <div className='space-y-2'>
-            <Label className='text-sm font-semibold'>
+            <Label htmlFor='report-date' className='text-sm font-semibold'>
               리포트 대상 일자
             </Label>
             <DatePicker
+              id='report-date'
               value={date}
               onChange={setDate}
               // 아직 오지 않은 날의 리포트는 존재할 수 없다.
@@ -458,8 +459,16 @@ const DailyReportFormBody = ({
                         )}
                       </div>
 
+                      {/*
+                        항목이 여러 개 쌓이면 똑같이 생긴 칸이 세로로 늘어선다. 이름이
+                        없으면 보조기술에는 "편집" 이 여러 개 있을 뿐이라 지금 어느
+                        항목을 쓰고 있는지 알 수 없다 — 위 배지의 종류를 이름으로 쓴다.
+                      */}
                       <Textarea
                         rows={2}
+                        aria-label={`${
+                          reportContentTypeLabelMap[item.type] ?? item.type
+                        } 내용`}
                         value={item.content}
                         onChange={(e) =>
                           updateContentEntry(item.id, e.target.value)
@@ -478,13 +487,14 @@ const DailyReportFormBody = ({
 
       <Card>
         <CardHeader className='pb-3'>
-          <CardTitle className='text-base font-semibold'>
+          <CardTitle id='report-summary-label' className='text-base font-semibold'>
             총평 요약
           </CardTitle>
         </CardHeader>
         <CardContent className='space-y-3'>
           <Textarea
             rows={4}
+            aria-labelledby='report-summary-label'
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             placeholder='보호자에게 전달할 한 줄 총평을 작성하세요. 임시저장하면 AI 코멘트 초안을 참고할 수 있습니다.'

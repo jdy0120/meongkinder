@@ -82,9 +82,12 @@ export const AvatarUpload = ({ value, onChange, name }: AvatarUploadProps) => {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={preview}
+            // 방금 고른 사진의 미리보기다. 바로 옆에 '사진 바꾸기' 버튼이 있어
+            // 같은 말을 두 번 읽게 되므로 장식으로 둔다.
             alt=''
             className='size-full object-cover'
             draggable={false}
+            decoding='async'
           />
         ) : value ? (
           <PhotoImage fileId={value} className='size-full object-cover' />

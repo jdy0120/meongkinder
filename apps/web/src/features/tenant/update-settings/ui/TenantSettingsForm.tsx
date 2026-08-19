@@ -171,6 +171,7 @@ const SettingsFields = ({ settings }: { settings: TenantSettings }) => {
                 name='contactPhone'
                 render={({ field }) => (
                   <PhoneInput
+                    id='contactPhone'
                     value={field.value ?? ""}
                     onChange={field.onChange}
                   />

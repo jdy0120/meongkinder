@@ -87,7 +87,7 @@ export const UpdateStatusDialog = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-4 pt-2'>
           <div className='space-y-2'>
-            <Label className='text-sm font-semibold'>
+            <Label htmlFor='attendance-status' className='text-sm font-semibold'>
               상태
             </Label>
             <Controller
@@ -95,7 +95,10 @@ export const UpdateStatusDialog = ({
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className='w-full rounded-xl'>
+                  <SelectTrigger
+                    id='attendance-status'
+                    className='w-full rounded-xl'
+                  >
                     <SelectValue placeholder='상태 선택' />
                   </SelectTrigger>
                   <SelectContent className='rounded-xl'>
@@ -111,10 +114,11 @@ export const UpdateStatusDialog = ({
           </div>
 
           <div className='space-y-2'>
-            <Label className='text-sm font-semibold'>
+            <Label htmlFor='attendance-reason' className='text-sm font-semibold'>
               사유
             </Label>
             <Textarea
+              id='attendance-reason'
               rows={3}
               {...register("reason")}
               placeholder='예: 컨디션 난조로 결석, 다음 주 화요일 보강 예정'
@@ -123,14 +127,20 @@ export const UpdateStatusDialog = ({
           </div>
 
           <div className='flex items-center justify-between py-2 border-y'>
-            <span className='text-sm font-semibold'>
+            {/* 스위치는 글자를 안 들고 있다 — `<span>` 으로 두면 이름 없는 컨트롤이 된다.
+                돈을 움직이는 토글이라 더더욱 무엇에 대한 스위치인지 읽혀야 한다. */}
+            <Label
+              htmlFor='attendance-deduct-subscription'
+              className='text-sm font-semibold'
+            >
               정기권/회수권 차감
-            </span>
+            </Label>
             <Controller
               name='deductSubscription'
               control={control}
               render={({ field }) => (
                 <Switch
+                  id='attendance-deduct-subscription'
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />

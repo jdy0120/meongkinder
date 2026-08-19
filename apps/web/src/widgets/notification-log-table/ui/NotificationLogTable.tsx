@@ -6,7 +6,6 @@ import {
   Badge,
   Card,
   CardContent,
-  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +17,7 @@ import { formatPhone } from "@pawlog/shared";
 import type { NotificationLog } from "@pawlog/database";
 
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
+import { ListSkeleton } from "@/shared/ui";
 
 const TYPE_LABEL: Record<string, string> = {
   CHECK_IN: "등원",
@@ -59,7 +59,7 @@ export const NotificationLogTable = () => {
   if (isLoading) {
     return (
       <div className='flex justify-center py-12'>
-        <Spinner className='size-6' />
+        <ListSkeleton variant='row' count={6} label='알림 발송 이력 불러오는 중' />
       </div>
     );
   }

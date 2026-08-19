@@ -9,16 +9,17 @@ import {
   TableHeader,
   TableRow,
   Input,
+  Label,
   Button,
   Card,
   CardContent,
   CardHeader,
-  Spinner,
 } from "@pawlog/ui";
 import type { TenantSubscriptionDetail } from "@pawlog/shared";
 
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { SubscriptionStatusBadge } from "@/entities/subscription";
+import { ListSkeleton } from "@/shared/ui";
 
 const formatDate = (value: string | Date) =>
   new Date(value).toLocaleDateString("ko-KR", {
@@ -50,9 +51,18 @@ export const SubscriptionsTable = () => {
   return (
     <Card>
       <CardHeader className='pb-3'>
-        <form onSubmit={handleSearch} className='flex gap-2 max-w-sm'>
+        {/* placeholder 는 라벨이 아니다 — MembersTable 의 같은 주석 참고. */}
+        <form
+          onSubmit={handleSearch}
+          role='search'
+          className='flex max-w-sm gap-2'
+        >
+          <Label htmlFor='tenant-subscription-search' className='sr-only'>
+            테넌트명 또는 서브도메인 검색
+          </Label>
           <Input
-            type='text'
+            id='tenant-subscription-search'
+            type='search'
             placeholder='테넌트명 또는 서브도메인 검색'
             value={searchInput}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -70,9 +80,7 @@ export const SubscriptionsTable = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className='flex justify-center items-center py-12'>
-            <Spinner className='size-8 text-primary' />
-          </div>
+          <ListSkeleton variant='row' count={6} label='구독 목록 불러오는 중' />
         ) : (
           <div className='overflow-x-auto'>
             <Table>

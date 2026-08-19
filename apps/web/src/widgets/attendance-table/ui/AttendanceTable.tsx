@@ -12,8 +12,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Spinner,
-} from "@pawlog/ui";
+  } from "@pawlog/ui";
 import type { AttendanceWithPet } from "@pawlog/shared";
 
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
@@ -22,6 +21,7 @@ import { CheckInButton } from "@/features/attendance/check-in";
 import { SellTicketDialog } from "@/features/subscription/sell-ticket";
 import { CheckOutButton } from "@/features/attendance/check-out";
 import { UpdateStatusDialog } from "@/features/attendance/update-status";
+import { ListSkeleton } from "@/shared/ui";
 
 /**
  * 오늘의 출석부 목록 위젯. 페이지네이션 상태와 목록 조회를 자체 소유하고,
@@ -45,9 +45,7 @@ export const AttendanceTable = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className='flex justify-center items-center py-12'>
-            <Spinner className='size-8 text-primary' />
-          </div>
+          <ListSkeleton variant='row' count={6} label='출석부 불러오는 중' />
         ) : (
           <div className='overflow-x-auto'>
             <Table>

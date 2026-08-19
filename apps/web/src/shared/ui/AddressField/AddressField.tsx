@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Button, Input, Label } from "@pawlog/ui";
 import type { TenantAddressInput } from "@pawlog/shared";
@@ -78,6 +78,12 @@ export const AddressField = ({
   onChange,
   description,
 }: AddressFieldProps) => {
+  // 매장 설정과 개설 폼 양쪽에 놓이므로 id 는 렌더마다 유일해야 한다.
+  const groupId = useId();
+  const descriptionId = useId();
+  const postalId = useId();
+  const roadId = useId();
+  const detailId = useId();
   const [error, setError] = useState<string | null>(null);
   // 팝업 콜백은 열릴 때의 onChange 를 붙잡으므로, 최신 값을 ref 로 읽어 stale 을 피한다.
   const latest = useRef({ value, onChange });
@@ -114,38 +120,66 @@ export const AddressField = ({
   return (
     <div className='flex flex-col gap-3'>
       <div className='flex flex-col gap-1.5'>
-        <Label>주소</Label>
+        {/*
+          주소는 칸 하나가 아니라 **우편번호 · 도로명 · 상세** 세 칸이 한 덩어리다.
+          `<Label>` 하나로는 그중 하나만 가리킬 수 있어 나머지 두 칸이 이름 없이 남는다
+          — 그래서 제목은 그룹 이름으로 올리고 각 칸에 각자의 이름을 붙인다.
+        */}
+        <span id={groupId} className='text-body font-medium'>
+          주소
+        </span>
         {description && (
-          <p className='text-label text-muted-foreground'>{description}</p>
+          <p id={descriptionId} className='text-label text-muted-foreground'>
+            {description}
+          </p>
         )}
       </div>
 
-      <div className='flex gap-2'>
+      <div
+        role='group'
+        aria-labelledby={groupId}
+        aria-describedby={description ? descriptionId : undefined}
+        className='flex flex-col gap-2'
+      >
+        <div className='flex gap-2'>
+          <Label htmlFor={postalId} className='sr-only'>
+            우편번호
+          </Label>
+          <Input
+            id={postalId}
+            readOnly
+            value={value.postalCode ?? ""}
+            placeholder='우편번호'
+            className='w-32'
+          />
+          <Button type='button' variant='outline' onClick={openSearch}>
+            <Search className='size-4' aria-hidden='true' />
+            주소 검색
+          </Button>
+        </div>
+
+        <Label htmlFor={roadId} className='sr-only'>
+          도로명 주소
+        </Label>
         <Input
+          id={roadId}
           readOnly
-          value={value.postalCode ?? ""}
-          placeholder='우편번호'
-          className='w-32'
+          value={value.roadAddress ?? ""}
+          placeholder='주소 검색 버튼을 눌러 선택하세요'
         />
-        <Button type='button' variant='outline' onClick={openSearch}>
-          <Search className='size-4' />
-          주소 검색
-        </Button>
+
+        <Label htmlFor={detailId} className='sr-only'>
+          상세주소
+        </Label>
+        <Input
+          id={detailId}
+          value={value.addressDetail ?? ""}
+          placeholder='상세주소 (건물명·층·호)'
+          onChange={(event) =>
+            onChange({ ...value, addressDetail: event.target.value })
+          }
+        />
       </div>
-
-      <Input
-        readOnly
-        value={value.roadAddress ?? ""}
-        placeholder='주소 검색 버튼을 눌러 선택하세요'
-      />
-
-      <Input
-        value={value.addressDetail ?? ""}
-        placeholder='상세주소 (건물명·층·호)'
-        onChange={(event) =>
-          onChange({ ...value, addressDetail: event.target.value })
-        }
-      />
 
       {error && <p className='text-label text-destructive'>{error}</p>}
 

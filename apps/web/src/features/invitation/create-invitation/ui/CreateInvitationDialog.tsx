@@ -77,13 +77,13 @@ export const CreateInvitationDialog = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-4 pt-2'>
           <div className='space-y-2'>
-            <Label>자격</Label>
+            <Label htmlFor='invite-role'>자격</Label>
             <Controller
               name='role'
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger id='invite-role'>
                     <SelectValue placeholder='자격 선택' />
                   </SelectTrigger>
                   <SelectContent>
@@ -97,10 +97,11 @@ export const CreateInvitationDialog = () => {
           </div>
 
           <div className='space-y-2'>
-            <Label>
+            <Label htmlFor='invite-email'>
               이메일
             </Label>
             <Input
+              id='invite-email'
               type='email'
               placeholder='guardian@example.com'
               {...register("email")}
@@ -108,14 +109,18 @@ export const CreateInvitationDialog = () => {
           </div>
 
           <div className='space-y-2'>
-            <Label>
+            <Label htmlFor='invite-phone'>
               휴대폰 번호
             </Label>
             <Controller
               control={control}
               name='phone'
               render={({ field }) => (
-                <PhoneInput value={field.value ?? ""} onChange={field.onChange} />
+                <PhoneInput
+                  id='invite-phone'
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
               )}
             />
             <p>

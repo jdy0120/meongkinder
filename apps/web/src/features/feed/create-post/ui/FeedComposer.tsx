@@ -305,6 +305,8 @@ export const FeedComposer = ({ doneHref }: FeedComposerProps) => {
                     alt={photo.name}
                     className='aspect-square w-full object-cover'
                     draggable={false}
+                    loading='lazy'
+                    decoding='async'
                   />
                   <button
                     type='button'
@@ -399,7 +401,12 @@ export const FeedComposer = ({ doneHref }: FeedComposerProps) => {
       {photos.length > 0 && (
         <section className='space-y-2'>
           <div className='flex items-center justify-between'>
-            <h2 className='text-sm font-semibold'>한 줄 남기기</h2>
+            {/* 이 제목이 이미 캡션 칸의 이름이다. 라벨을 새로 만들면 같은 말이 두 번
+                읽히므로, 제목은 제목으로 두고 `aria-labelledby` 로 잇기만 한다.
+                (`<Label asChild>` 로 감싸면 `<h2 for=…>` 가 되어 잘못된 HTML 이다.) */}
+            <h2 id='feed-caption-label' className='text-sm font-semibold'>
+              한 줄 남기기
+            </h2>
             <Button
               type='button'
              
@@ -413,6 +420,8 @@ export const FeedComposer = ({ doneHref }: FeedComposerProps) => {
             </Button>
           </div>
           <Textarea
+            id='feed-caption'
+            aria-labelledby='feed-caption-label'
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             placeholder='비워두면 AI가 대신 써드려요.'

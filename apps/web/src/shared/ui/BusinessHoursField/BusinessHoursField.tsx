@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, CardContent, Input, Switch } from "@pawlog/ui";
+import { Button, Card, CardContent, Input, Label, Switch } from "@pawlog/ui";
 import {
   BUSINESS_WEEKDAY_LABELS,
   WEEK_DISPLAY_ORDER,
@@ -268,8 +268,11 @@ export const BusinessHoursField = ({ value, onChange }: Props) => {
         </div>
 
         <div className='flex flex-col gap-2'>
-          <span className='font-semibold'>안내 문구</span>
+          <Label htmlFor='business-hours-note' className='font-semibold'>
+            안내 문구
+          </Label>
           <Input
+            id='business-hours-note'
             value={value.note ?? ""}
             maxLength={200}
             placeholder='예: 마지막 등원 17:00까지'

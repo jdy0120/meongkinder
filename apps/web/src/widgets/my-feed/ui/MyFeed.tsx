@@ -4,9 +4,9 @@ import Link from "next/link";
 
 import { useState } from "react";
 import { PawPrint } from "lucide-react";
-import { Button, Card, Spinner } from "@pawlog/ui";
+import { Button } from "@pawlog/ui";
 
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, ListSkeleton } from "@/shared/ui";
 import { useInfiniteList } from "@/shared/libs/query/useInfiniteList";
 import { usePets } from "@/entities/pet";
 import { FeedPostCard, type MyFeedPost } from "@/entities/feed";
@@ -62,9 +62,7 @@ export const MyFeed = () => {
       )}
 
       {isLoading ? (
-        <div className='flex items-center justify-center py-12'>
-          <Spinner className='size-8 text-primary' />
-        </div>
+        <ListSkeleton variant='card' count={3} label='우리 아이 사진 불러오는 중' />
       ) : posts.length === 0 ? (
         <EmptyState
           icon={PawPrint}

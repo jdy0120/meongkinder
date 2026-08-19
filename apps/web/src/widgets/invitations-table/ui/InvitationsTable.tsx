@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -22,6 +21,7 @@ import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
 import { RoleBadge } from "@/entities/user";
 import { CreateInvitationDialog } from "@/features/invitation/create-invitation";
 import { useCancelInvitation } from "@/features/invitation/cancel-invitation";
+import { ListSkeleton } from "@/shared/ui";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "대기",
@@ -72,9 +72,7 @@ export const InvitationsTable = () => {
 
       <CardContent>
         {isLoading ? (
-          <div className='flex items-center justify-center py-12'>
-            <Spinner className='h-8 w-8' />
-          </div>
+          <ListSkeleton variant='row' count={4} label='초대 목록 불러오는 중' />
         ) : (
           <div className='overflow-x-auto'>
             <Table>

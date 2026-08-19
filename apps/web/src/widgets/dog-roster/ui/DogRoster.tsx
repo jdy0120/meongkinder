@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { PawPrint, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Input, Spinner } from "@pawlog/ui";
+import { Button, Input, Label } from "@pawlog/ui";
 import {
   BADGE_LEVEL,
   type PetSummaryResponse,
@@ -13,7 +13,7 @@ import {
 import { Get } from "@/shared/libs/axios/request";
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { useTenantStore } from "@/shared/libs/zustand/stores/tenant.store";
-import { EmptyState, SegmentedControl, type SegmentOption } from "@/shared/ui";
+import { EmptyState, ListSkeleton, SegmentedControl, type SegmentOption } from "@/shared/ui";
 import { DogCard, resolvePetSafety } from "@/entities/pet";
 import { CheckInButton } from "@/features/attendance/check-in";
 import { SellTicketDialog } from "@/features/subscription/sell-ticket";
@@ -121,8 +121,12 @@ export const DogRoster = () => {
 
   return (
     <div className='space-y-6'>
-      <form onSubmit={handleSearch} className='flex gap-2'>
+      <form onSubmit={handleSearch} role='search' className='flex gap-2'>
+        <Label htmlFor='roster-search' className='sr-only'>
+          아이 이름 또는 보호자 검색
+        </Label>
         <Input
+          id='roster-search'
           type='search'
           placeholder='아이 이름 또는 보호자'
           value={searchInput}
@@ -142,9 +146,7 @@ export const DogRoster = () => {
 
       {isLoading ? (
         // 스피너는 화면 중앙이 아니라 **콘텐츠가 들어올 자리**에 둔다 (§6).
-        <div className='flex justify-center py-16'>
-          <Spinner className='size-8 text-primary' />
-        </div>
+        <ListSkeleton variant='card' count={5} label='원생 목록 불러오는 중' />
       ) : pets.length === 0 ? (
         <EmptyState
           icon={PawPrint}

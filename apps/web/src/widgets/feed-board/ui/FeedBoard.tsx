@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Camera } from "lucide-react";
-import { Button, Card, Spinner } from "@pawlog/ui";
+import { Button } from "@pawlog/ui";
 
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, ListSkeleton } from "@/shared/ui";
 import { tenantPath } from "@/shared/libs/tenant/routes";
 import { useInfiniteList } from "@/shared/libs/query/useInfiniteList";
 import { FeedPostCard, type FeedPostDetail } from "@/entities/feed";
@@ -28,9 +28,7 @@ export const FeedBoard = () => {
 
   if (isLoading) {
     return (
-      <div className='flex items-center justify-center py-12'>
-        <Spinner className='size-8 text-primary' />
-      </div>
+      <ListSkeleton variant='card' count={3} label='사진 피드 불러오는 중' />
     );
   }
 

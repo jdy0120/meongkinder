@@ -15,7 +15,6 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -26,7 +25,7 @@ import {
 
 import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { tenantPath } from "@/shared/libs/tenant/routes";
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, ListSkeleton } from "@/shared/ui";
 import { usePetOptions } from "@/entities/pet";
 import { PhotoImage } from "@/entities/file";
 import {
@@ -151,9 +150,7 @@ export const DailyReportsTable = () => {
 
       <CardContent>
         {isLoading ? (
-          <div className='flex items-center justify-center py-12'>
-            <Spinner className='size-8 text-primary' />
-          </div>
+          <ListSkeleton variant='row' count={6} label='알림장 목록 불러오는 중' />
         ) : items.length === 0 ? (
           <EmptyState
             icon={CalendarDays}

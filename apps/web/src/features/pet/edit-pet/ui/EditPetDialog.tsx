@@ -214,8 +214,9 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             </h3>
 
             <div className='space-y-2'>
-              <Label>알러지</Label>
+              <Label htmlFor='pet-allergies'>알러지</Label>
               <Input
+                id='pet-allergies'
                 {...register("allergies")}
                 placeholder='닭고기, 소고기'
               />
@@ -225,8 +226,9 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             </div>
 
             <div className='space-y-2'>
-              <Label>성향</Label>
+              <Label htmlFor='pet-temperaments'>성향</Label>
               <Input
+                id='pet-temperaments'
                 {...register("temperaments")}
                 placeholder='대형견 무서워함, 물 싫어함'
               />
@@ -254,18 +256,39 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             />
 
             <div className='space-y-2'>
-              <Label>예방접종 만료일</Label>
-              <div className='grid grid-cols-2 gap-3'>
+              {/*
+                여기서 `<Label>` 은 틀린 태그다 — 이 제목이 가리키는 것은 컨트롤 하나가
+                아니라 접종 4종의 날짜 칸 전체인데, `<label htmlFor>` 는 **하나만**
+                가리킬 수 있다. 그래서 제목은 그룹 이름(`aria-labelledby`)으로 올리고,
+                각 칸의 이름은 그 옆의 종류 이름이 맡는다. 이렇게 해야 스크린리더가
+                "예방접종 만료일 그룹, 광견병, 날짜 선택" 순으로 읽는다 — 예전에는
+                네 칸이 전부 이름 없는 버튼으로만 읽혔다.
+              */}
+              <span
+                id='pet-vaccinations-label'
+                className='text-body font-medium'
+              >
+                예방접종 만료일
+              </span>
+              <div
+                role='group'
+                aria-labelledby='pet-vaccinations-label'
+                className='grid grid-cols-2 gap-3'
+              >
                 {VACCINATION_TYPES.map((type) => (
                   <div key={type} className='space-y-1.5'>
-                    <span className='text-label text-muted-foreground'>
+                    <Label
+                      htmlFor={`pet-vaccination-${type}`}
+                      className='text-label text-muted-foreground'
+                    >
                       {vaccinationLabel(type)}
-                    </span>
+                    </Label>
                     <Controller
                       control={control}
                       name={`vaccinations.${type}` as const}
                       render={({ field }) => (
                         <DatePicker
+                          id={`pet-vaccination-${type}`}
                           value={field.value}
                           onChange={field.onChange}
                           placeholder='기록 없음'
@@ -285,12 +308,13 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             </div>
 
             <div className='space-y-2'>
-              <Label>적응 기간 시작일</Label>
+              <Label htmlFor='pet-adaptation-started-at'>적응 기간 시작일</Label>
               <Controller
                 control={control}
                 name='adaptationStartedAt'
                 render={({ field }) => (
                   <DatePicker
+                    id='pet-adaptation-started-at'
                     value={field.value}
                     onChange={field.onChange}
                     placeholder='없음'
@@ -311,12 +335,16 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
 
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label>픽업 시각</Label>
-                <Input type='time' {...register("pickupTime")} />
+                <Label htmlFor='pet-pickup-time'>픽업 시각</Label>
+                <Input
+                  id='pet-pickup-time'
+                  type='time'
+                  {...register("pickupTime")}
+                />
               </div>
 
               <div className='space-y-2'>
-                <Label>픽업 수단</Label>
+                <Label htmlFor='pet-pickup-method'>픽업 수단</Label>
                 <Controller
                   name='pickupMethod'
                   control={control}
@@ -325,7 +353,7 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
                       value={field.value}
                       onValueChange={field.onChange}
                     >
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger id='pet-pickup-method' className='w-full'>
                         <SelectValue placeholder='선택' />
                       </SelectTrigger>
                       <SelectContent>
@@ -343,8 +371,9 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             </div>
 
             <div className='space-y-2'>
-              <Label>셔틀 호차</Label>
+              <Label htmlFor='pet-shuttle-number'>셔틀 호차</Label>
               <Input
+                id='pet-shuttle-number'
                 type='number'
                 min={1}
                 {...register("shuttleNumber", { valueAsNumber: true })}
@@ -375,18 +404,18 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
 
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label>이름</Label>
-                <Input {...register("name", { required: true })} />
+                <Label htmlFor='pet-name'>이름</Label>
+                <Input id='pet-name' {...register("name", { required: true })} />
               </div>
 
               <div className='space-y-2'>
-                <Label>종</Label>
+                <Label htmlFor='pet-species'>종</Label>
                 <Controller
                   name='species'
                   control={control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger id='pet-species' className='w-full'>
                         <SelectValue placeholder='종 선택' />
                       </SelectTrigger>
                       <SelectContent>
@@ -404,18 +433,18 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
 
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label>견종/품종</Label>
-                <Input {...register("breed")} />
+                <Label htmlFor='pet-breed'>견종/품종</Label>
+                <Input id='pet-breed' {...register("breed")} />
               </div>
 
               <div className='space-y-2'>
-                <Label>성별</Label>
+                <Label htmlFor='pet-gender'>성별</Label>
                 <Controller
                   name='gender'
                   control={control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger id='pet-gender' className='w-full'>
                         <SelectValue placeholder='성별 선택' />
                       </SelectTrigger>
                       <SelectContent>
@@ -433,12 +462,13 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
 
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label>생년월일</Label>
+                <Label htmlFor='pet-birth-date'>생년월일</Label>
                 <Controller
                   control={control}
                   name='birthDate'
                   render={({ field }) => (
                     <DatePicker
+                      id='pet-birth-date'
                       value={field.value}
                       onChange={field.onChange}
                       // 아직 태어나지 않은 아이는 없다.
@@ -449,8 +479,9 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
               </div>
 
               <div className='space-y-2'>
-                <Label>체중 (kg)</Label>
+                <Label htmlFor='pet-weight-kg'>체중 (kg)</Label>
                 <Input
+                  id='pet-weight-kg'
                   type='number'
                   step='0.1'
                   {...register("weightKg", { valueAsNumber: true })}
@@ -466,16 +497,17 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
 
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label>보호자 이름</Label>
-                <Input {...register("guardianName")} />
+                <Label htmlFor='pet-guardian-name'>보호자 이름</Label>
+                <Input id='pet-guardian-name' {...register("guardianName")} />
               </div>
               <div className='space-y-2'>
-                <Label>보호자 연락처</Label>
+                <Label htmlFor='pet-guardian-phone'>보호자 연락처</Label>
                 <Controller
                   control={control}
                   name='guardianPhone'
                   render={({ field }) => (
                     <PhoneInput
+                      id='pet-guardian-phone'
                       value={field.value ?? ""}
                       onChange={field.onChange}
                     />
@@ -485,8 +517,9 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             </div>
 
             <div className='space-y-2'>
-              <Label>케어 노트</Label>
+              <Label htmlFor='pet-care-note'>케어 노트</Label>
               <Textarea
+                id='pet-care-note'
                 rows={3}
                 {...register("careNote")}
                 placeholder='투약 방법, 보호자 당부처럼 위 항목에 담기지 않는 내용만 적어 주세요.'
@@ -500,14 +533,14 @@ export const EditPetDialog = ({ pet }: EditPetDialogProps) => {
             {/* 초상권 동의 범위 — 단체 사진에 남의 아이가 함께 찍히는 구조라 아이별로 필요하다.
                 나중에 붙이면 이미 쌓인 사진의 노출 범위를 소급 판정할 수 없다. */}
             <div className='space-y-2'>
-              <Label>초상권 동의 범위</Label>
+              <Label htmlFor='pet-photo-consent'>초상권 동의 범위</Label>
               <Controller
                 name='photoConsent'
                 control={control}
                 render={({ field }) => (
                   <>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger id='pet-photo-consent' className='w-full'>
                         <SelectValue placeholder='동의 범위 선택' />
                       </SelectTrigger>
                       <SelectContent>
@@ -563,18 +596,40 @@ const ToggleRow = ({
   label: string;
   hint?: string;
 }) => (
+  /*
+   * 스위치는 **글자를 하나도 안 들고 있는 컨트롤**이다. 이름을 붙여 주지 않으면
+   * 스크린리더가 "스위치, 꺼짐"까지만 읽고 무엇에 대한 스위치인지는 말하지 않는다 —
+   * 물림 이력·마운팅처럼 안전에 직결되는 항목이 전부 그 상태였다.
+   *
+   * `htmlFor` 로 이름을, `aria-describedby` 로 부연을 잇는다. 둘을 나누는 이유는
+   * 목록에서 훑을 때는 이름만 읽히고 초점이 닿았을 때 설명이 따라와야 하기 때문이다.
+   * 라벨을 붙인 부수효과로 **글자를 눌러도 토글된다** — 젖은 손으로 쓰는 화면에서
+   * 히트 영역이 스위치 하나에서 행 전체로 넓어진다.
+   */
   <div className='flex items-center justify-between gap-4 border-y py-3'>
     <div className='min-w-0'>
-      <span className='text-body font-semibold'>{label}</span>
+      <Label htmlFor={`pet-${name}`} className='text-body font-semibold'>
+        {label}
+      </Label>
       {hint && (
-        <p className='break-keep text-label text-muted-foreground'>{hint}</p>
+        <p
+          id={`pet-${name}-hint`}
+          className='break-keep text-label text-muted-foreground'
+        >
+          {hint}
+        </p>
       )}
     </div>
     <Controller
       name={name}
       control={control}
       render={({ field }) => (
-        <Switch checked={field.value} onCheckedChange={field.onChange} />
+        <Switch
+          id={`pet-${name}`}
+          aria-describedby={hint ? `pet-${name}-hint` : undefined}
+          checked={field.value}
+          onCheckedChange={field.onChange}
+        />
       )}
     />
   </div>

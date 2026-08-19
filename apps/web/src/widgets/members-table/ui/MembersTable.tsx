@@ -7,7 +7,7 @@ import {
   CardContent,
   CardHeader,
   Input,
-  Spinner,
+  Label,
   Table,
   TableBody,
   TableCell,
@@ -26,6 +26,7 @@ import { usePaginatedList } from "@/shared/libs/query/usePaginatedList";
 import { MembershipStatusBadge } from "@/entities/membership";
 import { RoleBadge } from "@/entities/user";
 import { DecideMembershipActions } from "@/features/membership/decide-membership";
+import { ListSkeleton } from "@/shared/ui";
 import {
   MemberRoleSelect,
   RemoveMemberButton,
@@ -96,9 +97,22 @@ export const MembersTable = () => {
           ))}
         </div>
 
-        <form onSubmit={handleSearch} className='flex max-w-sm gap-2'>
+        {/*
+          `role='search'` + 보이지 않는 라벨. placeholder 는 라벨이 아니다 — 글자를
+          입력하는 순간 사라지므로 "여기에 뭘 넣는 칸이었지"를 되물을 수 없고,
+          스크린리더는 칸의 이름을 아예 못 읽는다.
+        */}
+        <form
+          onSubmit={handleSearch}
+          role='search'
+          className='flex max-w-sm gap-2'
+        >
+          <Label htmlFor='member-search' className='sr-only'>
+            이메일 또는 닉네임 검색
+          </Label>
           <Input
-            type='text'
+            id='member-search'
+            type='search'
             placeholder='이메일 또는 닉네임 검색'
             value={searchInput}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -111,9 +125,7 @@ export const MembersTable = () => {
 
       <CardContent>
         {isLoading ? (
-          <div className='flex items-center justify-center py-12'>
-            <Spinner className='h-8 w-8' />
-          </div>
+          <ListSkeleton variant='row' count={6} label='구성원 목록 불러오는 중' />
         ) : (
           <div className='overflow-x-auto'>
             <Table>

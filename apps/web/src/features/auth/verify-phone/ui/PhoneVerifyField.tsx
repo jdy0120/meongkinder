@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import {
   Button,
@@ -54,6 +54,15 @@ export const PhoneVerifyField = ({
   label = "휴대폰 번호",
   description,
 }: PhoneVerifyFieldProps) => {
+  /*
+   * `useId` 로 만드는 이유: 이 컴포넌트는 프로필 화면과 최초 진입 게이트 양쪽에 있고,
+   * 한 화면에 두 번 놓일 수도 있다. 고정 문자열을 쓰면 id 가 겹쳐 **라벨이 첫 번째
+   * 칸만 가리키게 된다** — 두 번째 칸을 눌러도 첫 번째로 초점이 튄다.
+   */
+  const phoneId = useId();
+  const codeId = useId();
+  const descriptionId = useId();
+  const remainingId = useId();
   const [code, setCode] = useState("");
   const [verified, setVerified] = useState(false);
   /**
@@ -116,14 +125,18 @@ export const PhoneVerifyField = ({
   return (
     <div className='flex flex-col gap-3'>
       <div className='flex flex-col gap-1.5'>
-        <Label>{label}</Label>
+        <Label htmlFor={phoneId}>{label}</Label>
         {description && (
-          <p className='text-label text-muted-foreground'>{description}</p>
+          <p id={descriptionId} className='text-label text-muted-foreground'>
+            {description}
+          </p>
         )}
       </div>
 
       <div className='flex gap-2'>
         <PhoneInput
+          id={phoneId}
+          aria-describedby={description ? descriptionId : undefined}
           value={value}
           onChange={handlePhoneChange}
           disabled={!editing}
@@ -159,7 +172,13 @@ export const PhoneVerifyField = ({
       {waitingForCode && (
         <div className='flex gap-2'>
           <div className='relative flex-1'>
+            {/* 인증번호 칸은 placeholder 만으로 이름을 삼고 있었다 — 한 글자만 쳐도
+                사라지므로, 남은 시간만 들리고 "무슨 번호를 넣는 칸"인지는 사라진다. */}
+            <Label htmlFor={codeId} className='sr-only'>
+              인증번호 6자리
+            </Label>
             <Input
+              id={codeId}
               value={code}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
@@ -167,9 +186,16 @@ export const PhoneVerifyField = ({
               placeholder='인증번호 6자리'
               inputMode='numeric'
               autoComplete='one-time-code'
+              aria-describedby={remainingId}
             />
-            <span className='absolute right-4 top-1/2 -translate-y-1/2 text-label text-muted-foreground'>
-              {format(remaining)}
+            {/* 남은 시간은 초마다 바뀐다. `role='timer'` 로 두면 보조기술이 매초
+                끼어들지 않으면서도 값을 물어봤을 때 답할 수 있다. */}
+            <span
+              id={remainingId}
+              role='timer'
+              className='absolute right-4 top-1/2 -translate-y-1/2 text-label text-muted-foreground'
+            >
+              남은 시간 {format(remaining)}
             </span>
           </div>
           <Button

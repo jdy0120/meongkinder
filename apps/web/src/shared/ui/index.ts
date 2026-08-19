@@ -23,3 +23,5 @@ export * from "./KakaoMap/KakaoMap";
 // job-060: 매장 운영시간 입력(네이버 스마트플레이스식). 매장 개설과 매장 설정이
 // **같은 편집기**를 쓴다 — feature 두 개가 서로를 import 할 수 없으므로 여기 둔다.
 export * from "./BusinessHoursField/BusinessHoursField";
+// 목록 로딩 골격. 스피너로 자리를 비우면 데이터가 도착할 때 화면이 튄다(CLS).
+export * from "./ListSkeleton/ListSkeleton";
